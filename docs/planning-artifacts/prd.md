@@ -1,5 +1,5 @@
 ---
-stepsCompleted: ["step-01-init", "step-02-discovery", "step-02b-vision", "step-02c-executive-summary", "step-03-success", "step-04-journeys"]
+stepsCompleted: ["step-01-init", "step-02-discovery", "step-02b-vision", "step-02c-executive-summary", "step-03-success", "step-04-journeys", "step-07-project-type", "step-08-scoping", "step-09-functional", "step-10-nonfunctional"]
 inputDocuments: ["docs/planning-artifacts/product-brief-Rezepte-2026-03-14.md"]
 workflowType: 'prd'
 briefCount: 1
@@ -272,3 +272,232 @@ Dragon startet seinen Laptop, will die Wochenplanung machen. App lädt nicht - S
 - Löschen-Sicherheitsabfrage mit Alternative "Schlecht bewerten"
 - Grundlegendes Backup/Recovery (technisch selbst verwaltbar)
 - Last-write-wins für simultane Zugriffe
+
+## Web App Specific Requirements
+
+### Project-Type Overview
+
+**Rezepte** ist eine responsive Web-Anwendung für LAN-only Deployment. Der Fokus liegt auf einfacher Technologie-Wahl und unkompliziertem Deployment via Docker-Container.
+
+### Technical Architecture Considerations
+
+**Application Architecture:**
+- **SPA vs MPA:** Flexible - Technologie-Wahl basierend auf einfachster Implementation
+- **Deployment:** Docker-Image für einfache Installation auf Raspberry Pi/NAS
+- **Kein Real-time erforderlich:** Last-write-wins Konfliktlösung ausreichend
+- **LAN-only:** Keine Cloud-Infrastruktur, keine externe Erreichbarkeit
+
+**Browser Support:**
+- Alle aktuellen Browser (Chrome, Firefox, Safari, Edge)
+- Mobile Browser (iOS Safari, Chrome Mobile)
+- Responsive Design für Desktop, Tablet, Mobile
+
+**SEO & Discovery:**
+- Kein SEO erforderlich (LAN-only Zugriff)
+- Direkter Zugriff via IP/Hostname
+- Keine Suchmaschinen-Indexierung notwendig
+
+**Accessibility:**
+- WCAG 2.1 Level A Konformität
+- Tastaturnavigation für Kernfunktionen
+- Lesbare Schriftgrößen und Kontraste
+- Semantisches HTML für Screenreader-Kompatibilität
+
+### Implementation Considerations
+
+**Deployment:**
+- Single Docker-Image enthält Frontend + Backend (wenn nötig)
+- Einfache Installation via `docker run` Kommando
+- Persistente Datenspeicherung via Volume-Mapping
+- Kein komplexes Setup erforderlich
+
+**Performance:**
+- Filter-Anwendung < 1 Sekunde Reaktionszeit
+- Schnelles Laden der Rezeptliste
+- Optimierte Assets für mobile Geräte
+
+**Multi-Device Support:**
+- Simultaner Zugriff von mehreren Geräten
+- Last-write-wins für Konflikte
+- Keine Session-Verwaltung oder Login erforderlich
+
+## Project Scoping & Phased Development
+
+### MVP Strategy & Philosophy
+
+**MVP Approach:** Problem-Solving MVP
+
+Der Fokus liegt darauf, das Kernproblem zu lösen: Wochenplanung von 20+ Minuten auf 2 Minuten zu reduzieren und mehr Variation in den Speiseplan zu bringen. Der MVP liefert sofort nutzbaren Wert für den Zwei-Personen-Haushalt.
+
+**Resource Requirements:** 
+- 1 Full-Stack Developer mit KI-Unterstützung
+- Technologie-Stack: Einfachheit vor Perfektion
+- Deployment-Target: Docker-Container für einfache Installation
+
+**Primary Risk:** Zeit bis zum ersten nutzbaren Prototyp
+
+Das größte Risiko ist, zu lange an Features zu arbeiten, bevor die App praktisch nutzbar ist. Strategie: Schneller iterativer Ansatz mit frühzeitigem Deployment im LAN für sofortiges Feedback.
+
+### MVP Feature Set (Phase 1)
+
+**Core User Journeys Supported:**
+- **Journey 1:** Wochenplanung in 2 Minuten (Filter, Auswahl, Zukunftsdaten setzen)
+- **Journey 2:** Neues Rezept schnell erfassen (mobile-optimiert)
+- **Journey 3:** Spontane Bewertung während des Essens
+
+**Must-Have Capabilities:**
+
+**Core Rezept-Management:**
+- CRUD-Operationen (Create, Read, Update, Delete mit Sicherheitsabfrage)
+- Felder: Titel (Pflicht), Kategorien (Pflicht), Zutaten (optional), Anleitung (optional), Bewertung (optional), Datum "Geplant am" (optional)
+- Markdown-Support für Zutaten und Zubereitung
+
+**Filter & Suche:**
+- Volltextsuche über Titel, Zutaten, Anleitung
+- Filter nach Kategorien (Mittagessen, Brot, Party, Kuchen, Snacks)
+- Filter "Länger nicht gemacht" (aufsteigend nach Datum)
+- Filter "Nächste 7 Tage" (geplante Rezepte mit Zukunftsdatum)
+- Beliebtheit-Filter (3-5 Sterne)
+
+**Datum & Planning Feature:**
+- "Geplant am" akzeptiert Zukunftsdaten
+- Wochentag-Picker für intuitive Planung
+- Wochenvorschau formatiert nach Wochentag
+
+**Technisch:**
+- Responsive Design (Desktop, Tablet, Mobile)
+- LAN-Zugriff ohne Login
+- Last-write-wins Konfliktlösung
+- Docker-Deployment
+
+### Post-MVP Features
+
+**Phase 2 (Growth Features):**
+
+**Erweiterte Organisation:**
+- Gespeicherte Filter-Kombinationen für Schnellzugriff
+- Erweiterte Sortier-Optionen
+- Dubletten-Prüfung und Merge-Funktionalität
+
+**Verbesserte UX:**
+- Bilder zu Rezepten hinzufügen (optional)
+- "Heute gekocht"-Ansicht mit Highlight
+- Inline-Bewertung ohne Edit-Mode
+- Duplikaterkennung während Titeleingabe
+
+**Phase 3 (Vision/Expansion):**
+
+**Erweiterte Planung:**
+- Strukturierte Zutatenliste
+- Export für Einkaufsplanung
+- Rezept-Export in verschiedene Formate
+
+**Import/Migration:**
+- Bulk-Import von Rezepten
+- Migration aus anderen Formaten
+
+### Risk Mitigation Strategy
+
+**Technical Risks:**
+- **Risiko:** Zu komplexe Technologie-Wahl verzögert ersten Prototyp
+- **Mitigation:** Pragmatische Tech-Stack-Wahl, bewährte Technologien bevorzugen
+- **Mitigation:** Docker-first Ansatz für einfaches Deployment und Testing
+
+**Market Risks:**
+- **Risiko:** Features passen nicht zu tatsächlichem Nutzungsverhalten
+- **Mitigation:** Frühes Deployment im LAN für sofortiges Real-World-Feedback
+- **Mitigation:** Iterative Entwicklung basierend auf tatsächlicher Nutzung
+
+**Resource Risks:**
+- **Risiko:** Zeit bis zum ersten nutzbaren Prototyp (Hauptrisiko)
+- **Mitigation:** Strikte MVP-Disziplin - nur essenzielle Features in Phase 1
+- **Mitigation:** KI-Unterstützung für schnellere Entwicklung
+- **Mitigation:** Early-Exit-Strategie: Minimal funktionsfähige Version nach 2 Wochen im Einsatz
+
+**De-Risking Approach:**
+- Woche 1-2: Minimal funktionsfähige Version (CRUD + einfache Liste)
+- Woche 3-4: Filter und Datum-Feature
+- Woche 5+: Iterative Verbesserungen basierend auf praktischer Nutzung
+
+## Functional Requirements
+
+### Rezept-Management
+
+- **FR1:** Benutzer können ein neues Rezept erstellen mit Titel (Pflicht) und Kategorie (Pflicht)
+- **FR2:** Benutzer können optionale Rezept-Details hinzufügen (Zutaten, Anleitung)
+- **FR3:** Benutzer können bestehende Rezepte bearbeiten
+- **FR4:** Benutzer können Rezepte löschen mit Sicherheitsabfrage
+- **FR5:** Benutzer können Rezepte mit Markdown-Formatierung für Zutaten und Anleitung erfassen
+- **FR6:** Benutzer können Rezepte in vordefinierte Kategorien einordnen (Mittagessen, Brot, Party, Kuchen, Snacks)
+
+### Rezept-Bewertung & Planung
+
+- **FR7:** Benutzer können Rezepte mit 3-5 Sternen bewerten
+- **FR8:** Benutzer können für Rezepte ein "Geplant am"-Datum setzen (Vergangenheit oder Zukunft)
+- **FR9:** Benutzer können das "Geplant am"-Datum mit einem Wochentag-Picker setzen
+- **FR10:** System setzt automatisch korrektes Datum basierend auf gewähltem Wochentag
+
+### Suche & Filterung
+
+- **FR11:** Benutzer können Volltextsuche über Titel, Zutaten und Anleitung durchführen
+- **FR12:** Benutzer können Rezepte nach Kategorien filtern
+- **FR13:** Benutzer können Rezepte nach Bewertung filtern (Beliebtheit)
+- **FR14:** Benutzer können "Länger nicht gemacht" Filter anwenden (aufsteigend nach Datum sortiert)
+- **FR15:** Benutzer können "Nächste 7 Tage" Filter anwenden für geplante Rezepte
+- **FR16:** System schließt negativ bewertete Rezepte (1-2 Sterne) aus Vorschlägen aus
+
+### Wochenplanung & Übersicht
+
+- **FR17:** Benutzer können Wochenvorschau für geplante Rezepte anzeigen
+- **FR18:** System formatiert Wochenvorschau nach Wochentagen (Do: Gericht, Fr: Gericht)
+- **FR19:** Benutzer können Wochenvorschau-Daten kopieren für externe Nutzung
+
+### Multi-Device & Datenspeicherung
+
+- **FR20:** System ermöglicht simultanen Zugriff von mehreren Geräten im LAN
+- **FR21:** System löst Konflikte mit Last-write-wins Strategie
+- **FR22:** System speichert alle Rezeptdaten persistent
+- **FR23:** System benötigt keine Benutzer-Authentifizierung oder Login
+
+### Responsive Zugriff
+
+- **FR24:** Benutzer können die App von Desktop-Browsern nutzen
+- **FR25:** Benutzer können die App von Tablet-Browsern nutzen
+- **FR26:** Benutzer können die App von Mobile-Browsern nutzen
+- **FR27:** System passt UI automatisch an Bildschirmgröße an (responsive)
+
+## Non-Functional Requirements
+
+### Performance
+
+- **NFR-P1:** Filter-Anwendung liefert Ergebnisse in < 1 Sekunde
+- **NFR-P2:** Rezeptliste lädt in < 2 Sekunden beim initialen Seitenaufruf
+- **NFR-P3:** Rezept-Speicherung erfolgt in < 500ms
+- **NFR-P4:** Volltextsuche liefert Ergebnisse in < 1 Sekunde bei bis zu 200 Rezepten
+
+### Accessibility
+
+- **NFR-A1:** Anwendung erfüllt WCAG 2.1 Level A Konformität
+- **NFR-A2:** Alle Kernfunktionen (CRUD, Filter, Suche) sind per Tastatur navigierbar
+- **NFR-A3:** Farbkontraste erfüllen WCAG Level A Mindestanforderungen (4.5:1 für normalen Text)
+- **NFR-A4:** Semantisches HTML ermöglicht Screenreader-Navigation
+
+### Reliability & Availability
+
+- **NFR-R1:** System ist 24/7 im LAN erreichbar (passive Verfügbarkeit)
+- **NFR-R2:** Datenverlust-Risiko wird durch grundlegendes Backup minimiert
+- **NFR-R3:** System startet automatisch nach Server-Neustart (Docker restart policy)
+- **NFR-R4:** Simultaner Multi-Device-Zugriff funktioniert ohne Datenverlust (last-write-wins)
+
+### Deployment & Operations
+
+- **NFR-D1:** Anwendung wird als einzelnes Docker-Image ausgeliefert
+- **NFR-D2:** Installation erfolgt mit einem einzelnen `docker run` Kommando
+- **NFR-D3:** Persistente Daten werden via Volume-Mapping gespeichert
+- **NFR-D4:** Kein komplexes Setup oder Konfiguration erforderlich
+
+### Browser Compatibility
+
+- **NFR-B1:** Volle Funktionalität in aktuellen Versionen von Chrome, Firefox, Safari, Edge
+- **NFR-B2:** Mobile Browser (iOS Safari, Chrome Mobile) werden vollständig unterstützt
+- **NFR-B3:** Responsive Design funktioniert auf Bildschirmgrößen von 320px bis 2560px Breite
