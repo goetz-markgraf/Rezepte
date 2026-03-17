@@ -1,5 +1,5 @@
 ---
-stepsCompleted: ["step-01-init", "step-02-discovery", "step-02b-vision", "step-02c-executive-summary", "step-03-success", "step-04-journeys", "step-07-project-type", "step-08-scoping", "step-09-functional", "step-10-nonfunctional"]
+stepsCompleted: ["step-01-init", "step-02-discovery", "step-02b-vision", "step-02c-executive-summary", "step-03-success", "step-04-journeys", "step-07-project-type", "step-08-scoping", "step-09-functional", "step-10-nonfunctional", "step-11-polish"]
 inputDocuments: ["docs/planning-artifacts/product-brief-Rezepte-2026-03-14.md"]
 workflowType: 'prd'
 briefCount: 1
@@ -20,17 +20,17 @@ classification:
 
 ## Executive Summary
 
-**Rezepte** ist eine minimalistische Webanwendung zur Verwaltung von Familienrezepten im lokalen Netzwerk (LAN). Die Lösung transformiert Wochenplanung von mühsam (Bücher und Schnellhefter durchblättern) zu effizient (2 Minuten filtern und planen). Zielgruppe ist ein Zwei-Personen-Haushalt, der aktuell unter verstreuten Rezeptquellen leidet und immer auf dieselben 5-10 Gerichte zurückgreift, obwohl mehr Variation gewünscht ist. Die Anwendung ermöglicht schnellen Multi-Device-Zugriff (Handy, Tablet, Laptop) im LAN ohne Login-Barrieren, kombiniert mit intelligenten Filtern für bewusste Essensplanung und mehr Abwechslung im Speiseplan.
+**Rezepte** ist eine minimalistische Webanwendung zur Verwaltung von Familienrezepten im LAN. Die Lösung transformiert Wochenplanung von 20+ Minuten (Bücher durchblättern) zu 2 Minuten (filtern und planen). Zielgruppe: Zwei-Personen-Haushalt mit verstreuten Rezeptquellen, der aus Gewohnheit immer dieselben 5-10 Gerichte kocht, aber mehr Variation wünscht. Multi-Device-Zugriff (Handy, Tablet, Laptop) ohne Login kombiniert mit intelligenten Filtern für bewusste Essensplanung.
 
 ### Was macht dies besonders
 
-**Cleveres Datum-Feature:** Das "Zuletzt gemacht"-Feld akzeptiert Zukunftsdaten und wird dadurch automatisch zum Planungstool - ohne separates Wochenplan-Feature. Ein Filter "Nächste 7 Tage" zeigt geplante Gerichte nach Datum sortiert.
+**Datum-Feature als Planungstool:** "Geplant am"-Feld akzeptiert Zukunftsdaten - Wochenplanung ohne separates Feature. Filter "Nächste 7 Tage" zeigt geplante Gerichte sortiert.
 
-**Variations-Fokus:** Filter "Länger nicht gemacht" kombiniert mit Beliebtheit-Ranking (3-5 Sterne) hilft aktiv, aus der Routine auszubrechen und vergessene Favoriten wiederzuentdecken.
+**Variations-Fokus:** Filter "Länger nicht gemacht" + Beliebtheit-Ranking (3-5 Sterne) fördert Ausbruch aus Routine und Wiederentdeckung vergessener Favoriten.
 
-**Zero-Overhead:** Kein Login, kein Cloud-Sync, keine erzwungene Migration - sofort nutzbar. Hyper-fokussiert auf Rezept-Repository, kein Feature-Bloat (keine Einkaufslisten, keine Social Features).
+**Zero-Overhead:** Kein Login, kein Cloud-Sync, keine Migration - sofort nutzbar. Fokus: Rezept-Repository, kein Feature-Bloat.
 
-**LAN-only Simplicity:** Multi-Device ohne Komplexität - simultaner Zugriff von allen Geräten im Haushalt mit last-write-wins statt Over-Engineering.
+**LAN-only Simplicity:** Multi-Device ohne Komplexität - simultaner Zugriff mit last-write-wins.
 
 ## Projekt-Klassifizierung
 
@@ -44,12 +44,11 @@ classification:
 ### User Success
 
 **"Aha!"-Momente:**
-- Wochenplanung in 2 Minuten: Filter anwenden, 5-7 Rezepte auswählen, Zukunftsdaten eintragen - fertig
-- "Länger nicht gemacht"-Wiederentdeckung: Vergessene Favoriten (3+ Monate nicht gemacht) landen direkt im Wochenplan
-- Sofortiger Rezeptzugriff: Rezept auf dem Handy finden statt Bücher durchblättern
+- Wochenplanung in 2 Minuten: Filter anwenden, 5-7 Rezepte wählen, Zukunftsdaten setzen - fertig
+- Wiederentdeckung: Vergessene Favoriten (3+ Monate alt) landen direkt im Wochenplan
+- Sofortzugriff: Rezept auf Handy finden statt Bücher durchblättern
 
-**Emotionaler Erfolg:**
-Mehr Freude an der Wochenplanung durch einfachen Zugang und intelligente Filter, die Inspiration statt Routine fördern.
+**Emotionaler Erfolg:** Mehr Freude an Wochenplanung durch intelligente Filter, die Inspiration statt Routine fördern.
 
 ### Business Success
 
@@ -60,8 +59,7 @@ Mehr Freude an der Wochenplanung durch einfachen Zugang und intelligente Filter,
 - Gewohnheit entwickelt: Neue Rezept-Ideen werden spontan in die App eingetragen
 - Merklich mehr Variation im Speiseplan durch aktive Nutzung der Filter
 
-**ROI-Indikator:**
-Mehr Freude an Wochenplanung + messbar mehr Variation im Speiseplan = Investment hat sich gelohnt
+**ROI-Indikator:** Mehr Freude an Wochenplanung + messbar mehr Variation = Investment erfolgreich
 
 ### Technical Success
 
@@ -131,7 +129,7 @@ Mehr Freude an Wochenplanung + messbar mehr Variation im Speiseplan = Investment
 
 ### Vision (Future)
 
-Iterativer Ansatz basierend auf praktischer Nutzungserfahrung. Wenn der MVP erfolgreich ist, werden sich weitere sinnvolle Features organisch ergeben. Fokus bleibt auf Einfachheit und dem Kern-Use-Case: Schneller Rezeptzugriff und intelligente Wochenplanung.
+Iterativer Ansatz basierend auf Nutzungserfahrung. Weitere Features ergeben sich organisch bei MVP-Erfolg. Fokus bleibt: Einfachheit, schneller Rezeptzugriff, intelligente Wochenplanung.
 
 ## User Journeys
 
@@ -233,59 +231,19 @@ Hohe Wahrscheinlichkeit: Duplikat. Anna öffnet beide, vergleicht, merged die In
 
 Dragon startet seinen Laptop, will die Wochenplanung machen. App lädt nicht - Server ist down. Als technischer Admin checkt er den Server-Status auf seinem Raspberry Pi/NAS, startet den Service neu. 2 Minuten später läuft alles wieder.
 
-### Journey Requirements Summary
-
-**Capabilities, die aus den Journeys hervorgehen:**
-
-**Core Recipe Management:**
-- CRUD-Operationen (Create, Read, Update, Delete mit Sicherheitsabfrage)
-- Felder: Titel (Pflicht), Kategorie (Pflicht), Zutaten (optional), Zubereitung (optional), Bewertung (optional), Datum "Geplant am" (optional)
-- Markdown-Support für mehrzeilige Felder mit Smart-Listen (auto "- " nach ENTER)
-- Duplikaterkennung während Titeleingabe (inline, aufklappbar)
-- Dubletten-Prüfung (spezielle Suche für wahrscheinliche Duplikate)
-
-**Filter & Suche:**
-- Gespeicherte Filter mit Namen (z.B. "Mittagessenplanung")
-- Volltextsuche über alle Felder
-- Filter: Kategorien, "Länger nicht gemacht", "Noch nicht bewertet", "Beliebte Gerichte"
-- Sortierung: "Noch nie gemacht" erscheinen oben (außer negativ bewertet)
-- Filter "Nächste 7 Tage" (Wochenvorschau formatiert nach Wochentag)
-
-**Datum & Bewertung:**
-- Wochentag-Picker für intuitive Zukunftsplanung (setzt automatisch richtiges Datum)
-- "Heute gekocht"-Ansicht mit hervorgehobenem heutigem Gericht, Navigation zu gestern/morgen
-- Inline-Bewertung (ohne Edit-Mode, direkt in Bewertungs-Ansicht)
-- 1-5 Sterne-System, negativ bewertete Gerichte werden ausgeschlossen
-
-**Mobile Optimierung:**
-- Deep Links / Lesezeichen zu wichtigen Ansichten (z.B. "Neues Rezept"-Seite)
-- iPhone-optimiert, Android-kompatibel
-- Responsive für alle Geräte (Desktop/Tablet/Mobile)
-- Schnelle Navigation, keine unnötigen Seitenwechsel
-
-**Wochenvorschau & Export:**
-- Liste formatiert nach Wochentag (Do: Gericht, Fr: Gericht)
-- Copy/Paste-freundlich für externe Nutzung
-- Übersichtliche Darstellung geplanter Rezepte
-
-**Sicherheit & Wartung:**
-- Löschen-Sicherheitsabfrage mit Alternative "Schlecht bewerten"
-- Grundlegendes Backup/Recovery (technisch selbst verwaltbar)
-- Last-write-wins für simultane Zugriffe
-
 ## Web App Specific Requirements
 
 ### Project-Type Overview
 
-**Rezepte** ist eine responsive Web-Anwendung für LAN-only Deployment. Der Fokus liegt auf einfacher Technologie-Wahl und unkompliziertem Deployment via Docker-Container.
+**Rezepte** ist eine responsive Web-Anwendung für LAN-Deployment. Fokus: einfache Technologie-Wahl, unkompliziertes Docker-Deployment.
 
 ### Technical Architecture Considerations
 
 **Application Architecture:**
-- **SPA vs MPA:** Flexible - Technologie-Wahl basierend auf einfachster Implementation
-- **Deployment:** Docker-Image für einfache Installation auf Raspberry Pi/NAS
-- **Kein Real-time erforderlich:** Last-write-wins Konfliktlösung ausreichend
-- **LAN-only:** Keine Cloud-Infrastruktur, keine externe Erreichbarkeit
+- **SPA vs MPA:** Flexible Technologie-Wahl basierend auf einfachster Implementation
+- **Deployment:** Docker-Image für Raspberry Pi/NAS
+- **Konfliktlösung:** Last-write-wins ausreichend (kein Real-time erforderlich)
+- **Infrastruktur:** LAN-only, keine Cloud, keine externe Erreichbarkeit
 
 **Browser Support:**
 - Alle aktuellen Browser (Chrome, Firefox, Safari, Edge)
@@ -293,9 +251,8 @@ Dragon startet seinen Laptop, will die Wochenplanung machen. App lädt nicht - S
 - Responsive Design für Desktop, Tablet, Mobile
 
 **SEO & Discovery:**
-- Kein SEO erforderlich (LAN-only Zugriff)
+- Kein SEO erforderlich (LAN-only)
 - Direkter Zugriff via IP/Hostname
-- Keine Suchmaschinen-Indexierung notwendig
 
 **Accessibility:**
 - WCAG 2.1 Level A Konformität
@@ -327,7 +284,7 @@ Dragon startet seinen Laptop, will die Wochenplanung machen. App lädt nicht - S
 
 **MVP Approach:** Problem-Solving MVP
 
-Der Fokus liegt darauf, das Kernproblem zu lösen: Wochenplanung von 20+ Minuten auf 2 Minuten zu reduzieren und mehr Variation in den Speiseplan zu bringen. Der MVP liefert sofort nutzbaren Wert für den Zwei-Personen-Haushalt.
+Kernproblem lösen: Wochenplanung von 20+ Minuten auf 2 Minuten reduzieren und mehr Variation in den Speiseplan bringen. MVP liefert sofort nutzbaren Wert.
 
 **Resource Requirements:** 
 - 1 Full-Stack Developer mit KI-Unterstützung
@@ -336,7 +293,7 @@ Der Fokus liegt darauf, das Kernproblem zu lösen: Wochenplanung von 20+ Minuten
 
 **Primary Risk:** Zeit bis zum ersten nutzbaren Prototyp
 
-Das größte Risiko ist, zu lange an Features zu arbeiten, bevor die App praktisch nutzbar ist. Strategie: Schneller iterativer Ansatz mit frühzeitigem Deployment im LAN für sofortiges Feedback.
+Strategie: Schneller iterativer Ansatz mit frühzeitigem LAN-Deployment für sofortiges Feedback.
 
 ### MVP Feature Set (Phase 1)
 
