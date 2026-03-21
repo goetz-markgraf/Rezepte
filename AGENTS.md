@@ -58,4 +58,13 @@ Jede Implementierung folgt dem TDD-Pattern:
 - Implementierung schreiben, bis Test grün
 - Refactoring, Vereinfachung und Verbesserung der Implementierung, während der Test grün bleibt
 
+### Abnahme-Tests
 
+Sobald ein fachliches Feature erstellt wird, muss es einen UI-Integrationstest dafür geben. Diese
+Tests sind in Playwright geschrieben und liegen in einem separaten Verzeichnis.
+
+**Wichtige Details:**
+- **Testdaten:** SQL-Seed-Skripte in `tests/seeds/`
+- **Isolation:** Separate SQLite-DB pro Test-Run (`TEST_DATABASE_URL`)
+- **App-Start:** Playwright startet Rust-App automatisch via `webServer` Config
+- **Befehl:** `npm run test:e2e`
