@@ -1,4 +1,4 @@
-# Story 01: Projekt-Setup und Initialisierung
+# Story 00: Projekt-Setup und Initialisierung
 
 ## Beschreibung
 

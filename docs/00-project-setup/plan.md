@@ -1,4 +1,4 @@
-# Technischer Plan: Story 01 - Projekt-Setup
+# Technischer Plan: Story 00 - Projekt-Setup
 
 ## Überblick
 
