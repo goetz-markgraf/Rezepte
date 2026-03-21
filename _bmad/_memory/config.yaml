@@ -5,8 +5,7 @@
 
 
 # Core Configuration Values
-user_name: Goetz
+user_name: Dragon
 communication_language: Deutsch
 document_output_language: Deutsch
 output_folder: "{project-root}/docs"
-
