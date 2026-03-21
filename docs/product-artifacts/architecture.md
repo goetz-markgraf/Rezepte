@@ -335,23 +335,37 @@ sqlite3 data/recipes.db ".backup backups/recipes-$(date +%Y%m%d).db"
 
 ---
 
-## 6. Zusammenfassung
+## 6. Testing Strategy
 
-### Festgelegte Architektur
+### Unit Tests
+- Rust built-in Test-Framework mit tokio-test
+- Tests für Models, Services, Utilities
+- Integration in `cargo test`
 
-✅ **Tech Stack:** Rust + Axum + Askama + SQLite + HTMX  
-✅ **Struktur:** Modul-basiert in einem Crate  
-✅ **Datenmodell:** JSON-Array für Kategorien, hardcoded Enum  
-✅ **URLs:** DeepLink-fähig, Query-Parameter für Filter  
-✅ **Deployment:** Docker mit extern gemounteter SQLite-Datei  
+### UI Integration Tests
+- **Framework:** Playwright (Node.js)
+- **Testdaten:** SQL Seed-Skripte in `tests/seeds/`
+- **Isolation:** Separate SQLite-Datenbank pro Test-Run via `TEST_DATABASE_URL`
+- **App-Start:** Automatisch via Playwright `webServer` Config
+- **Befehl:** `npm run test:e2e`
 
-### Nächste Schritte
+**Struktur:**
+```
+tests/
+├── seeds/              # SQL-Dateien mit Testdaten
+│   └── 001_test_recipes.sql
+├── e2e/                # Playwright Test-Dateien
+│   └── recipes.spec.ts
+└── playwright.config.ts
+```
 
-1. **Projekt initialisieren** (`cargo init`)
-2. **Dependencies** in `Cargo.toml` definieren
-3. **Datenbank-Setup** (Migrations, sqlx prepare)
-4. **Grundgerüst** (main.rs, Router, erste Handler)
-5. **Templates** (Askama, HTML-Grundstruktur)
+**Prozess:**
+1. Playwright startet Rust-App mit `TEST_DATABASE_URL`
+2. Vor jedem Test-File: DB wird geleert + Seeds geladen
+3. Tests werden gegen laufende App ausgeführt
+4. Bei Fehlern: Traces und Screenshots verfügbar
+
+---
 
 Das Architecture-Dokument ist nun vollständig!
 

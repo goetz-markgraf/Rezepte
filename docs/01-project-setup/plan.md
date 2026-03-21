@@ -249,10 +249,116 @@ Alle Tests müssen grün sein.
 
 ---
 
+### Schritt 14: Playwright Setup
+
+**Beschreibung:**
+Playwright für UI-Integrationstests initialisieren.
+
+**Befehle:**
+```bash
+npm init -y
+npm install --save-dev @playwright/test
+npx playwright install
+```
+
+**Dateien:**
+- `package.json` - NPM Projekt-Config
+- `playwright.config.ts` - Playwright Konfiguration mit webServer
+
+**TDD Ansatz:**
+Kein Rust-Test nötig, aber Playwright Installation muss funktionieren.
+
+---
+
+### Schritt 15: Test-Daten Verzeichnisstruktur
+
+**Beschreibung:**
+Verzeichnisse für UI-Tests und Testdaten-Seeds erstellen.
+
+**Verzeichnisse:**
+```
+tests/
+├── seeds/              # SQL-Dateien mit Testdaten
+├── e2e/                # Playwright Test-Dateien
+└── playwright.config.ts
+```
+
+**Befehle:**
+```bash
+mkdir -p tests/seeds tests/e2e
+```
+
+---
+
+### Schritt 16: Playwright Konfiguration
+
+**Datei:** `playwright.config.ts`
+
+**Inhalt:**
+- webServer Config die `cargo run` ausführt
+- Umgebungsvariable `TEST_DATABASE_URL` setzen
+- Test-Patterns definieren
+
+**TDD Ansatz:**
+Test: Playwright kann Rust-App automatisch starten.
+
+---
+
+### Schritt 17: Erster UI-Integrationstest
+
+**Datei:** `tests/e2e/health.spec.ts`
+
+**Inhalt:**
+```typescript
+import { test, expect } from '@playwright/test';
+
+test('health check returns OK', async ({ page }) => {
+  await page.goto('http://localhost:8080/health');
+  await expect(page.locator('body')).toContainText('OK');
+});
+```
+
+**TDD Ansatz:**
+Dies ist der erste UI-Integrationstest - er muss mit Playwright laufen.
+
+---
+
+### Schritt 18: Test-Skripte in package.json
+
+**Datei:** `package.json`
+
+**Inhalt:**
+```json
+{
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
+  }
+}
+```
+
+**TDD Ansatz:**
+Kein Test nötig, nur NPM-Scripts definieren.
+
+---
+
+### Schritt 19: UI-Tests ausführen
+
+**Befehle:**
+```bash
+npm run test:e2e
+```
+
+**TDD Ansatz:**
+Alle UI-Tests müssen grün sein.
+
+---
+
 ## Abhängigkeiten
 
 - Rust-Toolchain installiert (cargo, rustc)
 - SQLite installiert (für sqlx-cli, optional)
+- Node.js 18+ und npm installiert (für Playwright)
 
 ## Risiken & Mitigation
 
@@ -269,6 +375,8 @@ Alle Tests müssen grün sein.
 - [ ] `cargo run` startet Server auf Port 8080
 - [ ] `curl http://localhost:8080/health` gibt "OK" zurück
 - [ ] Datenbank-Datei wird erstellt (./data/recipes.db)
+- [ ] `npm run test:e2e` führt Playwright Tests aus
+- [ ] UI-Integrationstest `tests/e2e/health.spec.ts` ist grün
 
 ## Nächste Story
 
