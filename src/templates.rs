@@ -1,0 +1,60 @@
+use askama::Template;
+
+#[derive(Template)]
+#[template(path = "recipes/form.html")]
+pub struct RecipeFormTemplate {
+    pub categories: Vec<String>,
+    pub errors: Vec<String>,
+    pub title: String,
+    pub selected_categories: Vec<String>,
+    pub ingredients: String,
+    pub instructions: String,
+}
+
+#[derive(Template)]
+#[template(path = "recipes/detail.html")]
+pub struct RecipeDetailTemplate {
+    pub id: i64,
+    pub title: String,
+    pub categories: Vec<String>,
+    pub ingredients: Option<String>,
+    pub instructions: Option<String>,
+    pub created_at: String,
+}
+
+#[derive(Template)]
+#[template(path = "index.html")]
+pub struct IndexTemplate {
+    pub recipes: Vec<RecipeListItem>,
+}
+
+#[derive(Debug)]
+pub struct RecipeListItem {
+    pub id: i64,
+    pub title: String,
+    pub categories: Vec<String>,
+}
+
+impl RecipeFormTemplate {
+    pub fn new() -> Self {
+        Self {
+            categories: crate::models::VALID_CATEGORIES.iter().map(|&s| s.to_string()).collect(),
+            errors: Vec::new(),
+            title: String::new(),
+            selected_categories: Vec::new(),
+            ingredients: String::new(),
+            instructions: String::new(),
+        }
+    }
+
+    pub fn with_errors(errors: Vec<String>) -> Self {
+        Self {
+            categories: crate::models::VALID_CATEGORIES.iter().map(|&s| s.to_string()).collect(),
+            errors,
+            title: String::new(),
+            selected_categories: Vec::new(),
+            ingredients: String::new(),
+            instructions: String::new(),
+        }
+    }
+}

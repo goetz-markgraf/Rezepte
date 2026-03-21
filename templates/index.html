@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Rezepte Übersicht{% endblock %}
+
+{% block content %}
+<h1>Rezepte Übersicht</h1>
+
+<div class="actions">
+    <a href="/recipes/new" class="btn-primary">Neues Rezept</a>
+</div>
+
+{% if recipes.is_empty() %}
+<p class="empty-state">Noch keine Rezepte vorhanden. Erstellen Sie Ihr erstes Rezept!</p>
+{% else %}
+<ul class="recipe-list">
+    {% for recipe in recipes %}
+    <li class="recipe-item">
+        <a href="/recipes/{{ recipe.id }}">
+            <h2>{{ recipe.title }}</h2>
+            <div class="categories">
+                {% for category in recipe.categories %}
+                <span class="category-tag">{{ category }}</span>
+                {% endfor %}
+            </div>
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

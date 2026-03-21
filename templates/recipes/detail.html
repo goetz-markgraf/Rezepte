@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Rezepte{% endblock %}
+
+{% block content %}
+<article class="recipe-detail">
+    <header>
+        <h1>{{ title }}</h1>
+        <div class="categories">
+            {% for category in categories %}
+            <span class="category-tag">{{ category }}</span>
+            {% endfor %}
+        </div>
+    </header>
+
+    {% if let Some(ingredients) = ingredients %}
+    <section class="ingredients">
+        <h2>Zutaten</h2>
+        <pre>{{ ingredients }}</pre>
+    </section>
+    {% endif %}
+
+    {% if let Some(instructions) = instructions %}
+    <section class="instructions">
+        <h2>Anleitung</h2>
+        <pre>{{ instructions }}</pre>
+    </section>
+    {% endif %}
+
+    <footer>
+        <p class="meta">Erstellt am: {{ created_at }}</p>
+        <div class="actions">
+            <a href="/" class="btn-secondary">Zurück zur Übersicht</a>
+        </div>
+    </footer>
+</article>
+{% endblock %}
