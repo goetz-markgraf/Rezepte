@@ -4,6 +4,14 @@ Dieses Repo enthält den Code für eine einfach Rezepte-Verwaltung.
 
 Sprache: Deutsch
 
+## Fachliche Informationen
+
+Du findest wichtige Business-Informationen und Angaben zu den Anforderungen und Story Maps in
+dem Ordern `docs/product`.
+
+- `docs/product/product-brief-Rezepte.md`
+- `docs/product/prd.md`
+
 ## Architektur (Festlegungen)
 
 **Tech Stack:** Rust + Axum + Askama + sqlx + SQLite + HTMX
@@ -34,6 +42,8 @@ src/
 - SQLite mit JSON-Array für Kategorien
 
 **Deployment:** Docker-Image, Port 8080, Volume /data für DB
+
+Alle weiteren Informationen stehen in `docs/product/architecture.md`.
 
 ## Vorgehensweise
 
