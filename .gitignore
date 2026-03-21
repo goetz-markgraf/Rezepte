@@ -1,2 +1,33 @@
 .DS_Store
 .direnv/
+
+# Rust
+/target
+/Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# SQLite databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Data directory (except .gitkeep)
+/data/*
+!/data/.gitkeep
+
+# Environment variables
+.env
+.env.local
+
+# Node.js
+node_modules/
+/test-results/
+/playwright-report/
+/playwright/.cache/

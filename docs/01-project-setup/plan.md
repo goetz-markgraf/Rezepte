@@ -370,13 +370,13 @@ Alle UI-Tests müssen grün sein.
 
 ## Erfolgskriterien
 
-- [ ] `cargo build` läuft ohne Fehler
-- [ ] `cargo test` läuft erfolgreich (mindestens 1 Test)
-- [ ] `cargo run` startet Server auf Port 8080
-- [ ] `curl http://localhost:8080/health` gibt "OK" zurück
-- [ ] Datenbank-Datei wird erstellt (./data/recipes.db)
-- [ ] `npm run test:e2e` führt Playwright Tests aus
-- [ ] UI-Integrationstest `tests/e2e/health.spec.ts` ist grün
+- [x] `cargo build` läuft ohne Fehler
+- [x] `cargo test` läuft erfolgreich (mindestens 1 Test)
+- [x] `cargo run` startet Server auf Port 8080
+- [x] `curl http://localhost:8080/health` gibt "OK" zurück
+- [x] Datenbank-Datei wird erstellt (./data/recipes.db)
+- [x] `npm run test:e2e` führt Playwright Tests aus
+- [x] UI-Integrationstest `tests/e2e/health.spec.ts` ist grün
 
 ## Nächste Story
 

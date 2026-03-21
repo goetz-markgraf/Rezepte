@@ -4,13 +4,8 @@
 
   outputs = { my-base, ... }: my-base.lib.mkMacShell {
     packages = pkgs: with pkgs; [
-      go
-      cacert
-      git
-      gnumake
-      libffi
-      zlib
-      libxml2
+      nodejs_24
+      opencode
     ];
   };
 }

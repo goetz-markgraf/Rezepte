@@ -16,22 +16,22 @@ Das Projekt "Rezepte" ist bisher nur in Dokumenten beschrieben. Diese erste Stor
 ## Akzeptanzkriterien
 
 1. **Projektstruktur existiert**
-   - [ ] Cargo.toml mit allen Dependencies ist erstellt
-   - [ ] Verzeichnisstruktur `src/`, `templates/`, `static/css/`, `migrations/` existiert
-   - [ ] `.gitignore` für Rust-Projekt ist vorhanden
+   - [x] Cargo.toml mit allen Dependencies ist erstellt
+   - [x] Verzeichnisstruktur `src/`, `templates/`, `static/css/`, `migrations/` existiert
+   - [x] `.gitignore` für Rust-Projekt ist vorhanden
 
 2. **Datenbank ist konfiguriert**
-   - [ ] Erste Migration `001_initial.sql` erstellt die recipes-Tabelle
-   - [ ] sqlx ist konfiguriert für compile-time query checking
+   - [x] Erste Migration `001_initial.sql` erstellt die recipes-Tabelle
+   - [x] sqlx ist konfiguriert für compile-time query checking
 
 3. **Grundgerüst läuft**
-   - [ ] `cargo run` startet den Server erfolgreich
-   - [ ] Server antwortet auf Port 8080
-   - [ ] Health-Check Endpunkt `/health` gibt "OK" zurück
+   - [x] `cargo run` startet den Server erfolgreich
+   - [x] Server antwortet auf Port 8080
+   - [x] Health-Check Endpunkt `/health` gibt "OK" zurück
 
 4. **TDD-Setup funktioniert**
-   - [ ] Erster Integrationstest existiert und ist grün
-   - [ ] Test läuft mit `cargo test` erfolgreich
+   - [x] Erster Integrationstest existiert und ist grün
+   - [x] Test läuft mit `cargo test` erfolgreich
 
 ## Out of Scope
 
