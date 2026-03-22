@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Neues Rezept - Rezepte{% endblock %}
+{% block title %}{% if let Some(_) = recipe_id %}Rezept bearbeiten{% else %}Neues Rezept{% endif %} - Rezepte{% endblock %}
 
 {% block content %}
-<h1>Neues Rezept</h1>
+<h1>{% if let Some(_) = recipe_id %}Rezept bearbeiten{% else %}Neues Rezept{% endif %}</h1>
 
 {% if !errors.is_empty() %}
 <div class="errors">
@@ -15,7 +15,7 @@
 </div>
 {% endif %}
 
-<form method="POST" action="/recipes">
+<form method="POST" action="{% if let Some(id) = recipe_id %}/recipes/{{ id }}{% else %}/recipes{% endif %}">
     <div class="form-group">
         <label for="title">Titel *</label>
         <input type="text" id="title" name="title" value="{{ title }}" maxlength="100">
@@ -46,7 +46,7 @@
 
     <div class="form-actions">
         <button type="submit" class="btn-primary">Rezept speichern</button>
-        <a href="/" class="btn-secondary">Abbrechen</a>
+        <a href="{% if let Some(id) = recipe_id %}/recipes/{{ id }}{% else %}/{% endif %}" class="btn-secondary">Abbrechen</a>
     </div>
 </form>
 {% endblock %}

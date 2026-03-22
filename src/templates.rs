@@ -9,6 +9,7 @@ pub struct RecipeFormTemplate {
     pub selected_categories: Vec<String>,
     pub ingredients: String,
     pub instructions: String,
+    pub recipe_id: Option<i64>,
 }
 
 #[derive(Template)]
@@ -48,6 +49,7 @@ impl Default for RecipeFormTemplate {
             selected_categories: Vec::new(),
             ingredients: String::new(),
             instructions: String::new(),
+            recipe_id: None,
         }
     }
 }

@@ -3,85 +3,85 @@
 ## Technische Schritte
 
 ### Schritt 1: Datenbank-Layer erweitern
-- [ ] `update_recipe()` Funktion in `src/models/recipe_db.rs` implementieren
+- [x] `update_recipe()` Funktion in `src/models/recipe_db.rs` implementieren
   - SQL UPDATE mit allen Feldern
   - Automatisches Setzen von `updated_at = CURRENT_TIMESTAMP`
   - Prüfung ob Rezept existiert (Fehler wenn nicht gefunden)
-- [ ] Unit-Test: Update mit allen Feldern
-- [ ] Unit-Test: Update nicht-existentes Rezept (Fehler)
-- [ ] Unit-Test: updated_at wird aktualisiert
+- [x] Unit-Test: Update mit allen Feldern
+- [x] Unit-Test: Update nicht-existentes Rezept (Fehler)
+- [x] Unit-Test: updated_at wird aktualisiert
 
 ### Schritt 2: Modell erweitern
-- [ ] `UpdateRecipe` Struct in `src/models/recipe.rs` erstellen
+- [x] `UpdateRecipe` Struct in `src/models/recipe.rs` erstellen
   - Gleiche Felder wie `CreateRecipe`
   - Validation-Logik wiederverwenden
-- [ ] `Recipe::validate_update()` Methode implementieren
+- [x] `Recipe::validate_update()` Methode implementieren
   - Gleiche Validierung wie bei Create
 
 ### Schritt 3: Routes und Handler
-- [ ] `src/routes/recipes.rs` erweitern:
+- [x] `src/routes/recipes.rs` erweitern:
   - GET `/recipes/:id/edit` - Bearbeiten-Formular anzeigen
   - POST `/recipes/:id` - Rezept aktualisieren
-- [ ] Handler implementieren:
+- [x] Handler implementieren:
   - `edit_recipe_form()` - Formular mit bestehenden Daten laden
   - `update_recipe_handler()` - Validieren + speichern
   - Fehlerbehandlung: 404 wenn Rezept nicht existiert
 
 ### Schritt 4: Templates anpassen
-- [ ] `templates/recipes/form.html` erweitern:
+- [x] `templates/recipes/form.html` erweitern:
   - Edit-Modus erkennen (Rezept-ID vorhanden)
   - Alle Felder mit `value="{{ recipe.title }}"` vorausfüllen
   - Dynamischer Titel: "Rezept bearbeiten" vs "Neues Rezept"
   - Action-URL anpassen: POST /recipes/:id vs POST /recipes
-- [ ] `templates/recipes/detail.html` erweitern:
+- [x] `templates/recipes/detail.html` erweitern:
   - Button "Bearbeiten" hinzufügen
   - Link zu `/recipes/:id/edit`
   - Temporär rudimentäre Detailseite als Platzhalter
 
 ### Schritt 5: Detailseite (rudimentär)
-- [ ] `templates/recipes/detail.html` verbessern:
+- [x] `templates/recipes/detail.html` verbessern:
   - Alle Rezept-Felder anzeigen
   - Button "Bearbeiten" prominent platzieren
   - Button "Zurück zur Übersicht"
   - Einfache Formatierung für Zutaten/Anleitung
-- [ ] GET `/recipes/:id` Handler verbessern:
+- [x] GET `/recipes/:id` Handler verbessern:
   - Rezept aus DB laden
   - 404 wenn nicht gefunden
   - Template mit Daten rendern
 
 ### Schritt 6: Validierung
-- [ ] Serverseitige Validierung im Update-Handler:
+- [x] Serverseitige Validierung im Update-Handler:
   - Titel nicht leer
   - Mindestens eine Kategorie
   - Gleiche Fehlermeldungen wie bei Erstellung
-- [ ] Fehleranzeige im Formular:
+- [x] Fehleranzeige im Formular:
   - Eingegebene Werte beibehalten (nicht zurücksetzen)
   - Fehler oberhalb des Formulars anzeigen
 
 ### Schritt 7: Redirects und Feedback
-- [ ] Nach erfolgreichem Update:
+- [x] Nach erfolgreichem Update:
   - Redirect zu GET `/recipes/:id` (Detailseite)
   - Erfolgsmeldung anzeigen (Flash-Message oder Query-Param)
-- [ ] Bei "Abbrechen":
+- [x] Bei "Abbrechen":
   - Redirect zu `/recipes/:id` (ohne Speichern)
-- [ ] Bei Validierungsfehler:
+- [x] Bei Validierungsfehler:
   - Formular neu rendern mit Fehlern
   - Eingegebene Werte beibehalten
 
 ### Schritt 8: E2E-Tests (Playwright)
-- [ ] `tests/e2e/recipe-edit.spec.ts` erstellen:
+- [x] `tests/e2e/recipe-edit.spec.ts` erstellen:
   - Test 1: Erfolgreiche Bearbeitung (Titel ändern)
   - Test 2: Abbrechen ohne Speichern
   - Test 3: Validierung - Leerer Titel
   - Test 4: Nicht-existentes Rezept (404)
   - Test 5: updated_at Timestamp prüfen
-- [ ] Seed-Daten für Tests:
+- [x] Seed-Daten für Tests:
   - Rezept "Testrezept" in Seed-SQL einfügen
 
 ### Schritt 9: Integration
-- [ ] `src/routes/mod.rs` - Routes registrieren
-- [ ] `src/main.rs` - Handler einbinden
-- [ ] Navigation prüfen: Übersicht -> Detail -> Bearbeiten
+- [x] `src/routes/mod.rs` - Routes registrieren
+- [x] `src/main.rs` - Handler einbinden
+- [x] Navigation prüfen: Übersicht -> Detail -> Bearbeiten
 
 ### Schritt 10: Styling
 - [ ] `static/css/style.css` erweitern:
@@ -105,13 +105,13 @@ POST /recipes/:id         → Rezept aktualisieren
 
 ## Test-Checkliste
 
-- [ ] Unit-Test: DB-Update Operation
-- [ ] Unit-Test: Validierung mit fehlenden Pflichtfeldern
-- [ ] E2E-Test: Kompletter Edit-Flow
-- [ ] E2E-Test: Abbrechen-Funktionalität
-- [ ] Manueller Test: Formular ist vorausgefüllt
-- [ ] Manueller Test: updated_at wird aktualisiert
-- [ ] Manueller Test: 404 bei nicht-existentem Rezept
+- [x] Unit-Test: DB-Update Operation
+- [x] Unit-Test: Validierung mit fehlenden Pflichtfeldern
+- [x] E2E-Test: Kompletter Edit-Flow
+- [x] E2E-Test: Abbrechen-Funktionalität
+- [x] Manueller Test: Formular ist vorausgefüllt
+- [x] Manueller Test: updated_at wird aktualisiert
+- [x] Manueller Test: 404 bei nicht-existentem Rezept
 
 ## Schätzung
 

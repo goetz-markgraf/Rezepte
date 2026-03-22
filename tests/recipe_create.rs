@@ -16,7 +16,12 @@ async fn should_show_recipe_form() {
     let (app, _temp) = setup_test_app().await;
 
     let response = app
-        .oneshot(Request::builder().uri("/recipes/new").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/recipes/new")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
@@ -28,7 +33,7 @@ async fn should_create_recipe_successfully() {
     let (app, _temp) = setup_test_app().await;
 
     let form_data = "title=Test%20Rezept&categories=Mittagessen";
-    
+
     let request = Request::builder()
         .method("POST")
         .uri("/recipes")
@@ -48,7 +53,7 @@ async fn should_validate_required_fields() {
     let (app, _temp) = setup_test_app().await;
 
     let form_data = "title=&categories=";
-    
+
     let request = Request::builder()
         .method("POST")
         .uri("/recipes")
@@ -67,7 +72,7 @@ async fn should_show_recipe_detail() {
 
     // Create a recipe first
     let form_data = "title=Test%20Rezept&categories=Mittagessen&ingredients=Test%20Zutaten&instructions=Test%20Anleitung";
-    
+
     let create_request = Request::builder()
         .method("POST")
         .uri("/recipes")
@@ -76,12 +81,22 @@ async fn should_show_recipe_detail() {
         .unwrap();
 
     let create_response = app.clone().oneshot(create_request).await.unwrap();
-    let location = create_response.headers().get("location").unwrap().to_str().unwrap();
+    let location = create_response
+        .headers()
+        .get("location")
+        .unwrap()
+        .to_str()
+        .unwrap();
     let id: i64 = location.split('/').last().unwrap().parse().unwrap();
 
     // Now get the detail page
     let response = app
-        .oneshot(Request::builder().uri(format!("/recipes/{}", id)).body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri(format!("/recipes/{}", id))
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
