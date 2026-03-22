@@ -1,5 +1,5 @@
 use axum::{
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use sqlx::SqlitePool;
@@ -14,7 +14,8 @@ pub fn create_router(pool: SqlitePool) -> Router {
     Router::new()
         .route("/", get(recipes::index))
         .route("/health", get(health_check))
-        .route("/recipes/new", get(recipes::new_recipe_form).post(recipes::create_recipe_handler))
+        .route("/recipes", post(recipes::create_recipe_handler))
+        .route("/recipes/new", get(recipes::new_recipe_form))
         .route("/recipes/:id", get(recipes::show_recipe))
         .nest_service("/static", ServeDir::new("src/static"))
         .with_state(pool)

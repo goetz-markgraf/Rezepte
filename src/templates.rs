@@ -14,6 +14,7 @@ pub struct RecipeFormTemplate {
 #[derive(Template)]
 #[template(path = "recipes/detail.html")]
 pub struct RecipeDetailTemplate {
+    #[allow(dead_code)]
     pub id: i64,
     pub title: String,
     pub categories: Vec<String>,
@@ -35,10 +36,13 @@ pub struct RecipeListItem {
     pub categories: Vec<String>,
 }
 
-impl RecipeFormTemplate {
-    pub fn new() -> Self {
+impl Default for RecipeFormTemplate {
+    fn default() -> Self {
         Self {
-            categories: crate::models::VALID_CATEGORIES.iter().map(|&s| s.to_string()).collect(),
+            categories: crate::models::VALID_CATEGORIES
+                .iter()
+                .map(|&s| s.to_string())
+                .collect(),
             errors: Vec::new(),
             title: String::new(),
             selected_categories: Vec::new(),
@@ -46,15 +50,10 @@ impl RecipeFormTemplate {
             instructions: String::new(),
         }
     }
+}
 
-    pub fn with_errors(errors: Vec<String>) -> Self {
-        Self {
-            categories: crate::models::VALID_CATEGORIES.iter().map(|&s| s.to_string()).collect(),
-            errors,
-            title: String::new(),
-            selected_categories: Vec::new(),
-            ingredients: String::new(),
-            instructions: String::new(),
-        }
+impl RecipeFormTemplate {
+    pub fn new() -> Self {
+        Self::default()
     }
 }

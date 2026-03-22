@@ -29,8 +29,8 @@ test.describe('Rezept erstellen', () => {
     await page.fill('input[name="title"]', '');
     await page.click('button[type="submit"]');
     
-    // Sollte auf der Seite bleiben
-    await expect(page).toHaveURL('/recipes/new');
+    // Sollte auf der Seite bleiben (POST bleibt auf /recipes)
+    await expect(page).toHaveURL('/recipes');
     
     // Fehlermeldungen prüfen
     await expect(page.locator('.errors')).toContainText('Titel ist erforderlich');

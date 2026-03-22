@@ -1,7 +1,6 @@
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use rezepte::{create_pool, create_router};
-use std::collections::HashMap;
 use tower::ServiceExt;
 
 async fn setup_test_app() -> (axum::Router, tempfile::NamedTempFile) {
