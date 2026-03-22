@@ -58,6 +58,7 @@ In dem Folder stehen dann die folgenden Dateien:
 docs/xx-desc
 ├── story.md    (Fachliche Beschreibung, ohne Technik aber mit Akzeptanzkriterien)
 ├── plan.md     (Technische Beschreibung und Liste der einzelnen Schritte, mit [ ] zum Abhaken)
+├── review.md   (Nach der Implementierung wird hier das Ergebnis der Review erstellt)
 ├── adrs.md     (optional, ADR-Beschreibung, falls spezielle Entscheidungen notwendig sind)
 └── research.md (optional, Ergebnisse von Forschungen und Websuchen, falls notwendig)
 
