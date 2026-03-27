@@ -1,20 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}Rezepte Übersicht{% endblock %}
+{% block title %}Rezepte{% endblock %}
 
 {% block content %}
 {% if let Some(title) = deleted_title %}
 <div class="success">Rezept '{{ title }}' wurde gelöscht</div>
 {% endif %}
 
-<h1>Rezepte Übersicht</h1>
+<h1>Rezepte</h1>
 
 <div class="actions">
     <a href="/recipes/new" class="btn-primary">Neues Rezept</a>
 </div>
 
 {% if recipes.is_empty() %}
-<p class="empty-state">Noch keine Rezepte vorhanden. Erstellen Sie Ihr erstes Rezept!</p>
+<div class="empty-state">
+    <p>Noch keine Rezepte vorhanden.</p>
+    <a href="/recipes/new" class="btn-primary">Erstes Rezept anlegen</a>
+</div>
 {% else %}
 <ul class="recipe-list">
     {% for recipe in recipes %}
