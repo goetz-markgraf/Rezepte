@@ -4,6 +4,12 @@ Führe die folgenden Phasen **sequenziell** aus. Starte die nächste Phase erst,
 
 ---
 
+## Phase 0: Vorbereitung
+
+Stelle in @docs/stories_epics.md die Story auf den Status "in Arbeit"
+
+---
+
 ## Phase 1: Fachexperte — Story-Verfeinerung
 
 Starte einen Subagenten mit den Anweisungen aus `.opencode/commands/refine-story.md`.
@@ -91,3 +97,4 @@ Teile dem Nutzer nach Abschluss aller Phasen mit:
 - Welche Phasen durchlaufen wurden
 - Ergebnis der Qualitätschecks
 - Offene Prio-2-Punkte aus dem Review (zur Information)
+- Status in @docs/stories_epics.md aktualisieren ("Abgeschlossen") inkl. Commit
