@@ -32,6 +32,23 @@ fn decode_form_value(value: &str) -> String {
         .to_string()
 }
 
+fn parse_form_data(body: &[u8]) -> std::collections::HashMap<String, Vec<String>> {
+    let form_data = String::from_utf8_lossy(body);
+    let mut params: std::collections::HashMap<String, Vec<String>> =
+        std::collections::HashMap::new();
+
+    for pair in form_data.split('&') {
+        if let Some((key, value)) = pair.split_once('=') {
+            let key = decode_form_value(key);
+            let value = decode_form_value(value);
+            params.entry(key).or_default().push(value);
+        }
+    }
+
+    params
+}
+
+/// Zeigt die Liste aller Rezepte.
 pub async fn index(State(pool): State<Arc<SqlitePool>>) -> Result<impl IntoResponse, AppError> {
     let recipes: Vec<Recipe> = get_all_recipes(&pool).await?;
 
@@ -50,26 +67,18 @@ pub async fn index(State(pool): State<Arc<SqlitePool>>) -> Result<impl IntoRespo
     Ok(Html(render_template(template)?))
 }
 
+/// Zeigt das Formular zum Erstellen eines neuen Rezepts.
 pub async fn new_recipe_form() -> Result<impl IntoResponse, AppError> {
     let template = RecipeFormTemplate::new();
     Ok(Html(render_template(template)?))
 }
 
+/// Verarbeitet das Formular zum Erstellen eines neuen Rezepts und speichert es in der Datenbank.
 pub async fn create_recipe_handler(
     State(pool): State<Arc<SqlitePool>>,
     axum::extract::RawForm(body): axum::extract::RawForm,
 ) -> Result<impl IntoResponse, AppError> {
-    // Parse form data manually
-    let form_data = String::from_utf8_lossy(&body);
-    let mut params = std::collections::HashMap::new();
-
-    for pair in form_data.split('&') {
-        if let Some((key, value)) = pair.split_once('=') {
-            let key = decode_form_value(key);
-            let value = decode_form_value(value);
-            params.entry(key).or_insert_with(Vec::new).push(value);
-        }
-    }
+    let params = parse_form_data(&body);
 
     let title = params
         .get("title")
@@ -107,6 +116,7 @@ pub async fn create_recipe_handler(
     Ok(Redirect::to(&format!("/recipes/{}", id)).into_response())
 }
 
+/// Zeigt die Detailansicht eines Rezepts. Unterstützt `?success=1` für Erfolgsmeldungen.
 pub async fn show_recipe(
     State(pool): State<Arc<SqlitePool>>,
     Path(id): Path<i64>,
@@ -130,6 +140,7 @@ pub async fn show_recipe(
     Ok(Html(render_template(template)?))
 }
 
+/// Zeigt das Formular zum Bearbeiten eines bestehenden Rezepts, vorausgefüllt mit den aktuellen Daten.
 pub async fn edit_recipe_form(
     State(pool): State<Arc<SqlitePool>>,
     Path(id): Path<i64>,
@@ -151,22 +162,13 @@ pub async fn edit_recipe_form(
     Ok(Html(render_template(template)?))
 }
 
+/// Verarbeitet das Formular zum Bearbeiten eines Rezepts und aktualisiert es in der Datenbank.
 pub async fn update_recipe_handler(
     State(pool): State<Arc<SqlitePool>>,
     Path(id): Path<i64>,
     axum::extract::RawForm(body): axum::extract::RawForm,
 ) -> Result<impl IntoResponse, AppError> {
-    // Parse form data manually
-    let form_data = String::from_utf8_lossy(&body);
-    let mut params = std::collections::HashMap::new();
-
-    for pair in form_data.split('&') {
-        if let Some((key, value)) = pair.split_once('=') {
-            let key = decode_form_value(key);
-            let value = decode_form_value(value);
-            params.entry(key).or_insert_with(Vec::new).push(value);
-        }
-    }
+    let params = parse_form_data(&body);
 
     let title = params
         .get("title")
@@ -197,11 +199,14 @@ pub async fn update_recipe_handler(
         return Ok((StatusCode::BAD_REQUEST, Html(render_template(template)?)).into_response());
     }
 
-    // Prüfen ob Rezept existiert
-    let _existing = get_recipe_by_id(&pool, id)
-        .await?
-        .ok_or_else(|| AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", id)))?;
+    update_recipe(&pool, id, &recipe)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::RowNotFound => {
+                AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", id))
+            }
+            other => AppError::Database(other),
+        })?;
 
-    update_recipe(&pool, id, &recipe).await?;
     Ok(Redirect::to(&format!("/recipes/{}?success=1", id)).into_response())
 }

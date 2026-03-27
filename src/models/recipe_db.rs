@@ -1,6 +1,7 @@
 use crate::models::recipe::{CreateRecipe, Recipe, UpdateRecipe};
 use sqlx::SqlitePool;
 
+/// Erstellt ein neues Rezept in der Datenbank und gibt die ID zurück.
 pub async fn create_recipe(pool: &SqlitePool, recipe: &CreateRecipe) -> Result<i64, sqlx::Error> {
     let categories_json = recipe.categories_json();
 
@@ -20,6 +21,7 @@ pub async fn create_recipe(pool: &SqlitePool, recipe: &CreateRecipe) -> Result<i
     Ok(result.last_insert_rowid())
 }
 
+/// Gibt ein Rezept anhand seiner ID zurück, oder `None` wenn es nicht gefunden wird.
 pub async fn get_recipe_by_id(pool: &SqlitePool, id: i64) -> Result<Option<Recipe>, sqlx::Error> {
     let recipe = sqlx::query_as::<_, Recipe>(
         r#"
@@ -35,6 +37,7 @@ pub async fn get_recipe_by_id(pool: &SqlitePool, id: i64) -> Result<Option<Recip
     Ok(recipe)
 }
 
+/// Gibt alle Rezepte zurück, absteigend sortiert nach Erstellungsdatum.
 pub async fn get_all_recipes(pool: &SqlitePool) -> Result<Vec<Recipe>, sqlx::Error> {
     let recipes = sqlx::query_as::<_, Recipe>(
         r#"
@@ -49,6 +52,7 @@ pub async fn get_all_recipes(pool: &SqlitePool) -> Result<Vec<Recipe>, sqlx::Err
     Ok(recipes)
 }
 
+/// Aktualisiert ein bestehendes Rezept. Gibt `RowNotFound` zurück, wenn die ID nicht existiert.
 pub async fn update_recipe(
     pool: &SqlitePool,
     id: i64,

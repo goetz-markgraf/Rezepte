@@ -3,6 +3,47 @@ use sqlx::FromRow;
 
 pub const VALID_CATEGORIES: &[&str] = &["Mittagessen", "Brot", "Party", "Kuchen", "Snacks"];
 
+/// Validiert die gemeinsamen Felder eines Rezept-Formulars (Titel, Kategorien, Zutaten, Anleitung).
+/// Gibt eine Liste von Fehlermeldungen zurück, falls die Validierung fehlschlägt.
+pub fn validate_recipe_fields(
+    title: &str,
+    categories: &[String],
+    ingredients: Option<&str>,
+    instructions: Option<&str>,
+) -> Vec<String> {
+    let mut errors = Vec::new();
+
+    if title.trim().is_empty() {
+        errors.push("Titel ist erforderlich".to_string());
+    } else if title.len() > 100 {
+        errors.push("Titel darf maximal 100 Zeichen haben".to_string());
+    }
+
+    if categories.is_empty() {
+        errors.push("Mindestens eine Kategorie muss ausgewählt werden".to_string());
+    } else {
+        for cat in categories {
+            if !VALID_CATEGORIES.contains(&cat.as_str()) {
+                errors.push(format!("'{}' ist keine gültige Kategorie", cat));
+            }
+        }
+    }
+
+    if let Some(ingredients) = ingredients {
+        if ingredients.len() > 2000 {
+            errors.push("Zutaten dürfen maximal 2000 Zeichen haben".to_string());
+        }
+    }
+
+    if let Some(instructions) = instructions {
+        if instructions.len() > 5000 {
+            errors.push("Anleitung darf maximal 5000 Zeichen haben".to_string());
+        }
+    }
+
+    errors
+}
+
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Recipe {
     pub id: i64,
@@ -29,36 +70,14 @@ pub struct CreateRecipe {
 }
 
 impl CreateRecipe {
+    /// Validiert das Rezept-Formular und gibt bei Fehlern eine Liste von Fehlermeldungen zurück.
     pub fn validate(&self) -> Result<(), Vec<String>> {
-        let mut errors = Vec::new();
-
-        if self.title.trim().is_empty() {
-            errors.push("Titel ist erforderlich".to_string());
-        } else if self.title.len() > 100 {
-            errors.push("Titel darf maximal 100 Zeichen haben".to_string());
-        }
-
-        if self.categories.is_empty() {
-            errors.push("Mindestens eine Kategorie muss ausgewählt werden".to_string());
-        } else {
-            for cat in &self.categories {
-                if !VALID_CATEGORIES.contains(&cat.as_str()) {
-                    errors.push(format!("'{}' ist keine gültige Kategorie", cat));
-                }
-            }
-        }
-
-        if let Some(ref ingredients) = self.ingredients {
-            if ingredients.len() > 2000 {
-                errors.push("Zutaten dürfen maximal 2000 Zeichen haben".to_string());
-            }
-        }
-
-        if let Some(ref instructions) = self.instructions {
-            if instructions.len() > 5000 {
-                errors.push("Anleitung darf maximal 5000 Zeichen haben".to_string());
-            }
-        }
+        let errors = validate_recipe_fields(
+            &self.title,
+            &self.categories,
+            self.ingredients.as_deref(),
+            self.instructions.as_deref(),
+        );
 
         if errors.is_empty() {
             Ok(())
@@ -67,6 +86,7 @@ impl CreateRecipe {
         }
     }
 
+    /// Gibt die Kategorien als JSON-Array-String zurück.
     pub fn categories_json(&self) -> String {
         serde_json::to_string(&self.categories).unwrap_or_else(|_| "[]".to_string())
     }
@@ -81,36 +101,14 @@ pub struct UpdateRecipe {
 }
 
 impl UpdateRecipe {
+    /// Validiert das Rezept-Formular und gibt bei Fehlern eine Liste von Fehlermeldungen zurück.
     pub fn validate(&self) -> Result<(), Vec<String>> {
-        let mut errors = Vec::new();
-
-        if self.title.trim().is_empty() {
-            errors.push("Titel ist erforderlich".to_string());
-        } else if self.title.len() > 100 {
-            errors.push("Titel darf maximal 100 Zeichen haben".to_string());
-        }
-
-        if self.categories.is_empty() {
-            errors.push("Mindestens eine Kategorie muss ausgewählt werden".to_string());
-        } else {
-            for cat in &self.categories {
-                if !VALID_CATEGORIES.contains(&cat.as_str()) {
-                    errors.push(format!("'{}' ist keine gültige Kategorie", cat));
-                }
-            }
-        }
-
-        if let Some(ref ingredients) = self.ingredients {
-            if ingredients.len() > 2000 {
-                errors.push("Zutaten dürfen maximal 2000 Zeichen haben".to_string());
-            }
-        }
-
-        if let Some(ref instructions) = self.instructions {
-            if instructions.len() > 5000 {
-                errors.push("Anleitung darf maximal 5000 Zeichen haben".to_string());
-            }
-        }
+        let errors = validate_recipe_fields(
+            &self.title,
+            &self.categories,
+            self.ingredients.as_deref(),
+            self.instructions.as_deref(),
+        );
 
         if errors.is_empty() {
             Ok(())
@@ -119,6 +117,7 @@ impl UpdateRecipe {
         }
     }
 
+    /// Gibt die Kategorien als JSON-Array-String zurück.
     pub fn categories_json(&self) -> String {
         serde_json::to_string(&self.categories).unwrap_or_else(|_| "[]".to_string())
     }
