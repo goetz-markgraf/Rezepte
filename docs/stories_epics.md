@@ -28,7 +28,7 @@ Das Herzstück der Anwendung - Rezepte erstellen, bearbeiten, anzeigen und lösc
 
 | Nr | Story | Status |
 |----|-------|--------|
-| 05 | [Rezept-Liste alphabetisch sortiert](./05-rezept-liste/story.md) | Offen |
+| 05 | [Rezept-Liste alphabetisch sortiert](./05-rezept-liste/story.md) | Abgeschlossen |
 | 06 | [Responsive Layout für Desktop und Mobile](./06-responsive-layout/story.md) | Offen |
 
 ---
