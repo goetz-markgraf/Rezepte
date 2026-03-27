@@ -1,4 +1,4 @@
-Implementiere die Punkte aus dem Review im Verzeichnis $1 (z.B. `docs/03-story-name/`).
+Implementiere die Punkte aus dem Review im Verzeichnis $ARGUMENTS (z.B. `docs/03-story-name/`).
 Beachte dabei Story und Plan im selben Verzeichnis.
 Beachte @docs/product/architecture.md und @docs/definition_done.md .
 Nutze den /tdd skill.

@@ -1,4 +1,4 @@
-Erstelle einen Implementierungsplan für die Story im Verzeichnis $1 (z.B. `docs/03-story-name/`).
+Erstelle einen Implementierungsplan für die Story im Verzeichnis $ARGUMENTS (z.B. `docs/03-story-name/`).
 Beachte dabei @docs/product/architecture.md und @docs/definition_done.md .
 Der Plan muss alle DoD-Kriterien abdecken (Tests, Code-Qualität, Architektur-Konformität).
 

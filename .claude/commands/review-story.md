@@ -1,4 +1,4 @@
-Prüfe die Implementierung der Story im Verzeichnis $1 (z.B. `docs/03-story-name/`).
+Prüfe die Implementierung der Story im Verzeichnis $ARGUMENTS (z.B. `docs/03-story-name/`).
 Lies dir alle Dateien im zugehörigen Story-Verzeichnis durch. Beachte insbesondere, wenn es schon ein Review-Dokument gibt.
 Beachte @docs/definition_done.md (Implementierungs-Vollständigkeit) und @docs/product/architecture.md .
 

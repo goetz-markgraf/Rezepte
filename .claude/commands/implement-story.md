@@ -1,4 +1,4 @@
-Implementiere den Plan im Verzeichnis $1 (z.B. `docs/03-story-name/`).
+Implementiere den Plan im Verzeichnis $ARGUMENTS (z.B. `docs/03-story-name/`).
 Beachte dabei @docs/product/architecture.md und @docs/definition_done.md .
 Nutze den /tdd skill.
 
