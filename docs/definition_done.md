@@ -19,6 +19,7 @@ Alle diese Punkte müssen einzeln und nacheinander geprüft werden.
 - [ ] Komplexe Logik ist dokumentiert oder in kleinere Funktionen aufgeteilt
 - [ ] Konsistente Einrückung und Formatierung
 - [ ] Der Code ist kurz und auf den Punkt, ohne unnötige Schleifen
+- [ ] Es gibt keine unnötigen Duplikationen, wiederverwendete Funktionen sind in eigenen Funktionen mit sprechendem Namen
 
 ---
 
