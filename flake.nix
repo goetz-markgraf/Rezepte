@@ -6,6 +6,7 @@
     packages = pkgs: with pkgs; [
       nodejs_24
       opencode
+      claude-code
     ];
   };
 }
