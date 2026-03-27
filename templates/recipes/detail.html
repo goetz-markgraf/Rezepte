@@ -4,7 +4,10 @@
 
 {% block content %}
 {% if success %}
-<div class="success">Rezept erfolgreich aktualisiert</div>
+<div class="success">
+    <span>Rezept erfolgreich aktualisiert</span>
+    <button class="success-close" onclick="this.parentElement.remove()" aria-label="Meldung schließen">&times;</button>
+</div>
 {% endif %}
 
 <article class="recipe-detail">

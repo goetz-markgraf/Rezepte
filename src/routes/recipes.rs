@@ -4,7 +4,8 @@ use crate::models::{
     Recipe, UpdateRecipe, VALID_CATEGORIES,
 };
 use crate::templates::{
-    ConfirmDeleteTemplate, IndexTemplate, RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem,
+    ConfirmDeleteTemplate, IndexTemplate, NotFoundTemplate, RecipeDetailTemplate,
+    RecipeFormTemplate, RecipeListItem,
 };
 use axum::{
     extract::{Path, Query, State},
@@ -23,6 +24,23 @@ pub struct RecipeDetailQuery {
 #[derive(Deserialize)]
 pub struct IndexQuery {
     pub deleted: Option<String>,
+}
+
+/// Formatiert einen SQLite-Timestamp (z.B. "2026-03-27 10:45:00") in ein deutsches Datumsformat ("27.03.2026").
+/// Bei ungültiger Eingabe wird der ursprüngliche String zurückgegeben.
+pub fn format_date(date_str: &str) -> String {
+    let date_part = date_str.split_whitespace().next().unwrap_or(date_str);
+    let parts: Vec<&str> = date_part.split('-').collect();
+    if parts.len() == 3 {
+        if let (Ok(_), Ok(_), Ok(_)) = (
+            parts[0].parse::<u32>(),
+            parts[1].parse::<u32>(),
+            parts[2].parse::<u32>(),
+        ) {
+            return format!("{}.{}.{}", parts[2], parts[1], parts[0]);
+        }
+    }
+    date_str.to_string()
 }
 
 fn render_template<T: askama::Template>(template: T) -> Result<String, AppError> {
@@ -97,8 +115,16 @@ pub async fn create_recipe_handler(
         .cloned()
         .unwrap_or_default();
     let categories: Vec<String> = params.get("categories").cloned().unwrap_or_default();
-    let ingredients = params.get("ingredients").and_then(|v| v.first()).cloned();
-    let instructions = params.get("instructions").and_then(|v| v.first()).cloned();
+    let ingredients = params
+        .get("ingredients")
+        .and_then(|v| v.first())
+        .filter(|s| !s.is_empty())
+        .cloned();
+    let instructions = params
+        .get("instructions")
+        .and_then(|v| v.first())
+        .filter(|s| !s.is_empty())
+        .cloned();
 
     let recipe = CreateRecipe {
         title: title.clone(),
@@ -133,9 +159,15 @@ pub async fn show_recipe(
     Path(id): Path<i64>,
     Query(query): Query<RecipeDetailQuery>,
 ) -> Result<impl IntoResponse, AppError> {
-    let recipe: Recipe = get_recipe_by_id(&pool, id)
-        .await?
-        .ok_or_else(|| AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", id)))?;
+    let recipe_option: Option<Recipe> = get_recipe_by_id(&pool, id).await?;
+
+    let Some(recipe) = recipe_option else {
+        let template = NotFoundTemplate {
+            message: format!("Rezept mit ID {} wurde nicht gefunden.", id),
+        };
+        let html = render_template(template)?;
+        return Ok((StatusCode::NOT_FOUND, Html(html)).into_response());
+    };
 
     let template = RecipeDetailTemplate {
         id: recipe.id,
@@ -143,12 +175,12 @@ pub async fn show_recipe(
         categories: recipe.categories_vec(),
         ingredients: recipe.ingredients,
         instructions: recipe.instructions,
-        created_at: recipe.created_at,
-        updated_at: recipe.updated_at,
+        created_at: format_date(&recipe.created_at),
+        updated_at: format_date(&recipe.updated_at),
         success: query.success.as_deref() == Some("1"),
     };
 
-    Ok(Html(render_template(template)?))
+    Ok(Html(render_template(template)?).into_response())
 }
 
 /// Zeigt das Formular zum Bearbeiten eines bestehenden Rezepts, vorausgefüllt mit den aktuellen Daten.
@@ -187,8 +219,16 @@ pub async fn update_recipe_handler(
         .cloned()
         .unwrap_or_default();
     let categories: Vec<String> = params.get("categories").cloned().unwrap_or_default();
-    let ingredients = params.get("ingredients").and_then(|v| v.first()).cloned();
-    let instructions = params.get("instructions").and_then(|v| v.first()).cloned();
+    let ingredients = params
+        .get("ingredients")
+        .and_then(|v| v.first())
+        .filter(|s| !s.is_empty())
+        .cloned();
+    let instructions = params
+        .get("instructions")
+        .and_then(|v| v.first())
+        .filter(|s| !s.is_empty())
+        .cloned();
 
     let recipe = UpdateRecipe {
         title: title.clone(),

@@ -1,6 +1,12 @@
 use askama::Template;
 
 #[derive(Template)]
+#[template(path = "error/not_found.html")]
+pub struct NotFoundTemplate {
+    pub message: String,
+}
+
+#[derive(Template)]
 #[template(path = "recipes/form.html")]
 pub struct RecipeFormTemplate {
     pub categories: Vec<String>,
