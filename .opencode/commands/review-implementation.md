@@ -1,5 +1,13 @@
 Prüfe die Implementierung des Plans $1.
-Lies dir auch alle weiteren Dateien in dem Story-Verzeichnis durch, das zu dem Plan gehört.
-Beachte @docs/definition_ready.md und @docs/product/architecture.md.
+Lies dir alle Dateien im zugehörigen Story-Verzeichnis durch.
+Beachte @docs/definition_done.md (Implementierungs-Vollständigkeit) und @docs/product/architecture.md .
 
-Erstelle ein Review-Dokument in dem Story-Verzeichnis.
+Führe die Qualitätschecks aus: `cargo clippy -- -D warnings`, `cargo test`, `npm run test:e2e`.
+
+Erstelle ein Review-Dokument `review.md` im Story-Verzeichnis.
+Nutze @docs/templates/review.md als strukturelle Vorlage. Pflichtinhalt:
+- Prüfung aller Akzeptanzkriterien (✅/⚠️/❌)
+- Prüfung gegen DoD-Checkliste
+- Test-Ergebnisse
+- Empfohlene Nacharbeit (priorisiert)
+- Fazit mit Gesamtbewertung
