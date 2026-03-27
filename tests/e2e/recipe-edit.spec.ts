@@ -34,6 +34,17 @@ test.describe('Rezept bearbeiten', () => {
     await expect(page).toHaveURL(/\/recipes\/\d+/);
     await expect(page.locator('h1')).toContainText('Testrezept Geändert');
     await expect(page.getByText('Neue Zutat')).toBeVisible();
+    
+    // Erfolgsmeldung soll sichtbar sein
+    await expect(page.locator('.success')).toContainText('Rezept erfolgreich aktualisiert');
+  });
+
+  test('sollte Bearbeiten-Button in der Rezept-Liste anzeigen', async ({ page }) => {
+    // Zur Übersicht navigieren
+    await page.goto('/');
+    
+    // Bearbeiten-Link soll in der Liste für das Rezept vorhanden sein
+    await expect(page.locator('.recipe-item a[href*="/edit"]').first()).toBeVisible();
   });
 
   test('sollte Bearbeitung abbrechen ohne Speichern', async ({ page }) => {

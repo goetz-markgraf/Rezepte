@@ -15,14 +15,19 @@
 <ul class="recipe-list">
     {% for recipe in recipes %}
     <li class="recipe-item">
-        <a href="/recipes/{{ recipe.id }}">
-            <h2>{{ recipe.title }}</h2>
-            <div class="categories">
-                {% for category in recipe.categories %}
-                <span class="category-tag">{{ category }}</span>
-                {% endfor %}
+        <div class="recipe-item-content">
+            <a href="/recipes/{{ recipe.id }}" class="recipe-item-link">
+                <h2>{{ recipe.title }}</h2>
+                <div class="categories">
+                    {% for category in recipe.categories %}
+                    <span class="category-tag">{{ category }}</span>
+                    {% endfor %}
+                </div>
+            </a>
+            <div class="recipe-item-actions">
+                <a href="/recipes/{{ recipe.id }}/edit" class="btn-secondary btn-small">Bearbeiten</a>
             </div>
-        </a>
+        </div>
     </li>
     {% endfor %}
 </ul>

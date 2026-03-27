@@ -5,12 +5,18 @@ use crate::models::{
 };
 use crate::templates::{IndexTemplate, RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem};
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::{Html, IntoResponse, Redirect},
 };
+use serde::Deserialize;
 use sqlx::SqlitePool;
 use std::sync::Arc;
+
+#[derive(Deserialize)]
+pub struct RecipeDetailQuery {
+    pub success: Option<String>,
+}
 
 fn render_template<T: askama::Template>(template: T) -> Result<String, AppError> {
     template
@@ -104,6 +110,7 @@ pub async fn create_recipe_handler(
 pub async fn show_recipe(
     State(pool): State<Arc<SqlitePool>>,
     Path(id): Path<i64>,
+    Query(query): Query<RecipeDetailQuery>,
 ) -> Result<impl IntoResponse, AppError> {
     let recipe: Recipe = get_recipe_by_id(&pool, id)
         .await?
@@ -116,6 +123,8 @@ pub async fn show_recipe(
         ingredients: recipe.ingredients,
         instructions: recipe.instructions,
         created_at: recipe.created_at,
+        updated_at: recipe.updated_at,
+        success: query.success.as_deref() == Some("1"),
     };
 
     Ok(Html(render_template(template)?))
@@ -194,5 +203,5 @@ pub async fn update_recipe_handler(
         .ok_or_else(|| AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", id)))?;
 
     update_recipe(&pool, id, &recipe).await?;
-    Ok(Redirect::to(&format!("/recipes/{}", id)).into_response())
+    Ok(Redirect::to(&format!("/recipes/{}?success=1", id)).into_response())
 }

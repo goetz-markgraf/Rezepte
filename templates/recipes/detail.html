@@ -3,6 +3,10 @@
 {% block title %}{{ title }} - Rezepte{% endblock %}
 
 {% block content %}
+{% if success %}
+<div class="success">Rezept erfolgreich aktualisiert</div>
+{% endif %}
+
 <article class="recipe-detail">
     <header>
         <h1>{{ title }}</h1>
@@ -29,6 +33,7 @@
 
     <footer>
         <p class="meta">Erstellt am: {{ created_at }}</p>
+        <p class="meta">Zuletzt bearbeitet: {{ updated_at }}</p>
         <div class="actions">
             <a href="/recipes/{{ id }}/edit" class="btn-primary">Bearbeiten</a>
             <a href="/" class="btn-secondary">Zurück zur Übersicht</a>

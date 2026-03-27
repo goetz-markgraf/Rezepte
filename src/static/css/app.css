@@ -129,11 +129,28 @@ textarea {
     margin-bottom: 1rem;
 }
 
-.recipe-item a {
+.recipe-item-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.recipe-item-link {
     display: block;
     padding: 1.5rem;
     text-decoration: none;
     color: inherit;
+    flex: 1;
+}
+
+.recipe-item-actions {
+    padding: 1rem;
+    flex-shrink: 0;
+}
+
+.btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
 }
 
 .category-tag {
@@ -168,4 +185,13 @@ pre {
 
 .actions {
     margin-bottom: 2rem;
+}
+
+.success {
+    background-color: #dcfce7;
+    border: 1px solid #86efac;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    color: #166534;
 }

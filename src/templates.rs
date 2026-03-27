@@ -15,13 +15,14 @@ pub struct RecipeFormTemplate {
 #[derive(Template)]
 #[template(path = "recipes/detail.html")]
 pub struct RecipeDetailTemplate {
-    #[allow(dead_code)]
     pub id: i64,
     pub title: String,
     pub categories: Vec<String>,
     pub ingredients: Option<String>,
     pub instructions: Option<String>,
     pub created_at: String,
+    pub updated_at: String,
+    pub success: bool,
 }
 
 #[derive(Template)]

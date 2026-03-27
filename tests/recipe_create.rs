@@ -87,7 +87,7 @@ async fn should_show_recipe_detail() {
         .unwrap()
         .to_str()
         .unwrap();
-    let id: i64 = location.split('/').last().unwrap().parse().unwrap();
+    let id: i64 = location.split('/').next_back().unwrap().parse().unwrap();
 
     // Now get the detail page
     let response = app
