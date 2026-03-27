@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Rezept löschen - Rezepte{% endblock %}
+
+{% block content %}
+<div class="confirm-delete">
+    <h1>Rezept löschen</h1>
+
+    <p class="confirm-question">Rezept '{{ title }}' wirklich löschen?</p>
+
+    <p class="confirm-warning">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+
+    <div class="tip-box">
+        <p><strong>Tipp:</strong> Statt zu löschen, kannst du eine schlechte Bewertung vergeben. Dann wird es nicht mehr vorgeschlagen, aber bleibt im System.</p>
+    </div>
+
+    <div class="confirm-actions">
+        <a href="/recipes/{{ id }}" class="btn-primary" aria-label="Abbrechen und zurück zum Rezept">Abbrechen</a>
+        <form method="POST" action="/recipes/{{ id }}/delete" class="inline-form">
+            <button type="submit" class="btn-danger" aria-label="Rezept endgültig löschen">Wirklich löschen</button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href = '/recipes/{{ id }}';
+    }
+});
+</script>
+{% endblock %}

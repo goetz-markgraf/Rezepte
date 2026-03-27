@@ -3,6 +3,10 @@
 {% block title %}Rezepte Übersicht{% endblock %}
 
 {% block content %}
+{% if let Some(title) = deleted_title %}
+<div class="success">Rezept '{{ title }}' wurde gelöscht</div>
+{% endif %}
+
 <h1>Rezepte Übersicht</h1>
 
 <div class="actions">

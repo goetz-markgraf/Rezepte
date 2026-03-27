@@ -25,10 +25,19 @@ pub struct RecipeDetailTemplate {
     pub success: bool,
 }
 
+/// Template für die Bestätigungsseite zum Löschen eines Rezepts.
+#[derive(Template)]
+#[template(path = "recipes/confirm_delete.html")]
+pub struct ConfirmDeleteTemplate {
+    pub id: i64,
+    pub title: String,
+}
+
 #[derive(Template)]
 #[template(path = "index.html")]
 pub struct IndexTemplate {
     pub recipes: Vec<RecipeListItem>,
+    pub deleted_title: Option<String>,
 }
 
 #[derive(Debug)]

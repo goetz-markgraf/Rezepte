@@ -1,9 +1,11 @@
 use crate::error::AppError;
 use crate::models::{
-    create_recipe, get_all_recipes, get_recipe_by_id, update_recipe, CreateRecipe, Recipe,
-    UpdateRecipe, VALID_CATEGORIES,
+    create_recipe, delete_recipe, get_all_recipes, get_recipe_by_id, update_recipe, CreateRecipe,
+    Recipe, UpdateRecipe, VALID_CATEGORIES,
 };
-use crate::templates::{IndexTemplate, RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem};
+use crate::templates::{
+    ConfirmDeleteTemplate, IndexTemplate, RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem,
+};
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
@@ -16,6 +18,11 @@ use std::sync::Arc;
 #[derive(Deserialize)]
 pub struct RecipeDetailQuery {
     pub success: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct IndexQuery {
+    pub deleted: Option<String>,
 }
 
 fn render_template<T: askama::Template>(template: T) -> Result<String, AppError> {
@@ -48,8 +55,11 @@ fn parse_form_data(body: &[u8]) -> std::collections::HashMap<String, Vec<String>
     params
 }
 
-/// Zeigt die Liste aller Rezepte.
-pub async fn index(State(pool): State<Arc<SqlitePool>>) -> Result<impl IntoResponse, AppError> {
+/// Zeigt die Liste aller Rezepte. Unterstützt `?deleted=Titel` für Erfolgsmeldungen nach dem Löschen.
+pub async fn index(
+    State(pool): State<Arc<SqlitePool>>,
+    Query(query): Query<IndexQuery>,
+) -> Result<impl IntoResponse, AppError> {
     let recipes: Vec<Recipe> = get_all_recipes(&pool).await?;
 
     let recipe_items: Vec<RecipeListItem> = recipes
@@ -63,6 +73,7 @@ pub async fn index(State(pool): State<Arc<SqlitePool>>) -> Result<impl IntoRespo
 
     let template = IndexTemplate {
         recipes: recipe_items,
+        deleted_title: query.deleted,
     };
     Ok(Html(render_template(template)?))
 }
@@ -209,4 +220,42 @@ pub async fn update_recipe_handler(
         })?;
 
     Ok(Redirect::to(&format!("/recipes/{}?success=1", id)).into_response())
+}
+
+/// Zeigt die Bestätigungsseite zum Löschen eines Rezepts.
+pub async fn confirm_delete(
+    State(pool): State<Arc<SqlitePool>>,
+    Path(id): Path<i64>,
+) -> Result<impl IntoResponse, AppError> {
+    let recipe: Recipe = get_recipe_by_id(&pool, id)
+        .await?
+        .ok_or_else(|| AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", id)))?;
+
+    let template = ConfirmDeleteTemplate {
+        id: recipe.id,
+        title: recipe.title,
+    };
+    Ok(Html(render_template(template)?))
+}
+
+/// Löscht ein Rezept und leitet zur Übersichtsseite mit Erfolgsmeldung weiter.
+pub async fn delete_recipe_handler(
+    State(pool): State<Arc<SqlitePool>>,
+    Path(id): Path<i64>,
+) -> Result<impl IntoResponse, AppError> {
+    let recipe: Recipe = get_recipe_by_id(&pool, id)
+        .await?
+        .ok_or_else(|| AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", id)))?;
+
+    let title = recipe.title.clone();
+
+    delete_recipe(&pool, id).await.map_err(|e| match e {
+        sqlx::Error::RowNotFound => {
+            AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", id))
+        }
+        other => AppError::Database(other),
+    })?;
+
+    let encoded_title = urlencoding::encode(&title);
+    Ok(Redirect::to(&format!("/?deleted={encoded_title}")).into_response())
 }

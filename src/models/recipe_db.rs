@@ -87,6 +87,21 @@ pub async fn update_recipe(
     Ok(())
 }
 
+/// Löscht ein Rezept anhand seiner ID. Gibt `RowNotFound` zurück, wenn die ID nicht existiert.
+pub async fn delete_recipe(pool: &SqlitePool, id: i64) -> Result<(), sqlx::Error> {
+    let rows_affected = sqlx::query("DELETE FROM recipes WHERE id = ?1")
+        .bind(id)
+        .execute(pool)
+        .await?
+        .rows_affected();
+
+    if rows_affected == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -230,5 +245,54 @@ mod tests {
 
         let retrieved = get_recipe_by_id(&pool, id).await.unwrap().unwrap();
         assert_ne!(original.updated_at, retrieved.updated_at);
+    }
+
+    #[tokio::test]
+    async fn can_delete_recipe() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let recipe = CreateRecipe {
+            title: "Zum Löschen".to_string(),
+            categories: vec!["Mittagessen".to_string()],
+            ingredients: None,
+            instructions: None,
+        };
+        let id = create_recipe(&pool, &recipe).await.unwrap();
+
+        delete_recipe(&pool, id).await.unwrap();
+
+        let result = get_recipe_by_id(&pool, id).await.unwrap();
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn delete_recipe_returns_error_for_nonexistent() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let result = delete_recipe(&pool, 9999).await;
+        assert!(matches!(result, Err(sqlx::Error::RowNotFound)));
+    }
+
+    #[tokio::test]
+    async fn delete_recipe_is_idempotent() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let recipe = CreateRecipe {
+            title: "Doppelt löschen".to_string(),
+            categories: vec!["Party".to_string()],
+            ingredients: None,
+            instructions: None,
+        };
+        let id = create_recipe(&pool, &recipe).await.unwrap();
+
+        delete_recipe(&pool, id).await.unwrap();
+        let second_result = delete_recipe(&pool, id).await;
+        assert!(matches!(second_result, Err(sqlx::Error::RowNotFound)));
     }
 }
