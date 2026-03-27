@@ -27,6 +27,8 @@ Starte einen Subagenten (Agent-Tool) mit diesen Anweisungen:
 > Lies `.claude/commands/plan-story.md` und führe die Anweisungen aus.
 > Das Story-Verzeichnis ist: `docs/$ARGUMENTS-story-name/`
 
+Der Subagent soll einen hohen Aufwand betreiben (/effort high)
+
 Der Subagent soll:
 - `docs/$ARGUMENTS-story-name/plan.md` erstellen
 - mit `git commit -m "story $ARGUMENTS: implementation plan"` committen
