@@ -45,7 +45,7 @@ Intelligente Filter und Suche für schnelle Rezeptfindung.
 | 07 | [Volltextsuche über Titel, Zutaten und Anleitung](./07-volltextsuche/story.md) | Abgeschlossen |
 | 27 | [Clear-Icon in Volltextsuche triggert neue Suche](./27-clear-icon-suche/story.md) | Abgeschlossen |
 | 08 | [Filter nach Kategorien](./08-kategorien-filter/story.md) | Abgeschlossen |
-| 09 | [Filter "Länger nicht gemacht"](./09-filter-laenger-nicht-gemacht/story.md) | Offen |
+| 09 | [Filter "Länger nicht gemacht"](./09-filter-laenger-nicht-gemacht/story.md) | Abgeschlossen |
 | 10 | [Filter "Nächste 7 Tage" (geplante Rezepte)](./10-filter-nächste-7-tage/story.md) | Offen |
 | 11 | [Filter nach Bewertung (Beliebtheit)](./11-filter-bewertung/story.md) | Offen |
 | 12 | [Kombinierte Filter (mehrere Filter gleichzeitig)](./12-kombinierte-filter/story.md) | Offen |
