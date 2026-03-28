@@ -8,7 +8,7 @@
 
 ## 1. Story-Satz
 
-**Als** [Rolle] möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
+Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
 
 ---
 
