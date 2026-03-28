@@ -1,6 +1,12 @@
 # add-story
 
-Du bist ein Planungs-Agent. Deine Aufgabe ist es, eine neue Story mit dem Titel "$ARGUMENTS" in das Projekt einzufügen.
+Du bist ein Planungs-Agent. Deine Aufgabe ist es, eine neue Story in das Projekt einzufügen.
+
+Die Eingabe des Users lautet: "$ARGUMENTS"
+
+Extrahiere daraus:
+- **Titel:** Die erste Zeile oder der prägnante Kurztitel (wird für den Slug und die Tabelle in stories_epics.md verwendet)
+- **Zusatzinformationen:** Alle weiteren Beschreibungen, Anforderungen oder Details, die der User mitgegeben hat
 
 ## Schritt 1: Kontext verstehen
 
@@ -11,7 +17,7 @@ Lies `docs/stories_epics.md` vollständig. Verstehe:
 
 ## Schritt 2: Epic bestimmen
 
-Entscheide, in welches Epic "$ARGUMENTS" am besten passt.
+Entscheide, in welches Epic die Story am besten passt.
 
 Wenn kein bestehendes Epic passt, erstelle ein neues Epic (mit dem nächsten freien Epic-Nummer).
 
@@ -37,11 +43,12 @@ Erstelle darin eine minimale `story.md` mit folgendem Inhalt (nutze `docs/templa
 - Epic-Name eingetragen
 - Alle Platzhalter aus der Vorlage belassen (werden später im refine-Schritt gefüllt)
 - Status: Offen
+- Falls der User Zusatzinformationen mitgegeben hat: Füge am **Ende der Datei** einen Abschnitt `## Zusatzinformationen` ein und schreibe den vollständigen Originaltext des Users dort hinein (unverändert, als Fließtext)
 
 ## Schritt 6: Commit
 
 Erstelle einen Commit:
-`git commit -m "story XX: add story placeholder for '$ARGUMENTS'"`
+`git commit -m "story XX: add story placeholder for '<Titel>'"`
 
 ## Abschluss
 
