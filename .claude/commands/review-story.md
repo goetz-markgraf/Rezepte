@@ -12,6 +12,19 @@ Nutze @docs/templates/review.md als strukturelle Vorlage. Pflichtinhalt:
 - Empfohlene Nacharbeit (priorisiert)
 - Fazit mit Gesamtbewertung
 
+## Prioritäten-Definition
+
+**Prio 1 (Muss — blockiert Abschluss):**
+- Failing Tests (`cargo test`, `cargo clippy`, E2E)
+- Nicht erfüllte Akzeptanzkriterien aus der Story
+- Datenverlust- oder Sicherheitsprobleme
+- Verstöße gegen Architektur-Constraints (z.B. CDN-Abhängigkeit, JSON-API statt SSR)
+
+**Prio 2 (Sollte — nice-to-have):**
+- Code-Verbesserungen ohne funktionale Auswirkung
+- Fehlende optionale Kriterien
+- Stilistische oder strukturelle Anmerkungen
+
 ## Abschluss
 
 Erstelle nach Fertigstellung einen Commit mit der Story-Nummer aus dem Verzeichnisnamen:

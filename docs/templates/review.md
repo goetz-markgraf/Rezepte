@@ -77,15 +77,19 @@
 
 ## Empfohlene Nacharbeit
 
-### Prio 1 (Muss)
+### Prio 1 (Muss — blockiert Abschluss)
+
+Kriterien für Prio 1: Failing Tests, nicht erfüllte Akzeptanzkriterien, Datenverlust/Sicherheit, Architektur-Verstöße.
 
 1. **[Problem]**
    - [Beschreibung des Problems]
    - [Empfohlene Lösung]
 
-### Prio 2 (Sollte)
+### Prio 2 (Sollte — nice-to-have)
 
-2. **[Problem]**
+Kriterien für Prio 2: Code-Verbesserungen ohne funktionale Auswirkung, fehlende optionale Kriterien, stilistische Anmerkungen.
+
+1. **[Problem]**
    - [Beschreibung]
 
 ---
