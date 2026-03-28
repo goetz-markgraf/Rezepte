@@ -1,7 +1,7 @@
 use crate::error::AppError;
 use crate::models::{
-    create_recipe, delete_recipe, filter_recipes_by_categories, get_recipe_by_id, update_recipe,
-    CreateRecipe, Recipe, UpdateRecipe, VALID_CATEGORIES,
+    create_recipe, delete_recipe, filter_recipes_by_categories, filter_recipes_not_made_recently,
+    get_recipe_by_id, update_recipe, CreateRecipe, Recipe, UpdateRecipe, VALID_CATEGORIES,
 };
 use crate::templates::{
     CategoryFilterItem, ConfirmDeleteTemplate, IndexTemplate, NotFoundTemplate,
@@ -59,6 +59,7 @@ pub struct RecipeDetailQuery {
 pub struct IndexQuery {
     pub deleted: Option<String>,
     pub q: Option<String>,
+    pub filter: Option<String>,
 }
 
 /// Extrahiert alle `kategorie`-Parameter aus dem Raw-Query-String.
@@ -125,12 +126,13 @@ fn parse_form_data(body: &[u8]) -> std::collections::HashMap<String, Vec<String>
 }
 
 /// Baut die Toggle-URL für eine Kategorie: aktiv→entfernen, inaktiv→hinzufügen.
-/// Bestehender Suchbegriff bleibt erhalten.
+/// Bestehender Suchbegriff und `not_made_filter_active` bleiben erhalten.
 fn build_category_toggle_url(
     category: &str,
     is_active: bool,
     active_categories: &[String],
     search_query: &str,
+    not_made_filter_active: bool,
 ) -> String {
     let mut params: Vec<String> = Vec::new();
 
@@ -149,6 +151,10 @@ fn build_category_toggle_url(
         params.push(format!("kategorie={}", urlencoding::encode(category)));
     }
 
+    if not_made_filter_active {
+        params.push("filter=laenger-nicht-gemacht".to_string());
+    }
+
     if params.is_empty() {
         "/".to_string()
     } else {
@@ -160,13 +166,19 @@ fn build_category_toggle_url(
 fn build_category_filters(
     active_categories: &[String],
     search_query: &str,
+    not_made_filter_active: bool,
 ) -> Vec<CategoryFilterItem> {
     VALID_CATEGORIES
         .iter()
         .map(|&cat| {
             let is_active = active_categories.iter().any(|a| a == cat);
-            let toggle_url =
-                build_category_toggle_url(cat, is_active, active_categories, search_query);
+            let toggle_url = build_category_toggle_url(
+                cat,
+                is_active,
+                active_categories,
+                search_query,
+                not_made_filter_active,
+            );
             CategoryFilterItem {
                 name: cat.to_string(),
                 is_active,
@@ -177,11 +189,48 @@ fn build_category_filters(
 }
 
 /// Erstellt die URL zum Zurücksetzen aller Kategorie-Filter (Suchbegriff bleibt erhalten).
-fn build_reset_url(search_query: &str) -> String {
-    if search_query.is_empty() {
+/// Wenn `not_made_filter_active` gesetzt ist, bleibt der Filter erhalten.
+fn build_reset_url(search_query: &str, not_made_filter_active: bool) -> String {
+    let mut params: Vec<String> = Vec::new();
+    if !search_query.is_empty() {
+        params.push(format!("q={}", urlencoding::encode(search_query)));
+    }
+    if not_made_filter_active {
+        params.push("filter=laenger-nicht-gemacht".to_string());
+    }
+    if params.is_empty() {
         "/".to_string()
     } else {
-        format!("/?q={}", urlencoding::encode(search_query))
+        format!("/?{}", params.join("&"))
+    }
+}
+
+/// Baut die Toggle-URL für den "Länger nicht gemacht"-Filter.
+/// Aktiv → URL ohne `filter`-Parameter (Kategorie + Suche bleiben erhalten).
+/// Inaktiv → URL mit `filter=laenger-nicht-gemacht` (Kategorie + Suche bleiben erhalten).
+fn build_not_made_toggle_url(
+    is_active: bool,
+    active_categories: &[String],
+    search_query: &str,
+) -> String {
+    let mut params: Vec<String> = Vec::new();
+
+    if !search_query.is_empty() {
+        params.push(format!("q={}", urlencoding::encode(search_query)));
+    }
+
+    for cat in active_categories {
+        params.push(format!("kategorie={}", urlencoding::encode(cat)));
+    }
+
+    if !is_active {
+        params.push("filter=laenger-nicht-gemacht".to_string());
+    }
+
+    if params.is_empty() {
+        "/".to_string()
+    } else {
+        format!("/?{}", params.join("&"))
     }
 }
 
@@ -201,6 +250,7 @@ fn normalize_categories(raw: Vec<String>) -> Vec<String> {
 /// Zeigt die Liste aller Rezepte. Unterstützt `?deleted=Titel` für Erfolgsmeldungen nach dem Löschen.
 /// Unterstützt `?q=suchbegriff` für die Volltextsuche in Titel, Zutaten und Anleitung.
 /// Unterstützt `?kategorie=Brot&kategorie=Kuchen` für den Kategorie-Filter (ODER-Logik).
+/// Unterstützt `?filter=laenger-nicht-gemacht` für den "Länger nicht gemacht"-Filter.
 pub async fn index(
     State(pool): State<Arc<SqlitePool>>,
     Query(query): Query<IndexQuery>,
@@ -209,9 +259,13 @@ pub async fn index(
     let search_query = query.q.unwrap_or_default();
     let raw = raw_query.unwrap_or_default();
     let active_categories = normalize_categories(extract_kategorie_params(&raw));
+    let not_made_filter_active = query.filter.as_deref() == Some("laenger-nicht-gemacht");
 
-    let recipes: Vec<Recipe> =
-        filter_recipes_by_categories(&pool, &active_categories, &search_query).await?;
+    let recipes: Vec<Recipe> = if not_made_filter_active {
+        filter_recipes_not_made_recently(&pool, &active_categories, &search_query).await?
+    } else {
+        filter_recipes_by_categories(&pool, &active_categories, &search_query).await?
+    };
 
     let recipe_items: Vec<RecipeListItem> = recipes
         .into_iter()
@@ -223,8 +277,11 @@ pub async fn index(
         })
         .collect();
 
-    let category_filters = build_category_filters(&active_categories, &search_query);
-    let reset_categories_url = build_reset_url(&search_query);
+    let category_filters =
+        build_category_filters(&active_categories, &search_query, not_made_filter_active);
+    let reset_categories_url = build_reset_url(&search_query, not_made_filter_active);
+    let not_made_filter_toggle_url =
+        build_not_made_toggle_url(not_made_filter_active, &active_categories, &search_query);
 
     let template = IndexTemplate {
         recipes: recipe_items,
@@ -233,6 +290,8 @@ pub async fn index(
         active_categories,
         category_filters,
         reset_categories_url,
+        not_made_filter_active,
+        not_made_filter_toggle_url,
     };
     Ok(Html(render_template(template)?))
 }

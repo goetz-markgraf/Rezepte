@@ -64,6 +64,10 @@ pub struct IndexTemplate {
     pub category_filters: Vec<CategoryFilterItem>,
     /// URL zum Zurücksetzen aller Kategorie-Filter.
     pub reset_categories_url: String,
+    /// Ob der Filter "Länger nicht gemacht" aktiv ist.
+    pub not_made_filter_active: bool,
+    /// URL zum Umschalten des "Länger nicht gemacht"-Filters.
+    pub not_made_filter_toggle_url: String,
 }
 
 #[derive(Debug)]

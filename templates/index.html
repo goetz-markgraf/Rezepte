@@ -43,13 +43,16 @@
     {% for filter in active_categories %}
     <input type="hidden" name="kategorie" value="{{ filter }}">
     {% endfor %}
+    {% if not_made_filter_active %}
+    <input type="hidden" name="filter" value="laenger-nicht-gemacht">
+    {% endif %}
 </form>
 
 <nav class="category-filter" aria-label="Nach Kategorie filtern">
     <a
         href="{{ reset_categories_url }}"
-        class="category-filter-btn{% if active_categories.is_empty() %} active{% endif %}"
-        aria-pressed="{{ active_categories.is_empty() }}"
+        class="category-filter-btn{% if active_categories.is_empty() && !not_made_filter_active %} active{% endif %}"
+        aria-pressed="{{ active_categories.is_empty() && !not_made_filter_active }}"
         hx-get="{{ reset_categories_url }}"
         hx-target="#recipe-results"
         hx-push-url="true"
@@ -67,6 +70,18 @@
     >{{ filter.name }}</a>
     {% endfor %}
 </nav>
+
+<div class="sort-filter">
+    <a
+        href="{{ not_made_filter_toggle_url }}"
+        class="sort-filter-btn{% if not_made_filter_active %} active{% endif %}"
+        aria-pressed="{{ not_made_filter_active }}"
+        hx-get="{{ not_made_filter_toggle_url }}"
+        hx-target="#recipe-results"
+        hx-push-url="true"
+        hx-select="#recipe-results"
+    >Länger nicht gemacht</a>
+</div>
 
 <script>
 (function() {
@@ -97,7 +112,15 @@
 </script>
 
 <div id="recipe-results" aria-live="polite">
-{% if recipes.is_empty() && !search_query.is_empty() && !active_categories.is_empty() %}
+{% if recipes.is_empty() && not_made_filter_active && !search_query.is_empty() && !active_categories.is_empty() %}
+<p class="search-no-results">Keine Rezepte für "{{ search_query }}" in den gewählten Kategorien ohne zukünftiges Datum gefunden.</p>
+{% else if recipes.is_empty() && not_made_filter_active && !search_query.is_empty() %}
+<p class="search-no-results">Keine Rezepte für "{{ search_query }}" ohne zukünftiges Datum gefunden.</p>
+{% else if recipes.is_empty() && not_made_filter_active && !active_categories.is_empty() %}
+<p class="search-no-results">Keine Rezepte in dieser Kategorie ohne zukünftiges Datum.</p>
+{% else if recipes.is_empty() && not_made_filter_active %}
+<p class="search-no-results">Keine Rezepte ohne zukünftiges Datum gefunden.</p>
+{% else if recipes.is_empty() && !search_query.is_empty() && !active_categories.is_empty() %}
 <p class="search-no-results">Keine Rezepte für "{{ search_query }}" in den gewählten Kategorien gefunden.</p>
 {% else if recipes.is_empty() && !search_query.is_empty() %}
 <p class="search-no-results">Keine Rezepte für "{{ search_query }}" gefunden.</p>

@@ -195,6 +195,70 @@ pub async fn filter_recipes_by_categories(
     Ok(recipes)
 }
 
+/// Filtert Rezepte nach dem Prinzip "Länger nicht gemacht":
+/// - Rezepte mit Zukunftsdatum werden ausgeschlossen
+/// - Rezepte ohne Datum (`planned_date IS NULL`) erscheinen zuerst
+/// - Dann aufsteigend nach Datum (ältestes zuerst)
+/// - Innerhalb gleichen Datums alphabetisch nach Titel (deutsche Sortierung)
+///
+/// Optional kombinierbar mit Kategorie-Filter (ODER-Logik) und Volltextsuche (UND-Logik).
+pub async fn filter_recipes_not_made_recently(
+    pool: &SqlitePool,
+    categories: &[String],
+    search_query: &str,
+) -> Result<Vec<Recipe>, sqlx::Error> {
+    let category_clause = if categories.is_empty() {
+        String::new()
+    } else {
+        let conditions: Vec<String> = categories
+            .iter()
+            .map(|_| "LOWER(categories) LIKE ?".to_string())
+            .collect();
+        format!("AND ({})", conditions.join(" OR "))
+    };
+
+    let search_clause = if search_query.trim().is_empty() {
+        String::new()
+    } else {
+        "AND (LOWER(title) LIKE ? OR LOWER(ingredients) LIKE ? OR LOWER(instructions) LIKE ?)"
+            .to_string()
+    };
+
+    let sql = format!(
+        "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at \
+         FROM recipes \
+         WHERE (planned_date IS NULL OR planned_date <= DATE('now')) \
+         {category_clause} {search_clause} \
+         ORDER BY CASE WHEN planned_date IS NULL THEN 0 ELSE 1 END ASC, planned_date ASC"
+    );
+
+    let mut query = sqlx::query_as::<_, Recipe>(&sql);
+
+    for category in categories {
+        let pattern = format!("%\"{}\"%", category.to_lowercase());
+        query = query.bind(pattern);
+    }
+
+    if !search_query.trim().is_empty() {
+        let term = format!("%{}%", search_query.to_lowercase());
+        query = query.bind(term.clone()).bind(term.clone()).bind(term);
+    }
+
+    let mut recipes = query.fetch_all(pool).await?;
+
+    // Sekundärsortierung innerhalb gleichen Datums: alphabetisch (deutsche Sortierung)
+    recipes.sort_by(|a, b| {
+        let date_cmp = a.planned_date.cmp(&b.planned_date);
+        if date_cmp == std::cmp::Ordering::Equal {
+            normalize_for_sort(&a.title).cmp(&normalize_for_sort(&b.title))
+        } else {
+            date_cmp
+        }
+    });
+
+    Ok(recipes)
+}
+
 /// Löscht ein Rezept anhand seiner ID. Gibt `RowNotFound` zurück, wenn die ID nicht existiert.
 pub async fn delete_recipe(pool: &SqlitePool, id: i64) -> Result<(), sqlx::Error> {
     let rows_affected = sqlx::query("DELETE FROM recipes WHERE id = ?1")
@@ -850,5 +914,292 @@ mod tests {
         // Then: planned_date ist None
         let retrieved = get_recipe_by_id(&pool, id).await.unwrap().unwrap();
         assert!(retrieved.planned_date.is_none());
+    }
+
+    fn make_recipe_with_date(title: &str, category: &str, date: Option<&str>) -> CreateRecipe {
+        CreateRecipe {
+            title: title.to_string(),
+            categories: vec![category.to_string()],
+            ingredients: None,
+            instructions: None,
+            planned_date_input: date.map(|d| d.to_string()),
+        }
+    }
+
+    #[tokio::test]
+    async fn not_made_recently_null_dates_appear_first() {
+        // Given: Rezept mit Datum und Rezept ohne Datum
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Mit Datum", "Mittagessen", Some("1.1.2020")),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Ohne Datum", "Mittagessen", None),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter "Länger nicht gemacht" aktiv
+        let results = filter_recipes_not_made_recently(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: Rezept ohne Datum erscheint als erstes
+        assert_eq!(results[0].title, "Ohne Datum");
+        assert_eq!(results[1].title, "Mit Datum");
+    }
+
+    #[tokio::test]
+    async fn not_made_recently_sorted_by_date_ascending() {
+        // Given: Drei Rezepte mit verschiedenen Vergangenheitsdaten
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Neueres", "Mittagessen", Some("1.6.2025")),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Ältestes", "Mittagessen", Some("1.1.2020")),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Mittleres", "Mittagessen", Some("1.6.2022")),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter aktiv
+        let results = filter_recipes_not_made_recently(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: Ältestes zuerst, dann aufsteigend
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert_eq!(titles, vec!["Ältestes", "Mittleres", "Neueres"]);
+    }
+
+    #[tokio::test]
+    async fn not_made_recently_excludes_future_dates() {
+        // Given: Rezept mit Zukunftsdatum und Rezept mit Vergangenheitsdatum
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Vergangenes", "Mittagessen", Some("1.1.2020")),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Zukünftiges", "Mittagessen", Some("1.1.2099")),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter aktiv
+        let results = filter_recipes_not_made_recently(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: Nur das vergangene Rezept erscheint
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert!(
+            titles.contains(&"Vergangenes"),
+            "Vergangenes sollte enthalten sein"
+        );
+        assert!(
+            !titles.contains(&"Zukünftiges"),
+            "Zukünftiges sollte ausgeschlossen sein"
+        );
+    }
+
+    #[tokio::test]
+    async fn not_made_recently_includes_past_and_null() {
+        // Given: Rezept ohne Datum, mit Vergangenheitsdatum, mit Zukunftsdatum
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Kein Datum", "Mittagessen", None),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Vergangen", "Mittagessen", Some("1.1.2020")),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Zukunft", "Mittagessen", Some("1.1.2099")),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter aktiv
+        let results = filter_recipes_not_made_recently(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: NULL und Vergangen enthalten, Zukunft nicht
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert_eq!(results.len(), 2);
+        assert!(titles.contains(&"Kein Datum"));
+        assert!(titles.contains(&"Vergangen"));
+    }
+
+    #[tokio::test]
+    async fn not_made_recently_returns_empty_if_all_future() {
+        // Given: Alle Rezepte haben Zukunftsdaten
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Geplant 1", "Mittagessen", Some("1.1.2099")),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Geplant 2", "Mittagessen", Some("1.6.2099")),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter aktiv
+        let results = filter_recipes_not_made_recently(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: Leere Liste
+        assert!(results.is_empty());
+    }
+
+    #[tokio::test]
+    async fn not_made_recently_same_date_sorted_alphabetically() {
+        // Given: Zwei Rezepte mit gleichem Datum
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Zupfbrot", "Brot", Some("1.1.2020")),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Apfelbrot", "Brot", Some("1.1.2020")),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter aktiv
+        let results = filter_recipes_not_made_recently(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: Alphabetisch sortiert bei gleichem Datum
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert_eq!(titles, vec!["Apfelbrot", "Zupfbrot"]);
+    }
+
+    #[tokio::test]
+    async fn not_made_recently_combined_with_category_filter() {
+        // Given: Brot-Rezepte und Mittagessen-Rezept mit Vergangenheitsdaten
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Dinkelbrot", "Brot", Some("1.1.2025")),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Roggenbrot", "Brot", Some("1.6.2026")),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Spaghetti", "Mittagessen", Some("1.1.2020")),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter "Länger nicht gemacht" + Kategorie "Brot"
+        let results = filter_recipes_not_made_recently(&pool, &["Brot".to_string()], "")
+            .await
+            .unwrap();
+
+        // Then: Nur Brot-Rezepte in Datumsreihenfolge (Roggenbrot 2026 noch in Zukunft→ausgeschlossen)
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert!(
+            titles.contains(&"Dinkelbrot"),
+            "Dinkelbrot sollte enthalten sein"
+        );
+        assert!(
+            !titles.contains(&"Spaghetti"),
+            "Spaghetti (Mittagessen) sollte nicht enthalten sein"
+        );
+        assert!(
+            !titles.contains(&"Roggenbrot"),
+            "Roggenbrot (Zukunftsdatum) sollte nicht enthalten sein"
+        );
+    }
+
+    #[tokio::test]
+    async fn not_made_recently_combined_with_search_query() {
+        // Given: Zwei Rezepte mit Vergangenheitsdatum
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Dinkelbrot", "Brot", Some("1.1.2020")),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Roggenbrot", "Brot", Some("1.6.2022")),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter "Länger nicht gemacht" + Suchbegriff "dinkel"
+        let results = filter_recipes_not_made_recently(&pool, &[], "dinkel")
+            .await
+            .unwrap();
+
+        // Then: Nur Dinkelbrot erscheint
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "Dinkelbrot");
     }
 }
