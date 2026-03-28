@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "components/icons.html" as icons %}
 
 {% block title %}{{ title }} - Rezepte{% endblock %}
 
@@ -38,9 +39,9 @@
         <p class="meta">Erstellt am: {{ created_at }}</p>
         <p class="meta">Zuletzt bearbeitet: {{ updated_at }}</p>
         <div class="actions">
-            <a href="/recipes/{{ id }}/edit" class="btn-primary">Bearbeiten</a>
-            <a href="/" class="btn-secondary">Zurück zur Übersicht</a>
-            <a href="/recipes/{{ id }}/confirm-delete" class="btn-danger">Löschen</a>
+            <a href="/recipes/{{ id }}/edit" class="btn-primary btn-icon-text">{% call icons::icon_pencil() %}Bearbeiten</a>
+            <a href="/" class="btn-secondary btn-icon-text">{% call icons::icon_arrow_left() %}Zurück zur Übersicht</a>
+            <a href="/recipes/{{ id }}/confirm-delete" class="btn-danger btn-icon-text">{% call icons::icon_trash_2() %}Löschen</a>
         </div>
     </footer>
 </article>

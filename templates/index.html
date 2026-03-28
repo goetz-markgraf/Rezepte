@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "components/icons.html" as icons %}
 
 {% block title %}Rezepte{% endblock %}
 
@@ -10,13 +11,13 @@
 <h1>Rezepte</h1>
 
 <div class="actions">
-    <a href="/recipes/new" class="btn-primary">Neues Rezept</a>
+    <a href="/recipes/new" class="btn-primary btn-icon-text">{% call icons::icon_plus() %}Neues Rezept</a>
 </div>
 
 {% if recipes.is_empty() %}
 <div class="empty-state">
     <p>Noch keine Rezepte vorhanden.</p>
-    <a href="/recipes/new" class="btn-primary">Erstes Rezept anlegen</a>
+                <a href="/recipes/new" class="btn-primary btn-icon-text">{% call icons::icon_plus() %}Erstes Rezept anlegen</a>
 </div>
 {% else %}
 <ul class="recipe-list">
@@ -32,7 +33,7 @@
                 </div>
             </a>
             <div class="recipe-item-actions">
-                <a href="/recipes/{{ recipe.id }}/edit" class="btn-secondary btn-small">Bearbeiten</a>
+                <a href="/recipes/{{ recipe.id }}/edit" class="btn-icon" aria-label="Rezept bearbeiten">{% call icons::icon_pencil() %}</a>
             </div>
         </div>
     </li>

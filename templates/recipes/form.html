@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "components/icons.html" as icons %}
 
 {% block title %}{% if let Some(_) = recipe_id %}Rezept bearbeiten{% else %}Neues Rezept{% endif %} - Rezepte{% endblock %}
 
@@ -45,8 +46,8 @@
     </div>
 
     <div class="form-actions">
-        <button type="submit" class="btn-primary">Rezept speichern</button>
-        <a href="{% if let Some(id) = recipe_id %}/recipes/{{ id }}{% else %}/{% endif %}" class="btn-secondary">Abbrechen</a>
+        <button type="submit" class="btn-primary btn-icon-text">{% call icons::icon_check() %}Rezept speichern</button>
+        <a href="{% if let Some(id) = recipe_id %}/recipes/{{ id }}{% else %}/{% endif %}" class="btn-secondary btn-icon-text">{% call icons::icon_x() %}Abbrechen</a>
     </div>
 </form>
 {% endblock %}
