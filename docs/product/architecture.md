@@ -191,7 +191,7 @@ GET  /                     → Liste aller Rezepte (mit Filter)
 GET  /recipes             → Liste mit optionalen Query-Parametern
 GET  /recipes?q=pasta     → Volltextsuche
 GET  /recipes?category=Mittagessen&sort=date → Filter + Sortierung
-GET  /recipes?filter=not-made → "Länger nicht gemacht"
+GET  /recipes?filter=laenger-nicht-gemacht → "Länger nicht gemacht"
 GET  /recipes/new         → Formular: Neues Rezept
 POST /recipes             → Rezept erstellen
 GET  /recipes/{id}        → Detail-Ansicht
@@ -212,7 +212,7 @@ GET  /recipes?rating=5      → 5-Sterne Rezepte
 | `category` | Enum | Einzelne Kategorie filtern |
 | `sort` | `title`, `date`, `rating` | Sortierfeld |
 | `order` | `asc`, `desc` | Sortierrichtung |
-| `filter` | `not-made` | "Länger nicht gemacht" |
+| `filter` | `laenger-nicht-gemacht` | "Länger nicht gemacht" |
 | `planned` | `next-7-days` | Geplante Rezepte |
 | `rating` | 1-5 | Nach Bewertung filtern |
 
