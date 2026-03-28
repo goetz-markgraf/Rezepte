@@ -105,25 +105,6 @@ Nicht-funktionale Anforderungen und technische Features.
 | 24 | [Multi-Device Zugriff im LAN](./24-multi-device/story.md) | Offen |
 | 25 | [WCAG 2.1 Level A Accessibility](./25-accessibility/story.md) | Offen |
 
----
-
-## Priorisierung (MVP = Phase 1)
-
-### Phase 1 (MVP) - Must Have
-**Epic 1:** Stories 01-04 (Rezept CRUD)  
-**Epic 2:** Stories 05-06 (Liste & Layout)  
-**Epic 3:** Stories 07-09 (Suche & grundlegende Filter)  
-**Epic 4:** Stories 14-16 (Bewertung & Datum)  
-**Epic 5:** Story 18 (Wochenvorschau)
-
-### Phase 2 - Should Have
-**Epic 3:** Stories 10-13 (Erweiterte Filter & gespeicherte Filter)  
-**Epic 5:** Stories 19-20 (Wochenplanung UX)  
-**Epic 4:** Story 17 (Inline-Bewertung)
-
-### Phase 3 - Nice to Have
-**Epic 6:** Stories 21-23 (Datenqualität)  
-**Epic 7:** Stories 24-25 (Technik)
 
 ---
 
@@ -134,6 +115,3 @@ Nicht-funktionale Anforderungen und technische Features.
 - **Abgeschlossen** - Implementiert und getestet
 - **Blockiert** - Wartet auf andere Story/Clarification
 
----
-
-**Gesamt:** 25 Stories in 7 Epics
