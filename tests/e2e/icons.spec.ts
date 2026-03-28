@@ -14,73 +14,76 @@ test.describe('Icons in der UI', () => {
   }
 
   test('Bearbeiten-Link in Rezeptliste hat SVG und aria-label (K2)', async ({ page }) => {
+    // Given: Ein Rezept wurde erstellt
     const title = `Icon-Test-Liste-${Date.now()}`;
     await createRecipe(page, title);
 
+    // When: Die Rezeptliste aufgerufen wird
     await page.goto('/');
 
-    // Bearbeiten-Link hat aria-label="Rezept bearbeiten"
+    // Then: Bearbeiten-Link hat aria-label und enthält ein SVG-Icon
     const editLink = page.locator('a[aria-label="Rezept bearbeiten"]').first();
     await expect(editLink).toBeVisible();
-
-    // Bearbeiten-Link enthält ein SVG-Icon
     await expect(editLink.locator('svg')).toBeVisible();
   });
 
   test('"Neues Rezept"-Button hat Plus-SVG (K1)', async ({ page }) => {
+    // Given: Die Startseite ist geöffnet
+    // When: Die Startseite aufgerufen wird
     await page.goto('/');
 
+    // Then: Der "Neues Rezept"-Link ist sichtbar und enthält ein SVG-Icon
     const newRecipeLink = page.locator('a[href="/recipes/new"]').first();
     await expect(newRecipeLink).toBeVisible();
-
-    // Link enthält ein SVG-Icon
     await expect(newRecipeLink.locator('svg')).toBeVisible();
   });
 
   test('Löschen-Button auf Detailseite hat SVG und navigiert zur Bestätigungsseite (K2)', async ({ page }) => {
+    // Given: Ein Rezept wurde erstellt, Detailseite ist aktiv
     const title = `Icon-Test-Detail-${Date.now()}`;
     await createRecipe(page, title);
 
-    // Löschen-Link prüfen: enthält svg
+    // When: Der Löschen-Button gesucht und geklickt wird
     const deleteLink = page.locator('a.btn-danger');
     await expect(deleteLink).toBeVisible();
     await expect(deleteLink.locator('svg')).toBeVisible();
-
-    // Klick navigiert zur Bestätigungsseite
     await deleteLink.click();
+
+    // Then: Navigation zur Bestätigungsseite erfolgt
     await expect(page).toHaveURL(/\/confirm-delete/);
   });
 
   test('Bestätigungs-Dialog-Buttons haben Icons (K4)', async ({ page }) => {
+    // Given: Die Lösch-Bestätigungsseite eines Rezepts ist geöffnet
     const title = `Icon-Test-Confirm-${Date.now()}`;
     const url = await createRecipe(page, title);
     const id = url.split('/').pop();
 
+    // When: Die Bestätigungsseite aufgerufen wird
     await page.goto(`/recipes/${id}/confirm-delete`);
 
-    // Abbrechen-Button enthält svg
+    // Then: Abbrechen- und Löschen-Button sind sichtbar und enthalten jeweils ein SVG
     const cancelLink = page.locator('a.btn-primary');
     await expect(cancelLink).toBeVisible();
     await expect(cancelLink.locator('svg')).toBeVisible();
 
-    // Löschen-Button enthält svg
     const deleteButton = page.locator('button.btn-danger');
     await expect(deleteButton).toBeVisible();
     await expect(deleteButton.locator('svg')).toBeVisible();
   });
 
   test('Icon-Buttons sind per Tastatur erreichbar (K8)', async ({ page }) => {
+    // Given: Ein Rezept wurde erstellt
     const title = `Icon-Test-Keyboard-${Date.now()}`;
     await createRecipe(page, title);
 
+    // When: Die Rezeptliste aufgerufen und der Bearbeiten-Link fokussiert wird
     await page.goto('/');
-
-    // Bearbeiten-Link mit aria-label ist im DOM vorhanden und erreichbar
     const editLink = page.locator('a[aria-label="Rezept bearbeiten"]').first();
     await expect(editLink).toBeVisible();
-
-    // Focus auf den Link setzen
     await editLink.focus();
+
+    // Then: Der Link ist tatsächlich fokussiert (Tastaturnavigation funktioniert)
     await expect(editLink).toBeFocused();
   });
 });

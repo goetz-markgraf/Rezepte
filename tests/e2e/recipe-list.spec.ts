@@ -15,6 +15,7 @@ test.describe('Rezept-Liste', () => {
   }
 
   test('sollte mehrere Rezepte alphabetisch sortiert anzeigen (K1, K2, K3)', async ({ page }) => {
+    // Given: Drei Rezepte mit Titeln Zupfbrot, Apfelkuchen, Bolognese wurden erstellt
     const suffix = Date.now();
     const titles = [`Zupfbrot-${suffix}`, `Apfelkuchen-${suffix}`, `Bolognese-${suffix}`];
 
@@ -22,8 +23,10 @@ test.describe('Rezept-Liste', () => {
       await createRecipe(page, title, 'Mittagessen');
     }
 
+    // When: Die Startseite aufgerufen wird
     await page.goto('/');
 
+    // Then: Alle Rezepte sind sichtbar, alphabetische Reihenfolge: Apfelkuchen → Bolognese → Zupfbrot; Kategorie-Tags sind sichtbar
     // Alle 3 Rezepte sind sichtbar (K1)
     for (const title of titles) {
       await expect(page.getByText(title).first()).toBeVisible();
