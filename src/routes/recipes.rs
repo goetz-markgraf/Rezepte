@@ -16,6 +16,40 @@ use serde::Deserialize;
 use sqlx::SqlitePool;
 use std::sync::Arc;
 
+const GERMAN_MONTHS_LONG: &[&str] = &[
+    "Januar",
+    "Februar",
+    "März",
+    "April",
+    "Mai",
+    "Juni",
+    "Juli",
+    "August",
+    "September",
+    "Oktober",
+    "November",
+    "Dezember",
+];
+
+/// Formatiert ein `time::Date` in das lange deutsche Format: "5. März 2025".
+fn format_planned_date_long(date: Option<time::Date>) -> Option<String> {
+    date.map(|d| {
+        let month_name = GERMAN_MONTHS_LONG[(d.month() as u8 - 1) as usize];
+        format!("{}. {} {}", d.day(), month_name, d.year())
+    })
+}
+
+/// Formatiert ein `time::Date` in das kompakte Format: "05.03.2025".
+fn format_planned_date_short(date: Option<time::Date>) -> Option<String> {
+    date.map(|d| format!("{:02}.{:02}.{}", d.day(), d.month() as u8, d.year()))
+}
+
+/// Formatiert ein `time::Date` für die Texteingabe im deutschen Format: "5.3.2025".
+fn format_planned_date_input(date: Option<time::Date>) -> String {
+    date.map(|d| format!("{}.{}.{}", d.day(), d.month() as u8, d.year()))
+        .unwrap_or_default()
+}
+
 #[derive(Deserialize)]
 pub struct RecipeDetailQuery {
     pub success: Option<String>,
@@ -185,6 +219,7 @@ pub async fn index(
             id: r.id,
             title: r.title.clone(),
             categories: r.categories_vec(),
+            planned_date: format_planned_date_short(r.planned_date),
         })
         .collect();
 
@@ -231,12 +266,14 @@ pub async fn create_recipe_handler(
         .and_then(|v| v.first())
         .filter(|s| !s.is_empty())
         .cloned();
+    let planned_date_raw = params.get("planned_date").and_then(|v| v.first()).cloned();
 
     let recipe = CreateRecipe {
         title: title.clone(),
         categories: categories.clone(),
         ingredients: ingredients.clone(),
         instructions: instructions.clone(),
+        planned_date_input: planned_date_raw.clone(),
     };
 
     if let Err(errors) = recipe.validate() {
@@ -251,6 +288,7 @@ pub async fn create_recipe_handler(
             ingredients: ingredients.unwrap_or_default(),
             instructions: instructions.unwrap_or_default(),
             recipe_id: None,
+            planned_date: planned_date_raw.unwrap_or_default(),
         };
         return Ok((StatusCode::BAD_REQUEST, Html(render_template(template)?)).into_response());
     }
@@ -275,6 +313,7 @@ pub async fn show_recipe(
         return Ok((StatusCode::NOT_FOUND, Html(html)).into_response());
     };
 
+    let planned_date = format_planned_date_long(recipe.planned_date);
     let template = RecipeDetailTemplate {
         id: recipe.id,
         title: recipe.title.clone(),
@@ -284,6 +323,7 @@ pub async fn show_recipe(
         created_at: format_date(&recipe.created_at),
         updated_at: format_date(&recipe.updated_at),
         success: query.success.as_deref() == Some("1"),
+        planned_date,
     };
 
     Ok(Html(render_template(template)?).into_response())
@@ -298,6 +338,7 @@ pub async fn edit_recipe_form(
         .await?
         .ok_or_else(|| AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", id)))?;
 
+    let planned_date = format_planned_date_input(recipe.planned_date);
     let template = RecipeFormTemplate {
         categories: VALID_CATEGORIES.iter().map(|&s| s.to_string()).collect(),
         errors: Vec::new(),
@@ -306,6 +347,7 @@ pub async fn edit_recipe_form(
         ingredients: recipe.ingredients.unwrap_or_default(),
         instructions: recipe.instructions.unwrap_or_default(),
         recipe_id: Some(id),
+        planned_date,
     };
 
     Ok(Html(render_template(template)?))
@@ -335,12 +377,14 @@ pub async fn update_recipe_handler(
         .and_then(|v| v.first())
         .filter(|s| !s.is_empty())
         .cloned();
+    let planned_date_raw = params.get("planned_date").and_then(|v| v.first()).cloned();
 
     let recipe = UpdateRecipe {
         title: title.clone(),
         categories: categories.clone(),
         ingredients: ingredients.clone(),
         instructions: instructions.clone(),
+        planned_date_input: planned_date_raw.clone(),
     };
 
     if let Err(errors) = recipe.validate() {
@@ -352,6 +396,7 @@ pub async fn update_recipe_handler(
             ingredients: ingredients.unwrap_or_default(),
             instructions: instructions.unwrap_or_default(),
             recipe_id: Some(id),
+            planned_date: planned_date_raw.unwrap_or_default(),
         };
         return Ok((StatusCode::BAD_REQUEST, Html(render_template(template)?)).into_response());
     }

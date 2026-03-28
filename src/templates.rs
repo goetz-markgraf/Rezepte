@@ -16,6 +16,8 @@ pub struct RecipeFormTemplate {
     pub ingredients: String,
     pub instructions: String,
     pub recipe_id: Option<i64>,
+    /// Datum im deutschen Format (T.M.JJJJ) oder leer.
+    pub planned_date: String,
 }
 
 #[derive(Template)]
@@ -29,6 +31,8 @@ pub struct RecipeDetailTemplate {
     pub created_at: String,
     pub updated_at: String,
     pub success: bool,
+    /// Datum im langen deutschen Format (z.B. "5. März 2025") oder None.
+    pub planned_date: Option<String>,
 }
 
 /// Template für die Bestätigungsseite zum Löschen eines Rezepts.
@@ -67,6 +71,8 @@ pub struct RecipeListItem {
     pub id: i64,
     pub title: String,
     pub categories: Vec<String>,
+    /// Datum im kompakten Format (TT.MM.JJJJ) oder None.
+    pub planned_date: Option<String>,
 }
 
 impl Default for RecipeFormTemplate {
@@ -82,6 +88,7 @@ impl Default for RecipeFormTemplate {
             ingredients: String::new(),
             instructions: String::new(),
             recipe_id: None,
+            planned_date: String::new(),
         }
     }
 }

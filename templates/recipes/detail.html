@@ -36,6 +36,9 @@
     {% endif %}
 
     <footer>
+        {% if let Some(date) = planned_date %}
+        <p class="meta">Datum: {{ date }}</p>
+        {% endif %}
         <p class="meta">Erstellt am: {{ created_at }}</p>
         <p class="meta">Zuletzt bearbeitet: {{ updated_at }}</p>
         <div class="actions">

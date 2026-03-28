@@ -36,6 +36,29 @@
     </div>
 
     <div class="form-group">
+        <label for="planned_date">Datum (geplant / gekocht)</label>
+        <div class="date-input-group">
+            <input
+                type="text"
+                id="planned_date"
+                name="planned_date"
+                placeholder="T.M.JJJJ"
+                value="{{ planned_date }}"
+                autocomplete="off"
+                aria-describedby="planned_date_error"
+            >
+            <input type="date" id="date-picker" class="date-picker-hidden" aria-hidden="true" tabindex="-1">
+            <button
+                type="button"
+                class="btn-icon date-picker-btn"
+                aria-label="Kalender öffnen"
+                title="Kalender öffnen"
+                onclick="document.getElementById('date-picker').showPicker()"
+            >{% call icons::icon_calendar() %}</button>
+        </div>
+    </div>
+
+    <div class="form-group">
         <label for="ingredients">Zutaten</label>
         <textarea id="ingredients" name="ingredients" rows="6" maxlength="2000">{{ ingredients }}</textarea>
     </div>
@@ -50,4 +73,24 @@
         <a href="{% if let Some(id) = recipe_id %}/recipes/{{ id }}{% else %}/{% endif %}" class="btn-secondary btn-icon-text">{% call icons::icon_x() %}Abbrechen</a>
     </div>
 </form>
+
+<script>
+(function() {
+    var textInput = document.getElementById('planned_date');
+    var datePicker = document.getElementById('date-picker');
+    if (!textInput || !datePicker) return;
+
+    datePicker.addEventListener('change', function() {
+        if (!datePicker.value) return;
+        var parts = datePicker.value.split('-');
+        if (parts.length === 3) {
+            // ISO YYYY-MM-DD → T.M.JJJJ
+            var day = parseInt(parts[2], 10);
+            var month = parseInt(parts[1], 10);
+            var year = parts[0];
+            textInput.value = day + '.' + month + '.' + year;
+        }
+    });
+})();
+</script>
 {% endblock %}

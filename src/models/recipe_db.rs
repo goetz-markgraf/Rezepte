@@ -4,17 +4,19 @@ use sqlx::SqlitePool;
 /// Erstellt ein neues Rezept in der Datenbank und gibt die ID zurück.
 pub async fn create_recipe(pool: &SqlitePool, recipe: &CreateRecipe) -> Result<i64, sqlx::Error> {
     let categories_json = recipe.categories_json();
+    let planned_date = recipe.parsed_date();
 
     let result = sqlx::query(
         r#"
-        INSERT INTO recipes (title, categories, ingredients, instructions)
-        VALUES (?1, ?2, ?3, ?4)
+        INSERT INTO recipes (title, categories, ingredients, instructions, planned_date)
+        VALUES (?1, ?2, ?3, ?4, ?5)
         "#,
     )
     .bind(&recipe.title)
     .bind(&categories_json)
     .bind(&recipe.ingredients)
     .bind(&recipe.instructions)
+    .bind(planned_date)
     .execute(pool)
     .await?;
 
@@ -25,7 +27,7 @@ pub async fn create_recipe(pool: &SqlitePool, recipe: &CreateRecipe) -> Result<i
 pub async fn get_recipe_by_id(pool: &SqlitePool, id: i64) -> Result<Option<Recipe>, sqlx::Error> {
     let recipe = sqlx::query_as::<_, Recipe>(
         r#"
-        SELECT id, title, categories, ingredients, instructions, created_at, updated_at
+        SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at
         FROM recipes
         WHERE id = ?1
         "#,
@@ -58,7 +60,7 @@ fn normalize_for_sort(title: &str) -> String {
 pub async fn get_all_recipes(pool: &SqlitePool) -> Result<Vec<Recipe>, sqlx::Error> {
     let mut recipes = sqlx::query_as::<_, Recipe>(
         r#"
-        SELECT id, title, categories, ingredients, instructions, created_at, updated_at
+        SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at
         FROM recipes
         "#,
     )
@@ -77,6 +79,7 @@ pub async fn update_recipe(
     recipe: &UpdateRecipe,
 ) -> Result<(), sqlx::Error> {
     let categories_json = recipe.categories_json();
+    let planned_date = recipe.parsed_date();
 
     let rows_affected = sqlx::query(
         r#"
@@ -85,14 +88,16 @@ pub async fn update_recipe(
             categories = ?2, 
             ingredients = ?3, 
             instructions = ?4,
+            planned_date = ?5,
             updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?5
+        WHERE id = ?6
         "#,
     )
     .bind(&recipe.title)
     .bind(&categories_json)
     .bind(&recipe.ingredients)
     .bind(&recipe.instructions)
+    .bind(planned_date)
     .bind(id)
     .execute(pool)
     .await?
@@ -117,7 +122,7 @@ pub async fn search_recipes(pool: &SqlitePool, query: &str) -> Result<Vec<Recipe
 
     let mut recipes = sqlx::query_as::<_, Recipe>(
         r#"
-        SELECT id, title, categories, ingredients, instructions, created_at, updated_at
+        SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at
         FROM recipes
         WHERE LOWER(title) LIKE ?1
            OR LOWER(ingredients) LIKE ?1
@@ -158,12 +163,12 @@ pub async fn filter_recipes_by_categories(
 
     let sql = if search_query.trim().is_empty() {
         format!(
-            "SELECT id, title, categories, ingredients, instructions, created_at, updated_at \
+            "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at \
              FROM recipes WHERE {category_clause}"
         )
     } else {
         format!(
-            "SELECT id, title, categories, ingredients, instructions, created_at, updated_at \
+            "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at \
              FROM recipes WHERE ({category_clause}) \
              AND (LOWER(title) LIKE ? OR LOWER(ingredients) LIKE ? OR LOWER(instructions) LIKE ?)"
         )
@@ -211,6 +216,16 @@ mod tests {
     use crate::db::create_pool;
     use tempfile::NamedTempFile;
 
+    fn make_recipe(title: &str, category: &str) -> CreateRecipe {
+        CreateRecipe {
+            title: title.to_string(),
+            categories: vec![category.to_string()],
+            ingredients: None,
+            instructions: None,
+            planned_date_input: None,
+        }
+    }
+
     #[tokio::test]
     async fn get_all_recipes_returns_alphabetically_sorted() {
         let temp_file = NamedTempFile::new().unwrap();
@@ -218,17 +233,9 @@ mod tests {
         let pool = create_pool(&db_url).await.unwrap();
 
         for title in ["Zupfbrot", "Apfelkuchen", "Bolognese"] {
-            create_recipe(
-                &pool,
-                &CreateRecipe {
-                    title: title.to_string(),
-                    categories: vec!["Mittagessen".to_string()],
-                    ingredients: None,
-                    instructions: None,
-                },
-            )
-            .await
-            .unwrap();
+            create_recipe(&pool, &make_recipe(title, "Mittagessen"))
+                .await
+                .unwrap();
         }
 
         let recipes = get_all_recipes(&pool).await.unwrap();
@@ -243,17 +250,9 @@ mod tests {
         let pool = create_pool(&db_url).await.unwrap();
 
         for title in ["zitronenkuchen", "Apfelkuchen"] {
-            create_recipe(
-                &pool,
-                &CreateRecipe {
-                    title: title.to_string(),
-                    categories: vec!["Kuchen".to_string()],
-                    ingredients: None,
-                    instructions: None,
-                },
-            )
-            .await
-            .unwrap();
+            create_recipe(&pool, &make_recipe(title, "Kuchen"))
+                .await
+                .unwrap();
         }
 
         let recipes = get_all_recipes(&pool).await.unwrap();
@@ -270,17 +269,9 @@ mod tests {
         // ä → wie a: "Ährenbrot" sollte vor "Apfelkuchen" oder direkt danach kommen
         // ü → wie u: "Überbackene Nudeln" nach "U..."
         for title in ["Überbackene Nudeln", "Apfelkuchen", "Ährenbrot"] {
-            create_recipe(
-                &pool,
-                &CreateRecipe {
-                    title: title.to_string(),
-                    categories: vec!["Mittagessen".to_string()],
-                    ingredients: None,
-                    instructions: None,
-                },
-            )
-            .await
-            .unwrap();
+            create_recipe(&pool, &make_recipe(title, "Mittagessen"))
+                .await
+                .unwrap();
         }
 
         let recipes = get_all_recipes(&pool).await.unwrap();
@@ -315,6 +306,7 @@ mod tests {
             categories: vec!["Mittagessen".to_string()],
             ingredients: Some("Zutat 1, Zutat 2".to_string()),
             instructions: Some("Anleitung".to_string()),
+            planned_date_input: None,
         };
 
         let id = create_recipe(&pool, &recipe).await.unwrap();
@@ -341,19 +333,8 @@ mod tests {
         let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
         let pool = create_pool(&db_url).await.unwrap();
 
-        let recipe1 = CreateRecipe {
-            title: "Rezept 1".to_string(),
-            categories: vec!["Party".to_string()],
-            ingredients: None,
-            instructions: None,
-        };
-
-        let recipe2 = CreateRecipe {
-            title: "Rezept 2".to_string(),
-            categories: vec!["Kuchen".to_string()],
-            ingredients: None,
-            instructions: None,
-        };
+        let recipe1 = make_recipe("Rezept 1", "Party");
+        let recipe2 = make_recipe("Rezept 2", "Kuchen");
 
         create_recipe(&pool, &recipe1).await.unwrap();
         create_recipe(&pool, &recipe2).await.unwrap();
@@ -374,6 +355,7 @@ mod tests {
             categories: vec!["Mittagessen".to_string()],
             ingredients: Some("Original Zutaten".to_string()),
             instructions: Some("Original Anleitung".to_string()),
+            planned_date_input: None,
         };
         let id = create_recipe(&pool, &recipe).await.unwrap();
 
@@ -383,6 +365,7 @@ mod tests {
             categories: vec!["Party".to_string()],
             ingredients: Some("Neue Zutaten".to_string()),
             instructions: Some("Neue Anleitung".to_string()),
+            planned_date_input: None,
         };
 
         update_recipe(&pool, id, &updated).await.unwrap();
@@ -405,6 +388,7 @@ mod tests {
             categories: vec!["Party".to_string()],
             ingredients: None,
             instructions: None,
+            planned_date_input: None,
         };
 
         let result = update_recipe(&pool, 9999, &updated).await;
@@ -418,12 +402,7 @@ mod tests {
         let pool = create_pool(&db_url).await.unwrap();
 
         // Rezept erstellen
-        let recipe = CreateRecipe {
-            title: "Original".to_string(),
-            categories: vec!["Mittagessen".to_string()],
-            ingredients: None,
-            instructions: None,
-        };
+        let recipe = make_recipe("Original", "Mittagessen");
         let id = create_recipe(&pool, &recipe).await.unwrap();
 
         let original = get_recipe_by_id(&pool, id).await.unwrap().unwrap();
@@ -436,6 +415,7 @@ mod tests {
             categories: vec!["Mittagessen".to_string()],
             ingredients: None,
             instructions: None,
+            planned_date_input: None,
         };
         update_recipe(&pool, id, &updated).await.unwrap();
 
@@ -449,12 +429,7 @@ mod tests {
         let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
         let pool = create_pool(&db_url).await.unwrap();
 
-        let recipe = CreateRecipe {
-            title: "Zum Löschen".to_string(),
-            categories: vec!["Mittagessen".to_string()],
-            ingredients: None,
-            instructions: None,
-        };
+        let recipe = make_recipe("Zum Löschen", "Mittagessen");
         let id = create_recipe(&pool, &recipe).await.unwrap();
 
         delete_recipe(&pool, id).await.unwrap();
@@ -486,6 +461,7 @@ mod tests {
                 categories: vec!["Mittagessen".to_string()],
                 ingredients: Some("Hackfleisch, Tomaten".to_string()),
                 instructions: Some("Sauce kochen".to_string()),
+                planned_date_input: None,
             },
         )
         .await
@@ -509,6 +485,7 @@ mod tests {
                 categories: vec!["Snacks".to_string()],
                 ingredients: Some("Dinkelvollkornmehl, Eier, Milch".to_string()),
                 instructions: Some("Teig mischen".to_string()),
+                planned_date_input: None,
             },
         )
         .await
@@ -532,6 +509,7 @@ mod tests {
                 categories: vec!["Brot".to_string()],
                 ingredients: Some("Mehl, Hefe, Wasser".to_string()),
                 instructions: Some("Teig kneten und im Ofen backen".to_string()),
+                planned_date_input: None,
             },
         )
         .await
@@ -548,17 +526,9 @@ mod tests {
         let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
         let pool = create_pool(&db_url).await.unwrap();
 
-        create_recipe(
-            &pool,
-            &CreateRecipe {
-                title: "Spaghetti Bolognese".to_string(),
-                categories: vec!["Mittagessen".to_string()],
-                ingredients: None,
-                instructions: None,
-            },
-        )
-        .await
-        .unwrap();
+        create_recipe(&pool, &make_recipe("Spaghetti Bolognese", "Mittagessen"))
+            .await
+            .unwrap();
 
         let results = search_recipes(&pool, "BOLOGNESE").await.unwrap();
         assert_eq!(results.len(), 1);
@@ -571,17 +541,9 @@ mod tests {
         let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
         let pool = create_pool(&db_url).await.unwrap();
 
-        create_recipe(
-            &pool,
-            &CreateRecipe {
-                title: "Spaghetti Bolognese".to_string(),
-                categories: vec!["Mittagessen".to_string()],
-                ingredients: None,
-                instructions: None,
-            },
-        )
-        .await
-        .unwrap();
+        create_recipe(&pool, &make_recipe("Spaghetti Bolognese", "Mittagessen"))
+            .await
+            .unwrap();
 
         let results = search_recipes(&pool, "xyzxyzxyz").await.unwrap();
         assert!(results.is_empty());
@@ -594,17 +556,9 @@ mod tests {
         let pool = create_pool(&db_url).await.unwrap();
 
         for title in ["Apfelkuchen", "Bolognese", "Zupfbrot"] {
-            create_recipe(
-                &pool,
-                &CreateRecipe {
-                    title: title.to_string(),
-                    categories: vec!["Mittagessen".to_string()],
-                    ingredients: None,
-                    instructions: None,
-                },
-            )
-            .await
-            .unwrap();
+            create_recipe(&pool, &make_recipe(title, "Mittagessen"))
+                .await
+                .unwrap();
         }
 
         let results = search_recipes(&pool, "").await.unwrap();
@@ -624,6 +578,7 @@ mod tests {
                 categories: vec!["Mittagessen".to_string()],
                 ingredients: Some("Bolognese-Soße, Hackfleisch".to_string()),
                 instructions: Some("Bolognese zubereiten".to_string()),
+                planned_date_input: None,
             },
         )
         .await
@@ -639,29 +594,13 @@ mod tests {
         let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
         let pool = create_pool(&db_url).await.unwrap();
 
-        create_recipe(
-            &pool,
-            &CreateRecipe {
-                title: "Vollkornbrot".to_string(),
-                categories: vec!["Brot".to_string()],
-                ingredients: None,
-                instructions: None,
-            },
-        )
-        .await
-        .unwrap();
+        create_recipe(&pool, &make_recipe("Vollkornbrot", "Brot"))
+            .await
+            .unwrap();
 
-        create_recipe(
-            &pool,
-            &CreateRecipe {
-                title: "Spaghetti".to_string(),
-                categories: vec!["Mittagessen".to_string()],
-                ingredients: None,
-                instructions: None,
-            },
-        )
-        .await
-        .unwrap();
+        create_recipe(&pool, &make_recipe("Spaghetti", "Mittagessen"))
+            .await
+            .unwrap();
 
         let results = filter_recipes_by_categories(&pool, &["Brot".to_string()], "")
             .await
@@ -676,17 +615,9 @@ mod tests {
         let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
         let pool = create_pool(&db_url).await.unwrap();
 
-        create_recipe(
-            &pool,
-            &CreateRecipe {
-                title: "Käsekuchen".to_string(),
-                categories: vec!["Kuchen".to_string()],
-                ingredients: None,
-                instructions: None,
-            },
-        )
-        .await
-        .unwrap();
+        create_recipe(&pool, &make_recipe("Käsekuchen", "Kuchen"))
+            .await
+            .unwrap();
 
         create_recipe(
             &pool,
@@ -695,22 +626,15 @@ mod tests {
                 categories: vec!["Brot".to_string(), "Party".to_string()],
                 ingredients: None,
                 instructions: None,
+                planned_date_input: None,
             },
         )
         .await
         .unwrap();
 
-        create_recipe(
-            &pool,
-            &CreateRecipe {
-                title: "Spaghetti".to_string(),
-                categories: vec!["Mittagessen".to_string()],
-                ingredients: None,
-                instructions: None,
-            },
-        )
-        .await
-        .unwrap();
+        create_recipe(&pool, &make_recipe("Spaghetti", "Mittagessen"))
+            .await
+            .unwrap();
 
         let results =
             filter_recipes_by_categories(&pool, &["Kuchen".to_string(), "Brot".to_string()], "")
@@ -738,17 +662,9 @@ mod tests {
         let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
         let pool = create_pool(&db_url).await.unwrap();
 
-        create_recipe(
-            &pool,
-            &CreateRecipe {
-                title: "Brot".to_string(),
-                categories: vec!["Brot".to_string()],
-                ingredients: None,
-                instructions: None,
-            },
-        )
-        .await
-        .unwrap();
+        create_recipe(&pool, &make_recipe("Brot", "Brot"))
+            .await
+            .unwrap();
 
         let results = filter_recipes_by_categories(&pool, &["Snacks".to_string()], "")
             .await
@@ -762,29 +678,13 @@ mod tests {
         let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
         let pool = create_pool(&db_url).await.unwrap();
 
-        create_recipe(
-            &pool,
-            &CreateRecipe {
-                title: "Dinkelbrot".to_string(),
-                categories: vec!["Brot".to_string()],
-                ingredients: None,
-                instructions: None,
-            },
-        )
-        .await
-        .unwrap();
+        create_recipe(&pool, &make_recipe("Dinkelbrot", "Brot"))
+            .await
+            .unwrap();
 
-        create_recipe(
-            &pool,
-            &CreateRecipe {
-                title: "Roggenbrot".to_string(),
-                categories: vec!["Brot".to_string()],
-                ingredients: None,
-                instructions: None,
-            },
-        )
-        .await
-        .unwrap();
+        create_recipe(&pool, &make_recipe("Roggenbrot", "Brot"))
+            .await
+            .unwrap();
 
         let results = filter_recipes_by_categories(&pool, &["Brot".to_string()], "dinkel")
             .await
@@ -801,17 +701,9 @@ mod tests {
         let pool = create_pool(&db_url).await.unwrap();
 
         for title in ["Apfelkuchen", "Bolognese", "Zupfbrot"] {
-            create_recipe(
-                &pool,
-                &CreateRecipe {
-                    title: title.to_string(),
-                    categories: vec!["Mittagessen".to_string()],
-                    ingredients: None,
-                    instructions: None,
-                },
-            )
-            .await
-            .unwrap();
+            create_recipe(&pool, &make_recipe(title, "Mittagessen"))
+                .await
+                .unwrap();
         }
 
         let results = filter_recipes_by_categories(&pool, &[], "").await.unwrap();
@@ -825,17 +717,9 @@ mod tests {
         let pool = create_pool(&db_url).await.unwrap();
 
         for title in ["Zupfbrot", "Apfelbrot", "Mischbrot"] {
-            create_recipe(
-                &pool,
-                &CreateRecipe {
-                    title: title.to_string(),
-                    categories: vec!["Brot".to_string()],
-                    ingredients: None,
-                    instructions: None,
-                },
-            )
-            .await
-            .unwrap();
+            create_recipe(&pool, &make_recipe(title, "Brot"))
+                .await
+                .unwrap();
         }
 
         let results = filter_recipes_by_categories(&pool, &["Brot".to_string()], "")
@@ -852,16 +736,119 @@ mod tests {
         let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
         let pool = create_pool(&db_url).await.unwrap();
 
-        let recipe = CreateRecipe {
-            title: "Doppelt löschen".to_string(),
-            categories: vec!["Party".to_string()],
-            ingredients: None,
-            instructions: None,
-        };
+        let recipe = make_recipe("Doppelt löschen", "Party");
         let id = create_recipe(&pool, &recipe).await.unwrap();
 
         delete_recipe(&pool, id).await.unwrap();
         let second_result = delete_recipe(&pool, id).await;
         assert!(matches!(second_result, Err(sqlx::Error::RowNotFound)));
+    }
+
+    #[tokio::test]
+    async fn create_recipe_with_date_stores_and_retrieves_date() {
+        // Given: Ein Rezept mit einem gültigen Datum
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let recipe = CreateRecipe {
+            title: "Datums-Rezept".to_string(),
+            categories: vec!["Mittagessen".to_string()],
+            ingredients: None,
+            instructions: None,
+            planned_date_input: Some("5.3.2025".to_string()),
+        };
+
+        // When: Rezept erstellt und zurückgelesen wird
+        let id = create_recipe(&pool, &recipe).await.unwrap();
+        let retrieved = get_recipe_by_id(&pool, id).await.unwrap().unwrap();
+
+        // Then: Das gespeicherte Datum stimmt überein
+        let date = retrieved.planned_date.unwrap();
+        assert_eq!(date.year(), 2025);
+        assert_eq!(date.month(), time::Month::March);
+        assert_eq!(date.day(), 5);
+    }
+
+    #[tokio::test]
+    async fn create_recipe_without_date_has_none() {
+        // Given: Ein Rezept ohne Datum
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        // When: Rezept ohne Datum erstellt und zurückgelesen
+        let id = create_recipe(&pool, &make_recipe("Ohne Datum", "Mittagessen"))
+            .await
+            .unwrap();
+        let retrieved = get_recipe_by_id(&pool, id).await.unwrap().unwrap();
+
+        // Then: planned_date ist None
+        assert!(retrieved.planned_date.is_none());
+    }
+
+    #[tokio::test]
+    async fn update_recipe_changes_date() {
+        // Given: Ein Rezept mit Datum wird erstellt
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let recipe = CreateRecipe {
+            title: "Rezept mit Datum".to_string(),
+            categories: vec!["Mittagessen".to_string()],
+            ingredients: None,
+            instructions: None,
+            planned_date_input: Some("1.1.2025".to_string()),
+        };
+        let id = create_recipe(&pool, &recipe).await.unwrap();
+
+        // When: Das Datum wird über Update geändert
+        let updated = UpdateRecipe {
+            title: "Rezept mit Datum".to_string(),
+            categories: vec!["Mittagessen".to_string()],
+            ingredients: None,
+            instructions: None,
+            planned_date_input: Some("15.4.2026".to_string()),
+        };
+        update_recipe(&pool, id, &updated).await.unwrap();
+
+        // Then: Das neue Datum wird zurückgegeben
+        let retrieved = get_recipe_by_id(&pool, id).await.unwrap().unwrap();
+        let date = retrieved.planned_date.unwrap();
+        assert_eq!(date.year(), 2026);
+        assert_eq!(date.month(), time::Month::April);
+        assert_eq!(date.day(), 15);
+    }
+
+    #[tokio::test]
+    async fn update_recipe_clears_date() {
+        // Given: Ein Rezept mit Datum
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let recipe = CreateRecipe {
+            title: "Rezept mit Datum".to_string(),
+            categories: vec!["Mittagessen".to_string()],
+            ingredients: None,
+            instructions: None,
+            planned_date_input: Some("1.1.2025".to_string()),
+        };
+        let id = create_recipe(&pool, &recipe).await.unwrap();
+
+        // When: Das Datum wird gelöscht (leere Eingabe)
+        let updated = UpdateRecipe {
+            title: "Rezept mit Datum".to_string(),
+            categories: vec!["Mittagessen".to_string()],
+            ingredients: None,
+            instructions: None,
+            planned_date_input: Some("".to_string()),
+        };
+        update_recipe(&pool, id, &updated).await.unwrap();
+
+        // Then: planned_date ist None
+        let retrieved = get_recipe_by_id(&pool, id).await.unwrap().unwrap();
+        assert!(retrieved.planned_date.is_none());
     }
 }

@@ -120,6 +120,9 @@
                     <span class="category-tag">{{ category }}</span>
                     {% endfor %}
                 </div>
+                {% if let Some(date) = recipe.planned_date %}
+                <span class="recipe-date">{{ date }}</span>
+                {% endif %}
             </a>
             <div class="recipe-item-actions">
                 <a href="/recipes/{{ recipe.id }}/edit" class="btn-icon" aria-label="Rezept bearbeiten">{% call icons::icon_pencil() %}</a>
