@@ -42,7 +42,7 @@ Intelligente Filter und Suche für schnelle Rezeptfindung.
 
 | Nr | Story | Status |
 |----|-------|--------|
-| 07 | [Volltextsuche über Titel, Zutaten und Anleitung](./07-volltextsuche/story.md) | Offen |
+| 07 | [Volltextsuche über Titel, Zutaten und Anleitung](./07-volltextsuche/story.md) | In Arbeit |
 | 08 | [Filter nach Kategorien](./08-kategorien-filter/story.md) | Offen |
 | 09 | [Filter "Länger nicht gemacht"](./09-filter-laenger-nicht-gemacht/story.md) | Offen |
 | 10 | [Filter "Nächste 7 Tage" (geplante Rezepte)](./10-filter-nächste-7-tage/story.md) | Offen |
