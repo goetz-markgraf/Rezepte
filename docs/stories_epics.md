@@ -65,6 +65,7 @@ Rezepte bewerten und Zubereitungsdaten verwalten.
 | 15 | [Datum "Geplant am" setzen (Vergangenheit und Zukunft)](./15-datum-setzen/story.md) | Offen |
 | 16 | [Wochentag-Picker für intuitive Datumauswahl](./16-wochentag-picker/story.md) | Offen |
 | 17 | [Inline-Bewertung ohne Edit-Mode](./17-inline-bewertung/story.md) | Offen |
+| 28 | [Datum-Eingabe am Rezept (geplant / gekocht)](./28-datum-eingabe/story.md) | Offen |
 
 ---
 
