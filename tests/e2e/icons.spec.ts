@@ -37,7 +37,7 @@ test.describe('Icons in der UI', () => {
     await expect(newRecipeLink.locator('svg')).toBeVisible();
   });
 
-  test('Löschen-Button auf Detailseite hat SVG und navigiert zur Bestätigungsseite (K3)', async ({ page }) => {
+  test('Löschen-Button auf Detailseite hat SVG und navigiert zur Bestätigungsseite (K2)', async ({ page }) => {
     const title = `Icon-Test-Detail-${Date.now()}`;
     await createRecipe(page, title);
 
@@ -69,7 +69,7 @@ test.describe('Icons in der UI', () => {
     await expect(deleteButton.locator('svg')).toBeVisible();
   });
 
-  test('Icon-Buttons sind per Tastatur erreichbar (K5)', async ({ page }) => {
+  test('Icon-Buttons sind per Tastatur erreichbar (K8)', async ({ page }) => {
     const title = `Icon-Test-Keyboard-${Date.now()}`;
     await createRecipe(page, title);
 
