@@ -144,3 +144,102 @@ test.describe('Volltextsuche', () => {
     await expect(resultsDiv).toHaveAttribute('aria-live', 'polite');
   });
 });
+
+test.describe('Clear-Icon in Volltextsuche (Story 27)', () => {
+  test('K1: Klick auf Clear-Icon leert Suchfeld und zeigt alle Rezepte', async ({ page }) => {
+    const suffix = Date.now();
+    await createRecipe(page, `Bolognese ${suffix}`, 'Mittagessen', 'Hackfleisch', 'Sauce kochen');
+    await createRecipe(page, `Pfannkuchen ${suffix}`, 'Snacks', 'Mehl, Eier', 'In der Pfanne backen');
+
+    // Suche starten
+    await page.goto(`/?q=Bolognese+${suffix}`);
+    await expect(page.locator('#recipe-results')).toContainText(`Bolognese ${suffix}`);
+    await expect(page.locator('#recipe-results')).not.toContainText(`Pfannkuchen ${suffix}`);
+
+    // Clear-Icon klicken
+    const clearBtn = page.locator('#clear-search');
+    await expect(clearBtn).toBeVisible();
+    await clearBtn.click();
+
+    // Suchfeld ist leer
+    await expect(page.locator('input#q')).toHaveValue('');
+
+    // Vollständige Rezeptliste sichtbar
+    await expect(page.locator('#recipe-results')).toContainText(`Bolognese ${suffix}`);
+    await expect(page.locator('#recipe-results')).toContainText(`Pfannkuchen ${suffix}`);
+
+    // URL enthält keinen nicht-leeren q-Parameter (q= oder kein q ist akzeptabel)
+    const url = page.url();
+    expect(url).not.toMatch(/[?&]q=.+/);
+  });
+
+  test('K2: Clear-Icon nur bei gefülltem Suchfeld sichtbar', async ({ page }) => {
+    await page.goto('/');
+
+    const clearBtn = page.locator('#clear-search');
+
+    // Bei leerem Suchfeld ist Clear-Icon nicht sichtbar
+    await expect(clearBtn).not.toBeVisible();
+
+    // Suchbegriff eingeben (pressSequentially löst input-Events aus)
+    await page.locator('input#q').pressSequentially('Salat');
+
+    // Clear-Icon ist jetzt sichtbar
+    await expect(clearBtn).toBeVisible();
+  });
+
+  test('K3: Clear-Icon nach Suche ohne Treffer zeigt vollständige Liste', async ({ page }) => {
+    const suffix = Date.now();
+    await createRecipe(page, `Testrezept ${suffix}`, 'Snacks', 'Zutaten', 'Anleitung');
+
+    // Suche ohne Treffer über URL (vollständiger Seitenaufruf, JS zeigt Clear-Icon)
+    await page.goto(`/?q=xyzxyzxyz`);
+    await expect(page.locator('#recipe-results')).toContainText('Keine Rezepte');
+
+    // Clear-Icon klicken (nach vollständigem Seitenaufruf ist es sichtbar)
+    const clearBtn = page.locator('#clear-search');
+    await expect(clearBtn).toBeVisible();
+    await clearBtn.click();
+
+    // Suchfeld ist leer
+    await expect(page.locator('input#q')).toHaveValue('');
+
+    // Vollständige Liste sichtbar
+    await expect(page.locator('#recipe-results')).toContainText(`Testrezept ${suffix}`);
+  });
+
+  test('K4: Tastatur-Navigation: Tab zum Clear-Icon und Enter drücken', async ({ page }) => {
+    const suffix = Date.now();
+    await createRecipe(page, `Pasta ${suffix}`, 'Mittagessen', 'Nudeln', 'Kochen');
+    await createRecipe(page, `Brot ${suffix}`, 'Brot', 'Mehl', 'Backen');
+
+    // Suche starten
+    await page.goto(`/?q=Pasta+${suffix}`);
+    await expect(page.locator('#recipe-results')).toContainText(`Pasta ${suffix}`);
+
+    // Fokus auf Suchfeld setzen und per Tab zum Clear-Icon navigieren
+    await page.locator('input#q').focus();
+    await page.keyboard.press('Tab');
+
+    // Clear-Icon ist fokussiert - Enter drücken
+    await page.keyboard.press('Enter');
+
+    // Suchfeld ist leer
+    await expect(page.locator('input#q')).toHaveValue('');
+
+    // Vollständige Liste sichtbar
+    await expect(page.locator('#recipe-results')).toContainText(`Pasta ${suffix}`);
+    await expect(page.locator('#recipe-results')).toContainText(`Brot ${suffix}`);
+  });
+
+  test('K5: Clear-Icon sofort sichtbar bei DeepLink mit q-Parameter', async ({ page }) => {
+    const suffix = Date.now();
+    await createRecipe(page, `Bolognese ${suffix}`, 'Mittagessen', 'Hackfleisch', 'Kochen');
+
+    // Seite direkt mit q-Parameter aufrufen
+    await page.goto(`/?q=Bolognese+${suffix}`);
+
+    // Clear-Icon ist sofort sichtbar (JS setzt initialen Zustand)
+    await expect(page.locator('#clear-search')).toBeVisible();
+  });
+});
