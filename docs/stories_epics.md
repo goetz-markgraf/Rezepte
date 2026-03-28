@@ -62,7 +62,7 @@ Rezepte bewerten und Zubereitungsdaten verwalten.
 | Nr | Story | Status |
 |----|-------|--------|
 | 14 | [Rezept mit 3-5 Sternen bewerten](./14-rezept-bewertung/story.md) | Offen |
-| 15 | [Datum "Geplant am" setzen (Vergangenheit und Zukunft)](./15-datum-setzen/story.md) | Offen |
+| 15 | [Datum "Geplant am" setzen (Vergangenheit und Zukunft)](./15-datum-setzen/story.md) | Dublette |
 | 16 | [Wochentag-Picker für intuitive Datumauswahl](./16-wochentag-picker/story.md) | Offen |
 | 17 | [Inline-Bewertung ohne Edit-Mode](./17-inline-bewertung/story.md) | Offen |
 | 28 | [Datum-Eingabe am Rezept (geplant / gekocht)](./28-datum-eingabe/story.md) | Abgeschlossen |
@@ -105,7 +105,7 @@ Nicht-funktionale Anforderungen und technische Features.
 
 | Nr | Story | Status |
 |----|-------|--------|
-| 24 | [Multi-Device Zugriff im LAN](./24-multi-device/story.md) | Offen |
+| 24 | [Multi-Device Zugriff im LAN](./24-multi-device/story.md) | Dublette |
 | 25 | [WCAG 2.1 Level A Accessibility](./25-accessibility/story.md) | Offen |
 
 
@@ -117,4 +117,5 @@ Nicht-funktionale Anforderungen und technische Features.
 - **In Arbeit** - Aktuell in Entwicklung
 - **Abgeschlossen** - Implementiert und getestet
 - **Blockiert** - Wartet auf andere Story/Clarification
+- **Dublette** - Ist durch eine andere Story erledigt und wird daher nicht umgesetzt
 
