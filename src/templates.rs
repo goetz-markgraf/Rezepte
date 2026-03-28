@@ -39,6 +39,14 @@ pub struct ConfirmDeleteTemplate {
     pub title: String,
 }
 
+/// Ein Kategorie-Filter-Button mit vorberechneter Toggle-URL.
+pub struct CategoryFilterItem {
+    pub name: String,
+    pub is_active: bool,
+    /// URL, die beim Klick aufgerufen wird (Toggle: aktiv→entfernen, inaktiv→hinzufügen).
+    pub toggle_url: String,
+}
+
 /// Template für die Rezept-Übersichtsseite.
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -46,6 +54,12 @@ pub struct IndexTemplate {
     pub recipes: Vec<RecipeListItem>,
     pub deleted_title: Option<String>,
     pub search_query: String,
+    /// Aktuell aktive Kategorien (aus URL-Parametern).
+    pub active_categories: Vec<String>,
+    /// Alle Kategorien mit Toggle-URLs für die Filter-Buttons.
+    pub category_filters: Vec<CategoryFilterItem>,
+    /// URL zum Zurücksetzen aller Kategorie-Filter.
+    pub reset_categories_url: String,
 }
 
 #[derive(Debug)]

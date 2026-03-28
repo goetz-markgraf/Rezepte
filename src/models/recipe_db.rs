@@ -133,6 +133,63 @@ pub async fn search_recipes(pool: &SqlitePool, query: &str) -> Result<Vec<Recipe
     Ok(recipes)
 }
 
+/// Filtert Rezepte nach Kategorien und/oder Suchbegriff.
+///
+/// - Beide leer → alle Rezepte
+/// - Nur `search_query` → Volltextsuche (wie `search_recipes`)
+/// - Nur `categories` → ODER-Logik: Rezept erscheint, wenn mindestens eine Kategorie passt
+/// - Beides gesetzt → UND-Verknüpfung: Kategorie-Filter UND Suchbegriff
+///
+/// Ergebnisse sind alphabetisch sortiert (deutsche Sortierung mit Umlauten).
+pub async fn filter_recipes_by_categories(
+    pool: &SqlitePool,
+    categories: &[String],
+    search_query: &str,
+) -> Result<Vec<Recipe>, sqlx::Error> {
+    if categories.is_empty() {
+        return search_recipes(pool, search_query).await;
+    }
+
+    let category_conditions: Vec<String> = categories
+        .iter()
+        .map(|_| "LOWER(categories) LIKE ?".to_string())
+        .collect();
+    let category_clause = category_conditions.join(" OR ");
+
+    let sql = if search_query.trim().is_empty() {
+        format!(
+            "SELECT id, title, categories, ingredients, instructions, created_at, updated_at \
+             FROM recipes WHERE {category_clause}"
+        )
+    } else {
+        format!(
+            "SELECT id, title, categories, ingredients, instructions, created_at, updated_at \
+             FROM recipes WHERE ({category_clause}) \
+             AND (LOWER(title) LIKE ? OR LOWER(ingredients) LIKE ? OR LOWER(instructions) LIKE ?)"
+        )
+    };
+
+    let mut query = sqlx::query_as::<_, Recipe>(&sql);
+
+    for category in categories {
+        let pattern = format!("%\"{}\"%", category.to_lowercase());
+        query = query.bind(pattern);
+    }
+
+    if !search_query.trim().is_empty() {
+        let search_term = format!("%{}%", search_query.to_lowercase());
+        query = query
+            .bind(search_term.clone())
+            .bind(search_term.clone())
+            .bind(search_term);
+    }
+
+    let mut recipes = query.fetch_all(pool).await?;
+    recipes.sort_by(|a, b| normalize_for_sort(&a.title).cmp(&normalize_for_sort(&b.title)));
+
+    Ok(recipes)
+}
+
 /// Löscht ein Rezept anhand seiner ID. Gibt `RowNotFound` zurück, wenn die ID nicht existiert.
 pub async fn delete_recipe(pool: &SqlitePool, id: i64) -> Result<(), sqlx::Error> {
     let rows_affected = sqlx::query("DELETE FROM recipes WHERE id = ?1")
@@ -574,6 +631,219 @@ mod tests {
 
         let results = search_recipes(&pool, "bolognese").await.unwrap();
         assert_eq!(results.len(), 1, "Rezept sollte nur einmal erscheinen");
+    }
+
+    #[tokio::test]
+    async fn filter_by_single_category_returns_matching_recipes() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Vollkornbrot".to_string(),
+                categories: vec!["Brot".to_string()],
+                ingredients: None,
+                instructions: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Spaghetti".to_string(),
+                categories: vec!["Mittagessen".to_string()],
+                ingredients: None,
+                instructions: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        let results = filter_recipes_by_categories(&pool, &["Brot".to_string()], "")
+            .await
+            .unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "Vollkornbrot");
+    }
+
+    #[tokio::test]
+    async fn filter_by_multiple_categories_uses_or_logic() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Käsekuchen".to_string(),
+                categories: vec!["Kuchen".to_string()],
+                ingredients: None,
+                instructions: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Partybrot".to_string(),
+                categories: vec!["Brot".to_string(), "Party".to_string()],
+                ingredients: None,
+                instructions: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Spaghetti".to_string(),
+                categories: vec!["Mittagessen".to_string()],
+                ingredients: None,
+                instructions: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        let results =
+            filter_recipes_by_categories(&pool, &["Kuchen".to_string(), "Brot".to_string()], "")
+                .await
+                .unwrap();
+
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert!(
+            titles.contains(&"Käsekuchen"),
+            "Käsekuchen sollte enthalten sein"
+        );
+        assert!(
+            titles.contains(&"Partybrot"),
+            "Partybrot sollte enthalten sein"
+        );
+        assert!(
+            !titles.contains(&"Spaghetti"),
+            "Spaghetti sollte nicht enthalten sein"
+        );
+    }
+
+    #[tokio::test]
+    async fn filter_returns_empty_for_category_without_recipes() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Brot".to_string(),
+                categories: vec!["Brot".to_string()],
+                ingredients: None,
+                instructions: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        let results = filter_recipes_by_categories(&pool, &["Snacks".to_string()], "")
+            .await
+            .unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[tokio::test]
+    async fn filter_combined_with_search_uses_and_logic() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Dinkelbrot".to_string(),
+                categories: vec!["Brot".to_string()],
+                ingredients: None,
+                instructions: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Roggenbrot".to_string(),
+                categories: vec!["Brot".to_string()],
+                ingredients: None,
+                instructions: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        let results = filter_recipes_by_categories(&pool, &["Brot".to_string()], "dinkel")
+            .await
+            .unwrap();
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "Dinkelbrot");
+    }
+
+    #[tokio::test]
+    async fn filter_with_no_categories_returns_all_recipes() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        for title in ["Apfelkuchen", "Bolognese", "Zupfbrot"] {
+            create_recipe(
+                &pool,
+                &CreateRecipe {
+                    title: title.to_string(),
+                    categories: vec!["Mittagessen".to_string()],
+                    ingredients: None,
+                    instructions: None,
+                },
+            )
+            .await
+            .unwrap();
+        }
+
+        let results = filter_recipes_by_categories(&pool, &[], "").await.unwrap();
+        assert_eq!(results.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn filter_result_is_alphabetically_sorted() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        for title in ["Zupfbrot", "Apfelbrot", "Mischbrot"] {
+            create_recipe(
+                &pool,
+                &CreateRecipe {
+                    title: title.to_string(),
+                    categories: vec!["Brot".to_string()],
+                    ingredients: None,
+                    instructions: None,
+                },
+            )
+            .await
+            .unwrap();
+        }
+
+        let results = filter_recipes_by_categories(&pool, &["Brot".to_string()], "")
+            .await
+            .unwrap();
+
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert_eq!(titles, vec!["Apfelbrot", "Mischbrot", "Zupfbrot"]);
     }
 
     #[tokio::test]

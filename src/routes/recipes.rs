@@ -1,14 +1,14 @@
 use crate::error::AppError;
 use crate::models::{
-    create_recipe, delete_recipe, get_recipe_by_id, search_recipes, update_recipe, CreateRecipe,
-    Recipe, UpdateRecipe, VALID_CATEGORIES,
+    create_recipe, delete_recipe, filter_recipes_by_categories, get_recipe_by_id, update_recipe,
+    CreateRecipe, Recipe, UpdateRecipe, VALID_CATEGORIES,
 };
 use crate::templates::{
-    ConfirmDeleteTemplate, IndexTemplate, NotFoundTemplate, RecipeDetailTemplate,
-    RecipeFormTemplate, RecipeListItem,
+    CategoryFilterItem, ConfirmDeleteTemplate, IndexTemplate, NotFoundTemplate,
+    RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem,
 };
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Path, Query, RawQuery, State},
     http::StatusCode,
     response::{Html, IntoResponse, Redirect},
 };
@@ -25,6 +25,22 @@ pub struct RecipeDetailQuery {
 pub struct IndexQuery {
     pub deleted: Option<String>,
     pub q: Option<String>,
+}
+
+/// Extrahiert alle `kategorie`-Parameter aus dem Raw-Query-String.
+/// Unterstützt Mehrfachwerte: `?kategorie=Brot&kategorie=Kuchen`.
+fn extract_kategorie_params(raw_query: &str) -> Vec<String> {
+    raw_query
+        .split('&')
+        .filter_map(|pair| {
+            let (key, value) = pair.split_once('=')?;
+            if key == "kategorie" {
+                urlencoding::decode(value).ok().map(|v| v.into_owned())
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 /// Formatiert einen SQLite-Timestamp (z.B. "2026-03-27 10:45:00") in ein deutsches Datumsformat ("27.03.2026").
@@ -74,15 +90,94 @@ fn parse_form_data(body: &[u8]) -> std::collections::HashMap<String, Vec<String>
     params
 }
 
+/// Baut die Toggle-URL für eine Kategorie: aktiv→entfernen, inaktiv→hinzufügen.
+/// Bestehender Suchbegriff bleibt erhalten.
+fn build_category_toggle_url(
+    category: &str,
+    is_active: bool,
+    active_categories: &[String],
+    search_query: &str,
+) -> String {
+    let mut params: Vec<String> = Vec::new();
+
+    if !search_query.is_empty() {
+        params.push(format!("q={}", urlencoding::encode(search_query)));
+    }
+
+    for cat in active_categories {
+        if is_active && cat == category {
+            continue; // aktive Kategorie beim Klick entfernen
+        }
+        params.push(format!("kategorie={}", urlencoding::encode(cat)));
+    }
+
+    if !is_active {
+        params.push(format!("kategorie={}", urlencoding::encode(category)));
+    }
+
+    if params.is_empty() {
+        "/".to_string()
+    } else {
+        format!("/?{}", params.join("&"))
+    }
+}
+
+/// Erstellt alle CategoryFilterItems für alle gültigen Kategorien.
+fn build_category_filters(
+    active_categories: &[String],
+    search_query: &str,
+) -> Vec<CategoryFilterItem> {
+    VALID_CATEGORIES
+        .iter()
+        .map(|&cat| {
+            let is_active = active_categories.iter().any(|a| a == cat);
+            let toggle_url =
+                build_category_toggle_url(cat, is_active, active_categories, search_query);
+            CategoryFilterItem {
+                name: cat.to_string(),
+                is_active,
+                toggle_url,
+            }
+        })
+        .collect()
+}
+
+/// Erstellt die URL zum Zurücksetzen aller Kategorie-Filter (Suchbegriff bleibt erhalten).
+fn build_reset_url(search_query: &str) -> String {
+    if search_query.is_empty() {
+        "/".to_string()
+    } else {
+        format!("/?q={}", urlencoding::encode(search_query))
+    }
+}
+
+/// Normalisiert Kategorienamen aus URL-Parametern auf die kanonische Schreibweise aus VALID_CATEGORIES.
+/// Ungültige Kategorien werden stillschweigend ignoriert.
+fn normalize_categories(raw: Vec<String>) -> Vec<String> {
+    raw.into_iter()
+        .filter_map(|input| {
+            VALID_CATEGORIES
+                .iter()
+                .find(|&&valid| valid.to_lowercase() == input.to_lowercase())
+                .map(|&valid| valid.to_string())
+        })
+        .collect()
+}
+
 /// Zeigt die Liste aller Rezepte. Unterstützt `?deleted=Titel` für Erfolgsmeldungen nach dem Löschen.
 /// Unterstützt `?q=suchbegriff` für die Volltextsuche in Titel, Zutaten und Anleitung.
+/// Unterstützt `?kategorie=Brot&kategorie=Kuchen` für den Kategorie-Filter (ODER-Logik).
 pub async fn index(
     State(pool): State<Arc<SqlitePool>>,
     Query(query): Query<IndexQuery>,
+    RawQuery(raw_query): RawQuery,
 ) -> Result<impl IntoResponse, AppError> {
     let search_query = query.q.unwrap_or_default();
+    let raw = raw_query.unwrap_or_default();
+    let active_categories = normalize_categories(extract_kategorie_params(&raw));
 
-    let recipes: Vec<Recipe> = search_recipes(&pool, &search_query).await?;
+    let recipes: Vec<Recipe> =
+        filter_recipes_by_categories(&pool, &active_categories, &search_query).await?;
 
     let recipe_items: Vec<RecipeListItem> = recipes
         .into_iter()
@@ -93,10 +188,16 @@ pub async fn index(
         })
         .collect();
 
+    let category_filters = build_category_filters(&active_categories, &search_query);
+    let reset_categories_url = build_reset_url(&search_query);
+
     let template = IndexTemplate {
         recipes: recipe_items,
         deleted_title: query.deleted,
         search_query,
+        active_categories,
+        category_filters,
+        reset_categories_url,
     };
     Ok(Html(render_template(template)?))
 }

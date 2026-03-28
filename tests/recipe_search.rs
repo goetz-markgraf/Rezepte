@@ -124,12 +124,17 @@ async fn search_finds_recipe_by_ingredients() {
     // When: GET /?q=dinkel
     let (_status, body) = get_body(app, "/?q=dinkel").await;
 
-    // Then: Pfannkuchen (mit Dinkel) sichtbar, Brot nicht
+    // Then: Pfannkuchen (mit Dinkel) sichtbar; Brot-Rezept nicht als Rezept-Titel in Ergebnisliste.
+    // Hinweis: "Brot" erscheint als Kategorie-Filter-Button — deshalb prüfen wir
+    // den Rezept-Titel als H2-Element, der nur in der Ergebnisliste vorkommt.
     assert!(
         body.contains("Pfannkuchen"),
         "Pfannkuchen sollte gefunden werden (Dinkel in Zutaten)"
     );
-    assert!(!body.contains("Brot"), "Brot sollte nicht gefunden werden");
+    assert!(
+        !body.contains("<h2>Brot</h2>"),
+        "Brot-Rezept sollte nicht als Ergebnis erscheinen"
+    );
 }
 
 #[tokio::test]
