@@ -78,6 +78,7 @@
 (function() {
     var textInput = document.getElementById('planned_date');
     var datePicker = document.getElementById('date-picker');
+    var calBtn = document.querySelector('.date-picker-btn');
     if (!textInput || !datePicker) return;
 
     datePicker.addEventListener('change', function() {
@@ -90,7 +91,19 @@
             var year = parts[0];
             textInput.value = day + '.' + month + '.' + year;
         }
+        // Fokus zurück ins Textfeld — schließt den Picker nach Datumsauswahl
+        textInput.focus();
     });
+
+    // TAB vom Kalender-Button weg: Fokus ins Textfeld, damit der Picker nicht offen bleibt
+    if (calBtn) {
+        calBtn.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                // Kleines Timeout damit der Browser den nativen Picker zuerst verarbeitet
+                setTimeout(function() { textInput.focus(); }, 0);
+            }
+        });
+    }
 })();
 </script>
 {% endblock %}
