@@ -84,9 +84,11 @@ Prüfe das Review-Dokument:
 
 ---
 
-## Phase 5 (bedingt): Dev Rework
+## Phase 5 (bedingt): Dev Rework + erneutes Review (Schleife)
 
 Nur ausführen, wenn das Review Prio-1-Probleme enthält.
+
+### Schritt 5a: Rework
 
 Starte einen Subagenten (Agent-Tool) mit diesen Anweisungen:
 
@@ -97,6 +99,26 @@ Der Subagent soll:
 - alle Prio-1-Punkte aus dem Review beheben
 - alle Qualitätschecks durchführen
 - mit `git commit -m "story $ARGUMENTS: rework"` committen
+
+Warte auf Abschluss, bevor du weitermachst.
+
+### Schritt 5b: Erneutes Review
+
+Starte erneut einen Subagenten (Agent-Tool) mit diesen Anweisungen:
+
+> Lies `.claude/commands/review-story.md` und führe die Anweisungen aus.
+> Das Story-Verzeichnis ist: `docs/$ARGUMENTS-story-name/`
+
+Der Subagent soll:
+- alle Qualitätschecks durchführen
+- `docs/$ARGUMENTS-story-name/review.md` aktualisieren
+- mit `git commit -m "story $ARGUMENTS: review"` committen
+
+Warte auf Abschluss und lies `review.md`.
+
+**Prüfe erneut:**
+- Enthält es noch **Prio-1-Punkte**? → Wiederhole Phase 5 (Rework + Review).
+- Keine Prio-1-Punkte mehr? → Weiter zum Abschlussbericht.
 
 ---
 

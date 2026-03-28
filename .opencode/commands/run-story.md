@@ -76,9 +76,11 @@ Prüfe das Review-Dokument:
 
 ---
 
-## Phase 5 (bedingt): Dev Rework
+## Phase 5 (bedingt): Dev Rework + erneutes Review (Schleife)
 
 Nur ausführen, wenn das Review Prio-1-Probleme enthält.
+
+### Schritt 5a: Rework
 
 Starte einen Subagenten mit den Anweisungen aus `.opencode/commands/rework.md`.
 
@@ -88,6 +90,25 @@ Der Subagent:
 - behebt alle Prio-1-Punkte aus dem Review
 - führt alle Qualitätschecks durch
 - committed mit `git commit -m "story $1: rework"`
+
+Warte auf Abschluss, bevor du weitermachst.
+
+### Schritt 5b: Erneutes Review
+
+Starte erneut einen Subagenten mit den Anweisungen aus `.opencode/commands/review-implementation.md`.
+
+Übergib als Argument das Story-Verzeichnis (z.B. `docs/$1-story-name/`).
+
+Der Subagent:
+- führt alle Qualitätschecks durch
+- aktualisiert `docs/$1-story-name/review.md`
+- committed mit `git commit -m "story $1: review"`
+
+Warte auf Abschluss und lies `review.md`.
+
+**Prüfe erneut:**
+- Enthält es noch **Prio-1-Punkte**? → Wiederhole Phase 5 (Rework + Review).
+- Keine Prio-1-Punkte mehr? → Weiter zum Abschlussbericht.
 
 ---
 
