@@ -50,6 +50,9 @@ async fn get_body(app: axum::Router, uri: &str) -> (StatusCode, String) {
 // Tests für format_date
 #[test]
 fn format_date_formats_correctly() {
+    // Given: Gültige SQLite-Datumsstrings
+    // When: format_date aufgerufen wird
+    // Then: Datum wird im deutschen Format (TT.MM.JJJJ) zurückgegeben
     use rezepte::routes::recipes::format_date;
     assert_eq!(format_date("2026-03-27 10:45:00"), "27.03.2026");
     assert_eq!(format_date("2026-01-01"), "01.01.2026");
@@ -58,6 +61,9 @@ fn format_date_formats_correctly() {
 
 #[test]
 fn format_date_handles_invalid_input() {
+    // Given: Ungültige oder leere Datumsstrings
+    // When: format_date aufgerufen wird
+    // Then: Der Eingabewert wird unverändert zurückgegeben
     use rezepte::routes::recipes::format_date;
     let input = "ungültiges-datum";
     assert_eq!(format_date(input), input);
@@ -68,17 +74,21 @@ fn format_date_handles_invalid_input() {
 // Handler-Tests
 #[tokio::test]
 async fn show_recipe_displays_title() {
+    // Given: Ein Rezept mit dem Titel "Schnitzel mit Pommes" wurde erstellt
     let (app, _temp) = setup_test_app().await;
     let id = create_test_recipe(&app, "title=Schnitzel+mit+Pommes&categories=Mittagessen").await;
 
+    // When: GET /recipes/{id} aufgerufen wird
     let (status, body) = get_body(app, &format!("/recipes/{}", id)).await;
 
+    // Then: HTTP 200, Titel im Body enthalten
     assert_eq!(status, StatusCode::OK);
     assert!(body.contains("Schnitzel mit Pommes"));
 }
 
 #[tokio::test]
 async fn show_recipe_displays_ingredients_section() {
+    // Given: Ein Rezept mit Zutaten wurde erstellt
     let (app, _temp) = setup_test_app().await;
     let id = create_test_recipe(
         &app,
@@ -86,8 +96,10 @@ async fn show_recipe_displays_ingredients_section() {
     )
     .await;
 
+    // When: GET /recipes/{id} aufgerufen wird
     let (status, body) = get_body(app, &format!("/recipes/{}", id)).await;
 
+    // Then: HTTP 200, Zutaten-Sektion und Zutat im Body enthalten
     assert_eq!(status, StatusCode::OK);
     assert!(body.contains("Zutaten"));
     assert!(body.contains("Mehl"));
@@ -95,41 +107,53 @@ async fn show_recipe_displays_ingredients_section() {
 
 #[tokio::test]
 async fn show_recipe_hides_ingredients_when_empty() {
+    // Given: Ein Rezept ohne Zutaten wurde erstellt
     let (app, _temp) = setup_test_app().await;
     let id = create_test_recipe(&app, "title=Ohnerezept&categories=Brot").await;
 
+    // When: GET /recipes/{id} aufgerufen wird
     let (status, body) = get_body(app, &format!("/recipes/{}", id)).await;
 
+    // Then: HTTP 200, Zutaten-Sektion wird nicht gerendert
     assert_eq!(status, StatusCode::OK);
     assert!(!body.contains(r#"class="ingredients""#));
 }
 
 #[tokio::test]
 async fn show_recipe_hides_instructions_when_empty() {
+    // Given: Ein Rezept ohne Anleitung wurde erstellt
     let (app, _temp) = setup_test_app().await;
     let id = create_test_recipe(&app, "title=Ohnerezept&categories=Brot").await;
 
+    // When: GET /recipes/{id} aufgerufen wird
     let (status, body) = get_body(app, &format!("/recipes/{}", id)).await;
 
+    // Then: HTTP 200, Anleitungs-Sektion wird nicht gerendert
     assert_eq!(status, StatusCode::OK);
     assert!(!body.contains(r#"class="instructions""#));
 }
 
 #[tokio::test]
 async fn show_recipe_returns_404_for_missing_id() {
+    // Given: ID 99999 existiert nicht
     let (app, _temp) = setup_test_app().await;
 
+    // When: GET /recipes/99999 aufgerufen wird
     let (status, _body) = get_body(app, "/recipes/99999").await;
 
+    // Then: HTTP 404
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
 
 #[tokio::test]
 async fn show_recipe_404_contains_back_link() {
+    // Given: ID 99999 existiert nicht
     let (app, _temp) = setup_test_app().await;
 
+    // When: GET /recipes/99999 aufgerufen wird
     let (status, body) = get_body(app, "/recipes/99999").await;
 
+    // Then: HTTP 404, Seite enthält Link zurück zur Übersicht
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert!(
         body.contains("Zurück zur Übersicht"),
@@ -143,11 +167,14 @@ async fn show_recipe_404_contains_back_link() {
 
 #[tokio::test]
 async fn show_recipe_displays_success_flash() {
+    // Given: Ein Rezept wurde erstellt
     let (app, _temp) = setup_test_app().await;
     let id = create_test_recipe(&app, "title=Testrezept&categories=Mittagessen").await;
 
+    // When: GET /recipes/{id}?success=1 aufgerufen wird
     let (status, body) = get_body(app, &format!("/recipes/{}?success=1", id)).await;
 
+    // Then: HTTP 200, Erfolgsmeldung "Rezept erfolgreich aktualisiert" sichtbar
     assert_eq!(status, StatusCode::OK);
     assert!(
         body.contains("success"),
@@ -158,11 +185,14 @@ async fn show_recipe_displays_success_flash() {
 
 #[tokio::test]
 async fn show_recipe_no_success_flash_without_param() {
+    // Given: Ein Rezept wurde erstellt
     let (app, _temp) = setup_test_app().await;
     let id = create_test_recipe(&app, "title=Testrezept&categories=Mittagessen").await;
 
+    // When: GET /recipes/{id} ohne ?success=1 aufgerufen wird
     let (_status, body) = get_body(app, &format!("/recipes/{}", id)).await;
 
+    // Then: Kein Erfolgs-Flash-Banner in der Seite
     assert!(
         !body.contains("Rezept erfolgreich aktualisiert"),
         "Seite sollte ohne ?success=1 keinen Flash-Banner zeigen"
@@ -171,11 +201,14 @@ async fn show_recipe_no_success_flash_without_param() {
 
 #[tokio::test]
 async fn show_recipe_displays_edit_link() {
+    // Given: Ein Rezept wurde erstellt
     let (app, _temp) = setup_test_app().await;
     let id = create_test_recipe(&app, "title=Testrezept&categories=Mittagessen").await;
 
+    // When: GET /recipes/{id} aufgerufen wird
     let (_status, body) = get_body(app, &format!("/recipes/{}", id)).await;
 
+    // Then: Seite enthält den Link zur Bearbeitungsseite
     assert!(
         body.contains(&format!("/recipes/{}/edit", id)),
         "Seite sollte einen Link zum Bearbeiten enthalten"
@@ -184,11 +217,14 @@ async fn show_recipe_displays_edit_link() {
 
 #[tokio::test]
 async fn show_recipe_displays_delete_link() {
+    // Given: Ein Rezept wurde erstellt
     let (app, _temp) = setup_test_app().await;
     let id = create_test_recipe(&app, "title=Testrezept&categories=Mittagessen").await;
 
+    // When: GET /recipes/{id} aufgerufen wird
     let (_status, body) = get_body(app, &format!("/recipes/{}", id)).await;
 
+    // Then: Seite enthält den Link zur Lösch-Bestätigungsseite
     assert!(
         body.contains(&format!("/recipes/{}/confirm-delete", id)),
         "Seite sollte einen Link zum Löschen enthalten"
@@ -197,13 +233,14 @@ async fn show_recipe_displays_delete_link() {
 
 #[tokio::test]
 async fn show_recipe_displays_formatted_date() {
+    // Given: Ein Rezept wurde erstellt (Datum wird automatisch gesetzt)
     let (app, _temp) = setup_test_app().await;
     let id = create_test_recipe(&app, "title=Datumstest&categories=Mittagessen").await;
 
+    // When: GET /recipes/{id} aufgerufen wird
     let (_status, body) = get_body(app, &format!("/recipes/{}", id)).await;
 
-    // The date should be in German format (DD.MM.YYYY), not raw SQLite format (YYYY-MM-DD ...)
-    // Check that the page contains a date in DD.MM.YYYY format
+    // Then: Datum wird im deutschen Format (TT.MM.JJJJ) angezeigt, nicht im SQLite-Rohformat
     let has_german_date = body
         .split_whitespace()
         .any(|word| word.chars().filter(|&c| c == '.').count() == 2);

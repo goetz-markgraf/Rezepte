@@ -3,10 +3,10 @@ use tempfile::NamedTempFile;
 
 #[tokio::test]
 async fn health_check_returns_ok() {
-    // Start test server
+    // Given: Die App läuft auf einem zufälligen Port
     let addr = spawn_app().await;
 
-    // Make HTTP request
+    // When: GET /health aufgerufen wird
     let client = reqwest::Client::new();
     let response = client
         .get(format!("http://{}/health", addr))
@@ -14,7 +14,7 @@ async fn health_check_returns_ok() {
         .await
         .expect("Failed to execute request");
 
-    // Assert
+    // Then: HTTP 200 und Body "OK"
     assert!(response.status().is_success());
     let body = response.text().await.expect("Failed to read body");
     assert_eq!(body, "OK");

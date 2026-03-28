@@ -13,8 +13,10 @@ async fn setup_test_app() -> (axum::Router, tempfile::NamedTempFile) {
 
 #[tokio::test]
 async fn should_show_recipe_form() {
+    // Given: Eine leere Datenbank
     let (app, _temp) = setup_test_app().await;
 
+    // When: GET /recipes/new aufgerufen wird
     let response = app
         .oneshot(
             Request::builder()
@@ -25,13 +27,16 @@ async fn should_show_recipe_form() {
         .await
         .unwrap();
 
+    // Then: HTTP 200
     assert_eq!(response.status(), StatusCode::OK);
 }
 
 #[tokio::test]
 async fn should_create_recipe_successfully() {
+    // Given: Eine leere Datenbank
     let (app, _temp) = setup_test_app().await;
 
+    // When: POST /recipes mit Titel und Kategorie gesendet wird
     let form_data = "title=Test%20Rezept&categories=Mittagessen";
 
     let request = Request::builder()
@@ -43,6 +48,7 @@ async fn should_create_recipe_successfully() {
 
     let response = app.oneshot(request).await.unwrap();
 
+    // Then: Redirect auf die neue Detailseite
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
     let location = response.headers().get("location").unwrap();
     assert!(location.to_str().unwrap().starts_with("/recipes/"));
@@ -50,8 +56,10 @@ async fn should_create_recipe_successfully() {
 
 #[tokio::test]
 async fn should_validate_required_fields() {
+    // Given: Eine leere Datenbank
     let (app, _temp) = setup_test_app().await;
 
+    // When: POST /recipes mit leerem Titel und leerer Kategorie gesendet wird
     let form_data = "title=&categories=";
 
     let request = Request::builder()
@@ -63,14 +71,15 @@ async fn should_validate_required_fields() {
 
     let response = app.oneshot(request).await.unwrap();
 
+    // Then: HTTP 400 Bad Request
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]
 async fn should_show_recipe_detail() {
+    // Given: Ein Rezept wurde erstellt
     let (app, _temp) = setup_test_app().await;
 
-    // Create a recipe first
     let form_data = "title=Test%20Rezept&categories=Mittagessen&ingredients=Test%20Zutaten&instructions=Test%20Anleitung";
 
     let create_request = Request::builder()
@@ -89,7 +98,7 @@ async fn should_show_recipe_detail() {
         .unwrap();
     let id: i64 = location.split('/').next_back().unwrap().parse().unwrap();
 
-    // Now get the detail page
+    // When: GET /recipes/{id} aufgerufen wird
     let response = app
         .oneshot(
             Request::builder()
@@ -100,17 +109,21 @@ async fn should_show_recipe_detail() {
         .await
         .unwrap();
 
+    // Then: HTTP 200
     assert_eq!(response.status(), StatusCode::OK);
 }
 
 #[tokio::test]
 async fn should_show_index_page() {
+    // Given: Eine leere Datenbank
     let (app, _temp) = setup_test_app().await;
 
+    // When: GET / aufgerufen wird
     let response = app
         .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
         .await
         .unwrap();
 
+    // Then: HTTP 200
     assert_eq!(response.status(), StatusCode::OK);
 }

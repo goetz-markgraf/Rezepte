@@ -54,15 +54,25 @@ async fn create_recipe_with_title(app: &axum::Router, title: &str, category: &st
 
 #[tokio::test]
 async fn index_returns_200() {
+    // Given: Eine leere Datenbank
     let (app, _temp) = setup_test_app().await;
+
+    // When: GET / aufgerufen wird
     let (status, _body) = get_body(app, "/").await;
+
+    // Then: HTTP 200
     assert_eq!(status, StatusCode::OK);
 }
 
 #[tokio::test]
 async fn index_shows_h1_rezepte() {
+    // Given: Eine leere Datenbank
     let (app, _temp) = setup_test_app().await;
+
+    // When: GET / aufgerufen wird
     let (_status, body) = get_body(app, "/").await;
+
+    // Then: H1 enthält genau "Rezepte"
     assert!(
         body.contains("<h1>Rezepte</h1>"),
         "H1 sollte genau 'Rezepte' enthalten, nicht 'Rezepte Übersicht'"
@@ -71,12 +81,16 @@ async fn index_shows_h1_rezepte() {
 
 #[tokio::test]
 async fn index_shows_all_recipes() {
+    // Given: Drei Rezepte wurden erstellt
     let (app, _temp) = setup_test_app().await;
     create_recipe_with_title(&app, "Apfelkuchen", "Kuchen").await;
     create_recipe_with_title(&app, "Bolognese", "Mittagessen").await;
     create_recipe_with_title(&app, "Zupfbrot", "Brot").await;
 
+    // When: GET / aufgerufen wird
     let (_status, body) = get_body(app, "/").await;
+
+    // Then: Alle drei Rezepte sind im Body enthalten
     assert!(
         body.contains("Apfelkuchen"),
         "Apfelkuchen sollte in der Liste sein"
@@ -93,11 +107,15 @@ async fn index_shows_all_recipes() {
 
 #[tokio::test]
 async fn index_shows_recipes_in_alphabetical_order() {
+    // Given: Zwei Rezepte in umgekehrter alphabetischer Reihenfolge erstellt
     let (app, _temp) = setup_test_app().await;
     create_recipe_with_title(&app, "Zupfbrot", "Brot").await;
     create_recipe_with_title(&app, "Apfelkuchen", "Kuchen").await;
 
+    // When: GET / aufgerufen wird
     let (_status, body) = get_body(app, "/").await;
+
+    // Then: Apfelkuchen (A) erscheint vor Zupfbrot (Z)
     let pos_apfel = body.find("Apfelkuchen").unwrap();
     let pos_zupf = body.find("Zupfbrot").unwrap();
     assert!(
@@ -108,8 +126,13 @@ async fn index_shows_recipes_in_alphabetical_order() {
 
 #[tokio::test]
 async fn index_shows_empty_state_message() {
+    // Given: Eine leere Datenbank
     let (app, _temp) = setup_test_app().await;
+
+    // When: GET / aufgerufen wird
     let (_status, body) = get_body(app, "/").await;
+
+    // Then: Leerzustand-Meldung "Noch keine Rezepte" wird angezeigt
     assert!(
         body.contains("Noch keine Rezepte"),
         "Leerzustand sollte 'Noch keine Rezepte' anzeigen"
@@ -118,8 +141,13 @@ async fn index_shows_empty_state_message() {
 
 #[tokio::test]
 async fn index_shows_create_link_in_empty_state() {
+    // Given: Eine leere Datenbank
     let (app, _temp) = setup_test_app().await;
+
+    // When: GET / aufgerufen wird
     let (_status, body) = get_body(app, "/").await;
+
+    // Then: Link zu /recipes/new ist im Leerzustand enthalten
     assert!(
         body.contains("/recipes/new"),
         "Leerzustand sollte Link zu /recipes/new enthalten"
@@ -128,8 +156,13 @@ async fn index_shows_create_link_in_empty_state() {
 
 #[tokio::test]
 async fn index_shows_new_recipe_button() {
+    // Given: Eine leere Datenbank
     let (app, _temp) = setup_test_app().await;
+
+    // When: GET / aufgerufen wird
     let (_status, body) = get_body(app, "/").await;
+
+    // Then: "Neues Rezept"-Button mit Link zu /recipes/new ist vorhanden
     assert!(
         body.contains("/recipes/new"),
         "'Neues Rezept'-Button sollte auf der Seite vorhanden sein"
@@ -142,10 +175,14 @@ async fn index_shows_new_recipe_button() {
 
 #[tokio::test]
 async fn index_shows_category_for_recipe() {
+    // Given: Ein Rezept mit Kategorie "Mittagessen" wurde erstellt
     let (app, _temp) = setup_test_app().await;
     create_recipe_with_title(&app, "Gulasch", "Mittagessen").await;
 
+    // When: GET / aufgerufen wird
     let (_status, body) = get_body(app, "/").await;
+
+    // Then: Kategorie "Mittagessen" ist im Listeneintrag sichtbar
     assert!(
         body.contains("Mittagessen"),
         "Kategorie 'Mittagessen' sollte im Listeneintrag sichtbar sein"
@@ -154,10 +191,14 @@ async fn index_shows_category_for_recipe() {
 
 #[tokio::test]
 async fn index_recipe_links_to_detail() {
+    // Given: Ein Rezept wurde erstellt
     let (app, _temp) = setup_test_app().await;
     let id = create_recipe_with_title(&app, "Pfannkuchen", "Snacks").await;
 
+    // When: GET / aufgerufen wird
     let (_status, body) = get_body(app, "/").await;
+
+    // Then: Listeneintrag enthält Link zur Detailseite /recipes/{id}
     let expected_link = format!("/recipes/{}", id);
     assert!(
         body.contains(&expected_link),

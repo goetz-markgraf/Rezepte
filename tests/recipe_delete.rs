@@ -39,9 +39,11 @@ async fn create_test_recipe(app: &axum::Router) -> i64 {
 
 #[tokio::test]
 async fn confirm_delete_shows_recipe_title() {
+    // Given: Ein Testrezept wurde erstellt
     let (app, _temp) = setup_test_app().await;
     let id = create_test_recipe(&app).await;
 
+    // When: GET /recipes/{id}/confirm-delete aufgerufen wird
     let response = app
         .clone()
         .oneshot(
@@ -53,6 +55,7 @@ async fn confirm_delete_shows_recipe_title() {
         .await
         .unwrap();
 
+    // Then: HTTP 200, Seite zeigt Rezepttitel, Löschen- und Abbrechen-Button
     assert_eq!(response.status(), StatusCode::OK);
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
@@ -64,8 +67,10 @@ async fn confirm_delete_shows_recipe_title() {
 
 #[tokio::test]
 async fn confirm_delete_returns_404_for_nonexistent() {
+    // Given: ID 99999 existiert nicht
     let (app, _temp) = setup_test_app().await;
 
+    // When: GET /recipes/99999/confirm-delete aufgerufen wird
     let response = app
         .oneshot(
             Request::builder()
@@ -76,14 +81,17 @@ async fn confirm_delete_returns_404_for_nonexistent() {
         .await
         .unwrap();
 
+    // Then: HTTP 404
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
 }
 
 #[tokio::test]
 async fn delete_recipe_removes_from_db() {
+    // Given: Ein Testrezept wurde erstellt
     let (app, _temp) = setup_test_app().await;
     let id = create_test_recipe(&app).await;
 
+    // When: POST /recipes/{id}/delete aufgerufen wird
     let response = app
         .clone()
         .oneshot(
@@ -96,6 +104,7 @@ async fn delete_recipe_removes_from_db() {
         .await
         .unwrap();
 
+    // Then: Redirect zur Startseite mit ?deleted=, Rezept ist nicht mehr abrufbar
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
     let location = response
         .headers()
@@ -105,7 +114,6 @@ async fn delete_recipe_removes_from_db() {
         .unwrap();
     assert!(location.starts_with("/?deleted="));
 
-    // Verify recipe is gone
     let detail_response = app
         .oneshot(
             Request::builder()
@@ -120,8 +128,10 @@ async fn delete_recipe_removes_from_db() {
 
 #[tokio::test]
 async fn delete_recipe_returns_404_for_nonexistent() {
+    // Given: ID 99999 existiert nicht
     let (app, _temp) = setup_test_app().await;
 
+    // When: POST /recipes/99999/delete aufgerufen wird
     let response = app
         .oneshot(
             Request::builder()
@@ -133,5 +143,6 @@ async fn delete_recipe_returns_404_for_nonexistent() {
         .await
         .unwrap();
 
+    // Then: HTTP 404
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
 }
