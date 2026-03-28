@@ -105,6 +105,34 @@ pub async fn update_recipe(
     Ok(())
 }
 
+/// Durchsucht alle Rezepte nach einem Suchbegriff in Titel, Zutaten und Anleitung.
+/// Die Suche ist case-insensitiv. Bei leerem Suchbegriff werden alle Rezepte zurückgegeben.
+/// Ergebnisse sind alphabetisch sortiert (gleiche Logik wie `get_all_recipes`).
+pub async fn search_recipes(pool: &SqlitePool, query: &str) -> Result<Vec<Recipe>, sqlx::Error> {
+    if query.trim().is_empty() {
+        return get_all_recipes(pool).await;
+    }
+
+    let term = format!("%{}%", query.to_lowercase());
+
+    let mut recipes = sqlx::query_as::<_, Recipe>(
+        r#"
+        SELECT id, title, categories, ingredients, instructions, created_at, updated_at
+        FROM recipes
+        WHERE LOWER(title) LIKE ?1
+           OR LOWER(ingredients) LIKE ?1
+           OR LOWER(instructions) LIKE ?1
+        "#,
+    )
+    .bind(&term)
+    .fetch_all(pool)
+    .await?;
+
+    recipes.sort_by(|a, b| normalize_for_sort(&a.title).cmp(&normalize_for_sort(&b.title)));
+
+    Ok(recipes)
+}
+
 /// Löscht ein Rezept anhand seiner ID. Gibt `RowNotFound` zurück, wenn die ID nicht existiert.
 pub async fn delete_recipe(pool: &SqlitePool, id: i64) -> Result<(), sqlx::Error> {
     let rows_affected = sqlx::query("DELETE FROM recipes WHERE id = ?1")
@@ -386,6 +414,166 @@ mod tests {
 
         let result = delete_recipe(&pool, 9999).await;
         assert!(matches!(result, Err(sqlx::Error::RowNotFound)));
+    }
+
+    #[tokio::test]
+    async fn search_recipes_finds_match_in_title() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Spaghetti Bolognese".to_string(),
+                categories: vec!["Mittagessen".to_string()],
+                ingredients: Some("Hackfleisch, Tomaten".to_string()),
+                instructions: Some("Sauce kochen".to_string()),
+            },
+        )
+        .await
+        .unwrap();
+
+        let results = search_recipes(&pool, "bolognese").await.unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "Spaghetti Bolognese");
+    }
+
+    #[tokio::test]
+    async fn search_recipes_finds_match_in_ingredients() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Pfannkuchen".to_string(),
+                categories: vec!["Snacks".to_string()],
+                ingredients: Some("Dinkelvollkornmehl, Eier, Milch".to_string()),
+                instructions: Some("Teig mischen".to_string()),
+            },
+        )
+        .await
+        .unwrap();
+
+        let results = search_recipes(&pool, "dinkel").await.unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "Pfannkuchen");
+    }
+
+    #[tokio::test]
+    async fn search_recipes_finds_match_in_instructions() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Brot im Ofen".to_string(),
+                categories: vec!["Brot".to_string()],
+                ingredients: Some("Mehl, Hefe, Wasser".to_string()),
+                instructions: Some("Teig kneten und im Ofen backen".to_string()),
+            },
+        )
+        .await
+        .unwrap();
+
+        let results = search_recipes(&pool, "ofen").await.unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "Brot im Ofen");
+    }
+
+    #[tokio::test]
+    async fn search_recipes_is_case_insensitive() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Spaghetti Bolognese".to_string(),
+                categories: vec!["Mittagessen".to_string()],
+                ingredients: None,
+                instructions: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        let results = search_recipes(&pool, "BOLOGNESE").await.unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "Spaghetti Bolognese");
+    }
+
+    #[tokio::test]
+    async fn search_recipes_returns_empty_for_no_match() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Spaghetti Bolognese".to_string(),
+                categories: vec!["Mittagessen".to_string()],
+                ingredients: None,
+                instructions: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        let results = search_recipes(&pool, "xyzxyzxyz").await.unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[tokio::test]
+    async fn search_recipes_returns_all_for_empty_query() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        for title in ["Apfelkuchen", "Bolognese", "Zupfbrot"] {
+            create_recipe(
+                &pool,
+                &CreateRecipe {
+                    title: title.to_string(),
+                    categories: vec!["Mittagessen".to_string()],
+                    ingredients: None,
+                    instructions: None,
+                },
+            )
+            .await
+            .unwrap();
+        }
+
+        let results = search_recipes(&pool, "").await.unwrap();
+        assert_eq!(results.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn search_recipes_returns_recipe_only_once_even_if_match_in_multiple_fields() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Bolognese Rezept".to_string(),
+                categories: vec!["Mittagessen".to_string()],
+                ingredients: Some("Bolognese-Soße, Hackfleisch".to_string()),
+                instructions: Some("Bolognese zubereiten".to_string()),
+            },
+        )
+        .await
+        .unwrap();
+
+        let results = search_recipes(&pool, "bolognese").await.unwrap();
+        assert_eq!(results.len(), 1, "Rezept sollte nur einmal erscheinen");
     }
 
     #[tokio::test]

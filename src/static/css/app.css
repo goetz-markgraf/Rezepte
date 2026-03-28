@@ -388,3 +388,52 @@ pre {
 .star-empty {
     fill: none;
 }
+
+/* Suchfeld */
+.search-form {
+    margin-bottom: 1.5rem;
+}
+
+.search-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.search-input-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+input[type="search"] {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    min-height: 44px;
+}
+
+input[type="search"]:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 0;
+    border-color: var(--primary-color);
+}
+
+.search-no-results {
+    padding: 2rem 1rem;
+    color: #6b7280;
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+@media (max-width: 600px) {
+    .search-input-group {
+        flex-direction: column;
+    }
+
+    input[type="search"] {
+        width: 100%;
+    }
+}

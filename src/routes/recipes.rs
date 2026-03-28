@@ -1,6 +1,6 @@
 use crate::error::AppError;
 use crate::models::{
-    create_recipe, delete_recipe, get_all_recipes, get_recipe_by_id, update_recipe, CreateRecipe,
+    create_recipe, delete_recipe, get_recipe_by_id, search_recipes, update_recipe, CreateRecipe,
     Recipe, UpdateRecipe, VALID_CATEGORIES,
 };
 use crate::templates::{
@@ -24,6 +24,7 @@ pub struct RecipeDetailQuery {
 #[derive(Deserialize)]
 pub struct IndexQuery {
     pub deleted: Option<String>,
+    pub q: Option<String>,
 }
 
 /// Formatiert einen SQLite-Timestamp (z.B. "2026-03-27 10:45:00") in ein deutsches Datumsformat ("27.03.2026").
@@ -74,11 +75,14 @@ fn parse_form_data(body: &[u8]) -> std::collections::HashMap<String, Vec<String>
 }
 
 /// Zeigt die Liste aller Rezepte. Unterstützt `?deleted=Titel` für Erfolgsmeldungen nach dem Löschen.
+/// Unterstützt `?q=suchbegriff` für die Volltextsuche in Titel, Zutaten und Anleitung.
 pub async fn index(
     State(pool): State<Arc<SqlitePool>>,
     Query(query): Query<IndexQuery>,
 ) -> Result<impl IntoResponse, AppError> {
-    let recipes: Vec<Recipe> = get_all_recipes(&pool).await?;
+    let search_query = query.q.unwrap_or_default();
+
+    let recipes: Vec<Recipe> = search_recipes(&pool, &search_query).await?;
 
     let recipe_items: Vec<RecipeListItem> = recipes
         .into_iter()
@@ -92,6 +96,7 @@ pub async fn index(
     let template = IndexTemplate {
         recipes: recipe_items,
         deleted_title: query.deleted,
+        search_query,
     };
     Ok(Html(render_template(template)?))
 }

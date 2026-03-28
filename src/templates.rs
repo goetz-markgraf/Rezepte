@@ -39,11 +39,13 @@ pub struct ConfirmDeleteTemplate {
     pub title: String,
 }
 
+/// Template für die Rezept-Übersichtsseite.
 #[derive(Template)]
 #[template(path = "index.html")]
 pub struct IndexTemplate {
     pub recipes: Vec<RecipeListItem>,
     pub deleted_title: Option<String>,
+    pub search_query: String,
 }
 
 #[derive(Debug)]
