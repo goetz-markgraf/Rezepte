@@ -53,16 +53,23 @@ Alle diese Punkte müssen einzeln und nacheinander geprüft werden.
 
 ### Unit Tests
 - [ ] Neue Funktionalität hat Unit Tests (`cargo test`)
-- [ ] Tests decken Happy Path und Edge Cases ab
+- [ ] Tests decken Happy Path und Edge Cases, sowie Fehlersituationen ab
 - [ ] Tests laufen erfolgreich durch
+
+### Integrationstests
+- [ ] Rust-Integrationstests für neue HTTP-Endpunkte geschrieben (in `tests/`)
+- [ ] Tests decken Happy Path, Validierungsfehler und 404-Fälle ab
+- [ ] Integrationstests bestehen (`cargo test`)
+- [ ] Jeder Test enthält Given/When/Then als deutsche Kommentare inline im Code
 
 ### E2E Tests
 - [ ] Playwright-Tests für neue Features geschrieben
+- [ ] Es gibt für jedes Akzeptanzkriterium mindestens einen Test
 - [ ] E2E-Tests bestehen (`npm run test:e2e`)
 - [ ] Screenshots/Traces bei Fehlern verfügbar
+- [ ] Jeder Test enthält Given/When/Then als deutsche Kommentare inline im Code
 
 ### Testabdeckung
-- [ ] Mindestens 80% Code-Coverage für neue Features
 - [ ] Kritische Pfade (DB-Queries, Validation) sind getestet
 
 ---
@@ -140,7 +147,3 @@ Alle diese Punkte müssen einzeln und nacheinander geprüft werden.
 - [ ] Branch ist auf aktuellem Stand mit main
 - [ ] Keine Merge-Konflikte
 - [ ] Commit-Messages sind verständlich und folgen Konventionen
-
----
-
-*Letzte Aktualisierung: 2026-03-21*
