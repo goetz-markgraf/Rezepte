@@ -332,3 +332,62 @@ impl DublettenPaarItem {
 pub struct DublettenUebersichtTemplate {
     pub paare: Vec<DublettenPaarItem>,
 }
+
+/// Informationen zu einem Rezept auf der Merge-Seite.
+pub struct MergeRezeptInfo {
+    pub title: String,
+    pub categories: Vec<String>,
+    pub ingredients: Option<String>,
+    pub instructions: Option<String>,
+    pub rating: Option<i32>,
+    pub planned_date: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+impl MergeRezeptInfo {
+    /// Gibt die Sterndarstellung zurück (z.B. "★★★") oder einen leeren String.
+    pub fn sterne(&self) -> String {
+        match self.rating {
+            Some(r) => "★".repeat(r as usize),
+            None => String::new(),
+        }
+    }
+}
+
+/// Template für die Merge-Seite (Rezepte zusammenführen).
+#[derive(Template)]
+#[template(path = "recipes/merge.html")]
+pub struct MergeTemplate {
+    pub rezept_a: MergeRezeptInfo,
+    pub rezept_b: MergeRezeptInfo,
+    pub source_id: i64,
+    pub target_id: i64,
+    pub fehler: Vec<String>,
+}
+
+impl MergeTemplate {
+    pub fn hat_konflikt_titel(&self) -> bool {
+        self.rezept_a.title != self.rezept_b.title
+    }
+
+    pub fn hat_konflikt_categories(&self) -> bool {
+        self.rezept_a.categories != self.rezept_b.categories
+    }
+
+    pub fn hat_konflikt_ingredients(&self) -> bool {
+        self.rezept_a.ingredients.is_some() && self.rezept_b.ingredients.is_some()
+    }
+
+    pub fn hat_konflikt_instructions(&self) -> bool {
+        self.rezept_a.instructions.is_some() && self.rezept_b.instructions.is_some()
+    }
+
+    pub fn hat_konflikt_rating(&self) -> bool {
+        self.rezept_a.rating.is_some() && self.rezept_b.rating.is_some()
+    }
+
+    pub fn hat_konflikt_planned_date(&self) -> bool {
+        self.rezept_a.planned_date.is_some() && self.rezept_b.planned_date.is_some()
+    }
+}

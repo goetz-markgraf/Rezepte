@@ -1,16 +1,16 @@
 use crate::error::AppError;
 use crate::models::recipe::validate_rating;
 use crate::models::{
-    create_recipe, create_saved_filter, delete_recipe, delete_saved_filter,
+    create_recipe, create_saved_filter, delete_recipe, delete_saved_filter, determine_merge_target,
     filter_recipes_by_categories, filter_recipes_next_seven_days, filter_recipes_not_made_recently,
     find_all_duplicate_pairs, find_similar_recipes, get_all_saved_filters, get_recipe_by_id,
-    update_recipe, update_recipe_rating, CreateRecipe, CreateSavedFilter, Recipe, UpdateRecipe,
-    VALID_CATEGORIES,
+    merge_recipes, update_recipe, update_recipe_rating, CreateRecipe, CreateSavedFilter, Recipe,
+    UpdateRecipe, VALID_CATEGORIES,
 };
 use crate::templates::{
     CategoryFilterItem, ConfirmDeleteTemplate, DublettenPaarItem, DublettenUebersichtTemplate,
-    DuplicateHintTemplate, IndexTemplate, InlineRatingTemplate, NotFoundTemplate,
-    RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem, SavedFilterItem,
+    DuplicateHintTemplate, IndexTemplate, InlineRatingTemplate, MergeRezeptInfo, MergeTemplate,
+    NotFoundTemplate, RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem, SavedFilterItem,
 };
 use askama::Template;
 use axum::{
@@ -976,4 +976,196 @@ pub async fn duplicates_handler(
         .collect();
     let template = DublettenUebersichtTemplate { paare: paar_items };
     Ok(Html(render_template(template)?))
+}
+
+/// Query-Parameter für die Merge-Seite.
+#[derive(Deserialize)]
+pub struct MergeQuery {
+    pub source: Option<i64>,
+    pub target: Option<i64>,
+}
+
+/// Konvertiert ein `Recipe` in ein `MergeRezeptInfo` für das Template.
+fn recipe_to_merge_info(recipe: &Recipe) -> MergeRezeptInfo {
+    let planned_date = format_planned_date_long(recipe.planned_date);
+    MergeRezeptInfo {
+        title: recipe.title.clone(),
+        categories: recipe.categories_vec(),
+        ingredients: recipe.ingredients.clone(),
+        instructions: recipe.instructions.clone(),
+        rating: recipe.rating,
+        planned_date,
+        created_at: format_date(&recipe.created_at),
+        updated_at: format_date(&recipe.updated_at),
+    }
+}
+
+/// Zeigt die Merge-Seite mit beiden Rezepten nebeneinander an.
+/// GET /recipes/merge?source=ID&target=ID
+pub async fn merge_form_handler(
+    State(pool): State<Arc<SqlitePool>>,
+    Query(query): Query<MergeQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let source_id = query.source.ok_or_else(|| {
+        AppError::BadRequest("source und target Parameter erforderlich".to_string())
+    })?;
+    let target_id = query.target.ok_or_else(|| {
+        AppError::BadRequest("source und target Parameter erforderlich".to_string())
+    })?;
+
+    let source: Recipe = get_recipe_by_id(&pool, source_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", source_id)))?;
+
+    let target: Recipe = get_recipe_by_id(&pool, target_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", target_id)))?;
+
+    // determine_merge_target bestimmt, welches Rezept als Ziel empfohlen wird
+    // aber wir verwenden die URL-Parameter direkt (der Nutzer hat die Rollen schon festgelegt)
+    let _ = determine_merge_target(&source, &target); // nur für zukünftige Erweiterungen
+
+    let template = MergeTemplate {
+        rezept_a: recipe_to_merge_info(&source),
+        rezept_b: recipe_to_merge_info(&target),
+        source_id,
+        target_id,
+        fehler: Vec::new(),
+    };
+
+    Ok(Html(render_template(template)?))
+}
+
+/// Verarbeitet das Merge-Formular und führt die Rezepte zusammen.
+/// POST /recipes/merge
+pub async fn merge_handler(
+    State(pool): State<Arc<SqlitePool>>,
+    axum::extract::RawForm(body): axum::extract::RawForm,
+) -> Result<impl IntoResponse, AppError> {
+    let params = parse_form_data(&body);
+
+    let source_id: i64 = params
+        .get("source_id")
+        .and_then(|v| v.first())
+        .and_then(|s| s.parse().ok())
+        .ok_or_else(|| AppError::BadRequest("source_id fehlt oder ungültig".to_string()))?;
+
+    let target_id: i64 = params
+        .get("target_id")
+        .and_then(|v| v.first())
+        .and_then(|s| s.parse().ok())
+        .ok_or_else(|| AppError::BadRequest("target_id fehlt oder ungültig".to_string()))?;
+
+    // Beide Rezepte laden (für Fehlerfall und Feldwerte)
+    let source: Recipe = get_recipe_by_id(&pool, source_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", source_id)))?;
+
+    let target: Recipe = get_recipe_by_id(&pool, target_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", target_id)))?;
+
+    // Feldauswahlen lesen: "a" = source, "b" = target
+    let title_from = params
+        .get("title_from")
+        .and_then(|v| v.first())
+        .map(|s| s.as_str())
+        .unwrap_or("a");
+    let categories_from = params
+        .get("categories_from")
+        .and_then(|v| v.first())
+        .map(|s| s.as_str())
+        .unwrap_or("a");
+    let ingredients_from = params
+        .get("ingredients_from")
+        .and_then(|v| v.first())
+        .map(|s| s.as_str())
+        .unwrap_or("a");
+    let instructions_from = params
+        .get("instructions_from")
+        .and_then(|v| v.first())
+        .map(|s| s.as_str())
+        .unwrap_or("a");
+    let rating_from = params
+        .get("rating_from")
+        .and_then(|v| v.first())
+        .map(|s| s.as_str())
+        .unwrap_or("a");
+    let planned_date_from = params
+        .get("planned_date_from")
+        .and_then(|v| v.first())
+        .map(|s| s.as_str())
+        .unwrap_or("a");
+
+    let title = if title_from == "b" {
+        target.title.clone()
+    } else {
+        source.title.clone()
+    };
+
+    let categories = if categories_from == "b" {
+        target.categories_vec()
+    } else {
+        source.categories_vec()
+    };
+
+    let ingredients = if ingredients_from == "b" {
+        target.ingredients.clone()
+    } else {
+        source.ingredients.clone()
+    };
+
+    let instructions = if instructions_from == "b" {
+        target.instructions.clone()
+    } else {
+        source.instructions.clone()
+    };
+
+    let rating = if rating_from == "b" {
+        target.rating
+    } else {
+        source.rating
+    };
+
+    // Datum: Wir speichern im deutschen Format für den Input
+    let planned_date_input = if planned_date_from == "b" {
+        target
+            .planned_date
+            .map(|d| format!("{}.{}.{}", d.day(), d.month() as u8, d.year()))
+    } else {
+        source
+            .planned_date
+            .map(|d| format!("{}.{}.{}", d.day(), d.month() as u8, d.year()))
+    };
+
+    let recipe = UpdateRecipe {
+        title: title.clone(),
+        categories: categories.clone(),
+        ingredients: ingredients.clone(),
+        instructions: instructions.clone(),
+        planned_date_input: planned_date_input.clone(),
+        rating,
+    };
+
+    if let Err(errors) = recipe.validate() {
+        let template = MergeTemplate {
+            rezept_a: recipe_to_merge_info(&source),
+            rezept_b: recipe_to_merge_info(&target),
+            source_id,
+            target_id,
+            fehler: errors,
+        };
+        return Ok((StatusCode::BAD_REQUEST, Html(render_template(template)?)).into_response());
+    }
+
+    merge_recipes(&pool, source_id, target_id, &recipe)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::RowNotFound => {
+                AppError::NotFound("Ein oder beide Rezepte wurden nicht gefunden".to_string())
+            }
+            other => AppError::Database(other),
+        })?;
+
+    Ok(Redirect::to(&format!("/recipes/{}?success=1", target_id)).into_response())
 }

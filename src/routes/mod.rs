@@ -31,6 +31,10 @@ pub fn create_router(pool: SqlitePool) -> Router {
         .route("/recipes/check-duplicate", get(recipes::check_duplicate))
         .route("/recipes/duplicates", get(recipes::duplicates_handler))
         .route(
+            "/recipes/merge",
+            get(recipes::merge_form_handler).post(recipes::merge_handler),
+        )
+        .route(
             "/recipes/:id",
             get(recipes::show_recipe).post(recipes::update_recipe_handler),
         )

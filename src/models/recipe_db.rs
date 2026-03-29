@@ -581,6 +581,71 @@ pub async fn find_similar_recipes(
         .collect())
 }
 
+/// Führt zwei Rezepte zusammen: Aktualisiert das Ziel-Rezept und löscht das Quell-Rezept.
+/// Beide Operationen erfolgen in einer atomaren SQLite-Transaktion.
+/// Gibt `RowNotFound` zurück, wenn eine der beiden IDs nicht existiert.
+pub async fn merge_recipes(
+    pool: &SqlitePool,
+    source_id: i64,
+    target_id: i64,
+    merged_data: &UpdateRecipe,
+) -> Result<(), sqlx::Error> {
+    let mut tx = pool.begin().await?;
+
+    // Beide IDs validieren
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM recipes WHERE id IN (?1, ?2)")
+        .bind(source_id)
+        .bind(target_id)
+        .fetch_one(&mut *tx)
+        .await?;
+
+    if count < 2 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    // Ziel-Rezept aktualisieren
+    let categories_json = merged_data.categories_json();
+    let planned_date = merged_data.parsed_date();
+
+    let rows_affected = sqlx::query(
+        r#"
+        UPDATE recipes
+        SET title = ?1,
+            categories = ?2,
+            ingredients = ?3,
+            instructions = ?4,
+            planned_date = ?5,
+            rating = ?6,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?7
+        "#,
+    )
+    .bind(&merged_data.title)
+    .bind(&categories_json)
+    .bind(&merged_data.ingredients)
+    .bind(&merged_data.instructions)
+    .bind(planned_date)
+    .bind(merged_data.rating)
+    .bind(target_id)
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
+
+    if rows_affected == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    // Quell-Rezept löschen
+    sqlx::query("DELETE FROM recipes WHERE id = ?1")
+        .bind(source_id)
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2816,5 +2881,125 @@ mod tests {
             3,
             "Bei 3 verschachtelt-ähnlichen Rezepten sollen 3 eindeutige Paare entstehen"
         );
+    }
+
+    #[tokio::test]
+    async fn merge_recipes_success() {
+        // Given: Zwei Rezepte existieren
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let source_id = create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Quell-Rezept".to_string(),
+                categories: vec!["Mittagessen".to_string()],
+                ingredients: Some("Zutat A".to_string()),
+                instructions: None,
+                planned_date_input: None,
+                rating: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        let target_id = create_recipe(
+            &pool,
+            &CreateRecipe {
+                title: "Ziel-Rezept".to_string(),
+                categories: vec!["Brot".to_string()],
+                ingredients: None,
+                instructions: Some("Anleitung B".to_string()),
+                planned_date_input: None,
+                rating: Some(4),
+            },
+        )
+        .await
+        .unwrap();
+
+        // When: Merge durchführen
+        let merged_data = UpdateRecipe {
+            title: "Zusammengeführt".to_string(),
+            categories: vec!["Mittagessen".to_string()],
+            ingredients: Some("Zutat A".to_string()),
+            instructions: Some("Anleitung B".to_string()),
+            planned_date_input: None,
+            rating: Some(4),
+        };
+        merge_recipes(&pool, source_id, target_id, &merged_data)
+            .await
+            .unwrap();
+
+        // Then: Ziel-Rezept ist aktualisiert
+        let target = get_recipe_by_id(&pool, target_id).await.unwrap().unwrap();
+        assert_eq!(target.title, "Zusammengeführt");
+        assert_eq!(target.ingredients, Some("Zutat A".to_string()));
+        assert_eq!(target.instructions, Some("Anleitung B".to_string()));
+        assert_eq!(target.rating, Some(4));
+
+        // And: Quell-Rezept ist gelöscht
+        let source = get_recipe_by_id(&pool, source_id).await.unwrap();
+        assert!(source.is_none());
+    }
+
+    #[tokio::test]
+    async fn merge_recipes_invalid_source_id() {
+        // Given: Nur ein Rezept existiert
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let target_id = create_recipe(&pool, &make_recipe("Ziel", "Mittagessen"))
+            .await
+            .unwrap();
+
+        // When: Merge mit ungültiger source_id
+        let merged_data = UpdateRecipe {
+            title: "Test".to_string(),
+            categories: vec!["Mittagessen".to_string()],
+            ingredients: None,
+            instructions: None,
+            planned_date_input: None,
+            rating: None,
+        };
+        let result = merge_recipes(&pool, 99999, target_id, &merged_data).await;
+
+        // Then: RowNotFound-Fehler
+        assert!(matches!(result, Err(sqlx::Error::RowNotFound)));
+
+        // And: Ziel-Rezept ist unverändert
+        let target = get_recipe_by_id(&pool, target_id).await.unwrap();
+        assert!(target.is_some());
+    }
+
+    #[tokio::test]
+    async fn merge_recipes_invalid_target_id() {
+        // Given: Nur ein Rezept existiert
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let source_id = create_recipe(&pool, &make_recipe("Quelle", "Mittagessen"))
+            .await
+            .unwrap();
+
+        // When: Merge mit ungültiger target_id
+        let merged_data = UpdateRecipe {
+            title: "Test".to_string(),
+            categories: vec!["Mittagessen".to_string()],
+            ingredients: None,
+            instructions: None,
+            planned_date_input: None,
+            rating: None,
+        };
+        let result = merge_recipes(&pool, source_id, 99999, &merged_data).await;
+
+        // Then: RowNotFound-Fehler
+        assert!(matches!(result, Err(sqlx::Error::RowNotFound)));
+
+        // And: Quell-Rezept ist noch vorhanden
+        let source = get_recipe_by_id(&pool, source_id).await.unwrap();
+        assert!(source.is_some());
     }
 }

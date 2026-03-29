@@ -1440,3 +1440,174 @@ input[type="search"]:focus {
         width: 3rem;
     }
 }
+
+
+/* ===  Merge-Seite === */
+
+.merge-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.merge-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.merge-recipe-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.merge-card-header {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.merge-card-label {
+    font-weight: 700;
+}
+
+.merge-card-subtitle {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-weight: normal;
+}
+
+.merge-card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+}
+
+.merge-card-meta {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.merge-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.merge-field-row {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.merge-conflict-row {
+    border-color: #f59e0b;
+    background: #fffbeb;
+}
+
+.merge-auto-row {
+    border-color: var(--border-color);
+    background: var(--card-bg);
+}
+
+.merge-field-label {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.merge-field-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.merge-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    background: white;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.merge-option:hover {
+    border-color: var(--primary-color);
+    background: #eff6ff;
+}
+
+.merge-option input[type="radio"] {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--primary-color);
+}
+
+.merge-field-value {
+    flex: 1;
+    font-size: 0.9375rem;
+}
+
+.merge-field-value pre {
+    font-family: inherit;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.875rem;
+}
+
+.merge-auto-value {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.merge-auto-badge {
+    font-size: 0.75rem;
+    color: #059669;
+    font-style: italic;
+}
+
+.merge-empty {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+.merge-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.duplicate-pair-actions {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Desktop: zwei Spalten für Merge-Layout */
+@media (min-width: 768px) {
+    .merge-layout {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .merge-field-options {
+        flex-direction: row;
+    }
+
+    .merge-option {
+        flex: 1;
+    }
+}

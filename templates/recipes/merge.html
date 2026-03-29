@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Rezepte zusammenführen – Rezepte{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Rezepte zusammenführen</h1>
+    <p class="page-subtitle">Wähle, welche Informationen das zusammengeführte Rezept enthalten soll. Das nicht gewählte Rezept wird anschließend gelöscht.</p>
+</div>
+
+{% if !fehler.is_empty() %}
+<div class="error-list" role="alert">
+    <ul>
+        {% for fehler_msg in fehler %}
+        <li>{{ fehler_msg }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<form method="POST" action="/recipes/merge" class="merge-form">
+    <input type="hidden" name="source_id" value="{{ source_id }}">
+    <input type="hidden" name="target_id" value="{{ target_id }}">
+
+    <div class="merge-layout">
+        <div class="merge-recipe-card merge-recipe-a">
+            <h2 class="merge-card-header">
+                <span class="merge-card-label">Rezept A</span>
+                <span class="merge-card-subtitle">(wird gelöscht)</span>
+            </h2>
+            <p class="merge-card-title">{{ rezept_a.title }}</p>
+            <p class="merge-card-meta">Erstellt: {{ rezept_a.created_at }}</p>
+            <p class="merge-card-meta">Geändert: {{ rezept_a.updated_at }}</p>
+        </div>
+        <div class="merge-recipe-card merge-recipe-b">
+            <h2 class="merge-card-header">
+                <span class="merge-card-label">Rezept B</span>
+                <span class="merge-card-subtitle">(bleibt erhalten)</span>
+            </h2>
+            <p class="merge-card-title">{{ rezept_b.title }}</p>
+            <p class="merge-card-meta">Erstellt: {{ rezept_b.created_at }}</p>
+            <p class="merge-card-meta">Geändert: {{ rezept_b.updated_at }}</p>
+        </div>
+    </div>
+
+    <div class="merge-fields">
+
+        <!-- Titel -->
+        {% if self.hat_konflikt_titel() %}
+        <div class="merge-field-row merge-conflict-row">
+            <div class="merge-field-label">Titel</div>
+            <div class="merge-field-options">
+                <label class="merge-option">
+                    <input type="radio" name="title_from" value="a" required>
+                    <span class="merge-field-value">{{ rezept_a.title }}</span>
+                </label>
+                <label class="merge-option">
+                    <input type="radio" name="title_from" value="b" required>
+                    <span class="merge-field-value">{{ rezept_b.title }}</span>
+                </label>
+            </div>
+        </div>
+        {% else %}
+        <div class="merge-field-row merge-auto-row">
+            <div class="merge-field-label">Titel</div>
+            <div class="merge-field-value merge-auto-value">
+                {{ rezept_a.title }}
+                <span class="merge-auto-badge">Automatisch übernommen</span>
+            </div>
+            <input type="hidden" name="title_from" value="a">
+        </div>
+        {% endif %}
+
+        <!-- Kategorien -->
+        {% if self.hat_konflikt_categories() %}
+        <div class="merge-field-row merge-conflict-row">
+            <div class="merge-field-label">Kategorien</div>
+            <div class="merge-field-options">
+                <label class="merge-option">
+                    <input type="radio" name="categories_from" value="a" required>
+                    <span class="merge-field-value">{{ rezept_a.categories|join(", ") }}</span>
+                </label>
+                <label class="merge-option">
+                    <input type="radio" name="categories_from" value="b" required>
+                    <span class="merge-field-value">{{ rezept_b.categories|join(", ") }}</span>
+                </label>
+            </div>
+        </div>
+        {% else %}
+        <div class="merge-field-row merge-auto-row">
+            <div class="merge-field-label">Kategorien</div>
+            <div class="merge-field-value merge-auto-value">
+                {% if !rezept_a.categories.is_empty() %}
+                {{ rezept_a.categories|join(", ") }}
+                {% else if !rezept_b.categories.is_empty() %}
+                {{ rezept_b.categories|join(", ") }}
+                {% else %}
+                <span class="merge-empty">Keine Kategorien</span>
+                {% endif %}
+                <span class="merge-auto-badge">Automatisch übernommen</span>
+            </div>
+            <input type="hidden" name="categories_from" value="{% if !rezept_a.categories.is_empty() %}a{% else %}b{% endif %}">
+        </div>
+        {% endif %}
+
+        <!-- Zutaten -->
+        {% if self.hat_konflikt_ingredients() %}
+        <div class="merge-field-row merge-conflict-row">
+            <div class="merge-field-label">Zutaten</div>
+            <div class="merge-field-options">
+                <label class="merge-option">
+                    <input type="radio" name="ingredients_from" value="a" required>
+                    <pre class="merge-field-value">{{ rezept_a.ingredients.as_deref().unwrap_or("") }}</pre>
+                </label>
+                <label class="merge-option">
+                    <input type="radio" name="ingredients_from" value="b" required>
+                    <pre class="merge-field-value">{{ rezept_b.ingredients.as_deref().unwrap_or("") }}</pre>
+                </label>
+            </div>
+        </div>
+        {% else if rezept_a.ingredients.is_some() %}
+        <div class="merge-field-row merge-auto-row">
+            <div class="merge-field-label">Zutaten</div>
+            <div class="merge-field-value merge-auto-value">
+                <pre>{{ rezept_a.ingredients.as_deref().unwrap_or("") }}</pre>
+                <span class="merge-auto-badge">Automatisch aus Rezept A übernommen</span>
+            </div>
+            <input type="hidden" name="ingredients_from" value="a">
+        </div>
+        {% else if rezept_b.ingredients.is_some() %}
+        <div class="merge-field-row merge-auto-row">
+            <div class="merge-field-label">Zutaten</div>
+            <div class="merge-field-value merge-auto-value">
+                <pre>{{ rezept_b.ingredients.as_deref().unwrap_or("") }}</pre>
+                <span class="merge-auto-badge">Automatisch aus Rezept B übernommen</span>
+            </div>
+            <input type="hidden" name="ingredients_from" value="b">
+        </div>
+        {% else %}
+        <div class="merge-field-row merge-auto-row">
+            <div class="merge-field-label">Zutaten</div>
+            <div class="merge-field-value merge-auto-value merge-empty">Keine Zutaten in beiden Rezepten</div>
+            <input type="hidden" name="ingredients_from" value="a">
+        </div>
+        {% endif %}
+
+        <!-- Anleitung -->
+        {% if self.hat_konflikt_instructions() %}
+        <div class="merge-field-row merge-conflict-row">
+            <div class="merge-field-label">Anleitung</div>
+            <div class="merge-field-options">
+                <label class="merge-option">
+                    <input type="radio" name="instructions_from" value="a" required>
+                    <pre class="merge-field-value">{{ rezept_a.instructions.as_deref().unwrap_or("") }}</pre>
+                </label>
+                <label class="merge-option">
+                    <input type="radio" name="instructions_from" value="b" required>
+                    <pre class="merge-field-value">{{ rezept_b.instructions.as_deref().unwrap_or("") }}</pre>
+                </label>
+            </div>
+        </div>
+        {% else if rezept_a.instructions.is_some() %}
+        <div class="merge-field-row merge-auto-row">
+            <div class="merge-field-label">Anleitung</div>
+            <div class="merge-field-value merge-auto-value">
+                <pre>{{ rezept_a.instructions.as_deref().unwrap_or("") }}</pre>
+                <span class="merge-auto-badge">Automatisch aus Rezept A übernommen</span>
+            </div>
+            <input type="hidden" name="instructions_from" value="a">
+        </div>
+        {% else if rezept_b.instructions.is_some() %}
+        <div class="merge-field-row merge-auto-row">
+            <div class="merge-field-label">Anleitung</div>
+            <div class="merge-field-value merge-auto-value">
+                <pre>{{ rezept_b.instructions.as_deref().unwrap_or("") }}</pre>
+                <span class="merge-auto-badge">Automatisch aus Rezept B übernommen</span>
+            </div>
+            <input type="hidden" name="instructions_from" value="b">
+        </div>
+        {% else %}
+        <div class="merge-field-row merge-auto-row">
+            <div class="merge-field-label">Anleitung</div>
+            <div class="merge-field-value merge-auto-value merge-empty">Keine Anleitung in beiden Rezepten</div>
+            <input type="hidden" name="instructions_from" value="a">
+        </div>
+        {% endif %}
+
+        <!-- Bewertung -->
+        {% if self.hat_konflikt_rating() %}
+        <div class="merge-field-row merge-conflict-row">
+            <div class="merge-field-label">Bewertung</div>
+            <div class="merge-field-options">
+                <label class="merge-option">
+                    <input type="radio" name="rating_from" value="a" required>
+                    <span class="merge-field-value">{{ rezept_a.sterne() }}</span>
+                </label>
+                <label class="merge-option">
+                    <input type="radio" name="rating_from" value="b" required>
+                    <span class="merge-field-value">{{ rezept_b.sterne() }}</span>
+                </label>
+            </div>
+        </div>
+        {% else if rezept_a.rating.is_some() %}
+        <div class="merge-field-row merge-auto-row">
+            <div class="merge-field-label">Bewertung</div>
+            <div class="merge-field-value merge-auto-value">
+                {{ rezept_a.sterne() }}
+                <span class="merge-auto-badge">Automatisch aus Rezept A übernommen</span>
+            </div>
+            <input type="hidden" name="rating_from" value="a">
+        </div>
+        {% else if rezept_b.rating.is_some() %}
+        <div class="merge-field-row merge-auto-row">
+            <div class="merge-field-label">Bewertung</div>
+            <div class="merge-field-value merge-auto-value">
+                {{ rezept_b.sterne() }}
+                <span class="merge-auto-badge">Automatisch aus Rezept B übernommen</span>
+            </div>
+            <input type="hidden" name="rating_from" value="b">
+        </div>
+        {% else %}
+        <div class="merge-field-row merge-auto-row">
+            <div class="merge-field-label">Bewertung</div>
+            <div class="merge-field-value merge-auto-value merge-empty">Keine Bewertung in beiden Rezepten</div>
+            <input type="hidden" name="rating_from" value="a">
+        </div>
+        {% endif %}
+
+        <!-- Datum -->
+        {% if self.hat_konflikt_planned_date() %}
+        <div class="merge-field-row merge-conflict-row">
+            <div class="merge-field-label">Datum</div>
+            <div class="merge-field-options">
+                <label class="merge-option">
+                    <input type="radio" name="planned_date_from" value="a" required>
+                    <span class="merge-field-value">{{ rezept_a.planned_date.as_deref().unwrap_or("") }}</span>
+                </label>
+                <label class="merge-option">
+                    <input type="radio" name="planned_date_from" value="b" required>
+                    <span class="merge-field-value">{{ rezept_b.planned_date.as_deref().unwrap_or("") }}</span>
+                </label>
+            </div>
+        </div>
+        {% else if rezept_a.planned_date.is_some() %}
+        <div class="merge-field-row merge-auto-row">
+            <div class="merge-field-label">Datum</div>
+            <div class="merge-field-value merge-auto-value">
+                {{ rezept_a.planned_date.as_deref().unwrap_or("") }}
+                <span class="merge-auto-badge">Automatisch aus Rezept A übernommen</span>
+            </div>
+            <input type="hidden" name="planned_date_from" value="a">
+        </div>
+        {% else if rezept_b.planned_date.is_some() %}
+        <div class="merge-field-row merge-auto-row">
+            <div class="merge-field-label">Datum</div>
+            <div class="merge-field-value merge-auto-value">
+                {{ rezept_b.planned_date.as_deref().unwrap_or("") }}
+                <span class="merge-auto-badge">Automatisch aus Rezept B übernommen</span>
+            </div>
+            <input type="hidden" name="planned_date_from" value="b">
+        </div>
+        {% else %}
+        <div class="merge-field-row merge-auto-row">
+            <div class="merge-field-label">Datum</div>
+            <div class="merge-field-value merge-auto-value merge-empty">Kein Datum in beiden Rezepten</div>
+            <input type="hidden" name="planned_date_from" value="a">
+        </div>
+        {% endif %}
+
+    </div>
+
+    <div class="merge-actions actions">
+        <button type="submit" class="btn-primary">Zusammenführen</button>
+        <a href="/recipes/duplicates" class="btn-secondary">Abbrechen</a>
+    </div>
+</form>
+{% endblock %}

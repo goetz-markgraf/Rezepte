@@ -34,6 +34,13 @@
                     </a>
                 </div>
             </div>
+            <div class="duplicate-pair-actions">
+                <a href="/recipes/merge?source={{ paar.id_a }}&target={{ paar.id_b }}"
+                   class="btn-primary"
+                   aria-label="Rezepte {{ paar.titel_a }} und {{ paar.titel_b }} zusammenführen">
+                    Mergen
+                </a>
+            </div>
         </section>
     </li>
     {% endfor %}

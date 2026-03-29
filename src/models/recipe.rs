@@ -90,6 +90,53 @@ pub fn validate_recipe_fields(
     errors
 }
 
+/// Bestimmt den Vorschlag für `(target_id, source_id)` beim Mergen zweier Rezepte.
+/// Das "wertvollere" Rezept wird als Ziel (bleibt erhalten) vorgeschlagen.
+/// Priorisierung: Hat Bewertung → Ziel; mehr Felder ausgefüllt → Ziel; neueres `updated_at` → Ziel; sonst: kleinere ID.
+pub fn determine_merge_target(recipe_a: &Recipe, recipe_b: &Recipe) -> (i64, i64) {
+    // 1. Hat Bewertung
+    let a_has_rating = recipe_a.rating.is_some();
+    let b_has_rating = recipe_b.rating.is_some();
+    if a_has_rating && !b_has_rating {
+        return (recipe_a.id, recipe_b.id);
+    }
+    if b_has_rating && !a_has_rating {
+        return (recipe_b.id, recipe_a.id);
+    }
+
+    // 2. Mehr Felder ausgefüllt
+    let a_score = a_has_rating as u32
+        + recipe_a.ingredients.is_some() as u32
+        + recipe_a.instructions.is_some() as u32
+        + recipe_a.planned_date.is_some() as u32;
+    let b_score = b_has_rating as u32
+        + recipe_b.ingredients.is_some() as u32
+        + recipe_b.instructions.is_some() as u32
+        + recipe_b.planned_date.is_some() as u32;
+
+    if a_score > b_score {
+        return (recipe_a.id, recipe_b.id);
+    }
+    if b_score > a_score {
+        return (recipe_b.id, recipe_a.id);
+    }
+
+    // 3. Neueres updated_at
+    if recipe_a.updated_at > recipe_b.updated_at {
+        return (recipe_a.id, recipe_b.id);
+    }
+    if recipe_b.updated_at > recipe_a.updated_at {
+        return (recipe_b.id, recipe_a.id);
+    }
+
+    // 4. Kleinere ID gewinnt als Ziel
+    if recipe_a.id < recipe_b.id {
+        (recipe_a.id, recipe_b.id)
+    } else {
+        (recipe_b.id, recipe_a.id)
+    }
+}
+
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Recipe {
     pub id: i64,
@@ -311,6 +358,71 @@ mod tests {
         let result = validate_rating(None);
         // Then: Kein Fehler (Bewertung ist optional)
         assert!(result.is_none());
+    }
+
+    fn make_test_recipe(
+        id: i64,
+        rating: Option<i32>,
+        ingredients: bool,
+        instructions: bool,
+    ) -> Recipe {
+        Recipe {
+            id,
+            title: format!("Rezept {}", id),
+            categories: "[]".to_string(),
+            ingredients: if ingredients {
+                Some("Zutat".to_string())
+            } else {
+                None
+            },
+            instructions: if instructions {
+                Some("Anleitung".to_string())
+            } else {
+                None
+            },
+            planned_date: None,
+            created_at: "2026-01-01 10:00:00".to_string(),
+            updated_at: "2026-01-01 10:00:00".to_string(),
+            rating,
+        }
+    }
+
+    #[test]
+    fn determine_merge_target_prefers_rated_recipe() {
+        // Given: Rezept A hat Bewertung, B hat keine
+        let a = make_test_recipe(1, Some(5), false, false);
+        let b = make_test_recipe(2, None, true, true);
+
+        // When: merge target bestimmen
+        let (target, source) = determine_merge_target(&a, &b);
+
+        // Then: A wird Ziel (hat Bewertung)
+        assert_eq!(target, 1);
+        assert_eq!(source, 2);
+    }
+
+    #[test]
+    fn determine_merge_target_prefers_more_filled_recipe() {
+        // Given: Beide haben Bewertung, aber B hat mehr Felder
+        let a = make_test_recipe(1, Some(3), false, false);
+        let b = make_test_recipe(2, Some(4), true, true);
+
+        let (target, source) = determine_merge_target(&a, &b);
+
+        assert_eq!(target, 2);
+        assert_eq!(source, 1);
+    }
+
+    #[test]
+    fn determine_merge_target_falls_back_to_smaller_id() {
+        // Given: Beide Rezepte gleich
+        let a = make_test_recipe(1, None, false, false);
+        let b = make_test_recipe(2, None, false, false);
+
+        let (target, source) = determine_merge_target(&a, &b);
+
+        assert_eq!(target, 1);
+        assert_eq!(source, 2);
     }
 
     #[test]
