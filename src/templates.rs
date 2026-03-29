@@ -128,14 +128,35 @@ impl RecipeFormTemplate {
     }
 }
 
+/// Template für das Inline-Rating-Fragment in der Detailansicht.
+#[derive(Template)]
+#[template(path = "recipes/_inline_rating.html")]
+pub struct InlineRatingTemplate {
+    pub id: i64,
+    pub rating: Option<i32>,
+}
+
+impl InlineRatingTemplate {
+    /// Gibt true zurück, wenn die aktuelle Bewertung dem Wert `n` entspricht.
+    pub fn rating_is_active(&self, n: i32) -> bool {
+        self.rating == Some(n)
+    }
+
+    /// Gibt true zurück, wenn der Stern `n` ausgefüllt sein soll (rating >= n).
+    pub fn star_filled(&self, n: i32) -> bool {
+        self.rating.unwrap_or(0) >= n
+    }
+}
+
 impl RecipeDetailTemplate {
-    /// Gibt die Sterndarstellung für die Detailansicht zurück (z.B. "★★★★☆" für 4).
-    /// Gibt einen leeren String zurück, wenn keine Bewertung vorhanden ist.
-    pub fn stars_display(&self) -> String {
-        match self.rating {
-            Some(r) => (1..=5).map(|n| if n <= r { '★' } else { '☆' }).collect(),
-            None => String::new(),
-        }
+    /// Gibt true zurück, wenn die aktuelle Bewertung dem Wert `n` entspricht (für Inline-Rating-Partial).
+    pub fn rating_is_active(&self, n: i32) -> bool {
+        self.rating == Some(n)
+    }
+
+    /// Gibt true zurück, wenn der Stern `n` ausgefüllt sein soll (rating >= n).
+    pub fn star_filled(&self, n: i32) -> bool {
+        self.rating.unwrap_or(0) >= n
     }
 }
 

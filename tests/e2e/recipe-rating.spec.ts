@@ -52,10 +52,10 @@ test.describe('Rezept-Bewertung', () => {
     await selectRating(page, 4);
     await page.click('button[type="submit"]');
 
-    // Then: Detail-Seite zeigt 4 Sterne
+    // Then: Detail-Seite zeigt 4 Sterne (Inline-Rating-Container)
     await expect(page).toHaveURL(/\/recipes\/\d+/);
-    await expect(page.locator('.recipe-stars')).toBeVisible();
-    await expect(page.locator('.recipe-stars')).toHaveAttribute('aria-label', '4 von 5 Sternen');
+    await expect(page.locator('#inline-rating')).toBeVisible();
+    await expect(page.locator('#inline-rating')).toHaveAttribute('aria-label', '4 von 5 Sternen');
   });
 
   test('K2: 1 Stern speichern (Negativbewertung)', async ({ page }) => {
@@ -63,9 +63,9 @@ test.describe('Rezept-Bewertung', () => {
     const suffix = Date.now();
     await createRecipe(page, `Ein-Stern-${suffix}`, 'Snacks', 1);
 
-    // Then: Detail-Seite zeigt 1 Stern
-    await expect(page.locator('.recipe-stars')).toBeVisible();
-    await expect(page.locator('.recipe-stars')).toHaveAttribute('aria-label', '1 von 5 Sternen');
+    // Then: Detail-Seite zeigt 1 Stern (Inline-Rating-Container)
+    await expect(page.locator('#inline-rating')).toBeVisible();
+    await expect(page.locator('#inline-rating')).toHaveAttribute('aria-label', '1 von 5 Sternen');
   });
 
   test('K3: Bewertung in Detailansicht (5 Sterne)', async ({ page }) => {
@@ -74,11 +74,15 @@ test.describe('Rezept-Bewertung', () => {
     await createRecipe(page, `Fuenf-Sterne-${suffix}`, 'Mittagessen', 5);
 
     // When: Detail-Seite ist geöffnet (schon nach createRecipe)
-    // Then: 5 ausgefüllte Sterne sind sichtbar
-    await expect(page.locator('.recipe-stars')).toBeVisible();
-    await expect(page.locator('.recipe-stars')).toHaveAttribute('aria-label', '5 von 5 Sternen');
-    const starsText = await page.locator('.recipe-stars').textContent();
-    expect(starsText).toContain('★★★★★');
+    // Then: 5 ausgefüllte Sterne sind sichtbar (Inline-Rating-Container)
+    await expect(page.locator('#inline-rating')).toBeVisible();
+    await expect(page.locator('#inline-rating')).toHaveAttribute('aria-label', '5 von 5 Sternen');
+    // Alle 5 Sterne-Buttons zeigen ★ (ausgefüllt)
+    const starBtns = page.locator('#inline-rating button');
+    await expect(starBtns).toHaveCount(5);
+    for (const btn of await starBtns.all()) {
+      expect(await btn.textContent()).toContain('★');
+    }
   });
 
   test('K3: Kein Sterne-Block bei unbewerteten Rezepten (Detailansicht)', async ({ page }) => {
@@ -87,8 +91,9 @@ test.describe('Rezept-Bewertung', () => {
     await createRecipe(page, `Unbewertet-Detail-${suffix}`, 'Brot');
 
     // When: Detail-Seite ist geöffnet
-    // Then: Kein Sterne-Block sichtbar
-    await expect(page.locator('.recipe-stars')).not.toBeVisible();
+    // Then: Inline-Rating-Container vorhanden, aber ohne aria-label (keine Bewertung)
+    await expect(page.locator('#inline-rating')).toBeVisible();
+    await expect(page.locator('#inline-rating')).not.toHaveAttribute('aria-label');
   });
 
   test('K4: Bewertung in der Listenansicht', async ({ page }) => {
@@ -122,9 +127,10 @@ test.describe('Rezept-Bewertung', () => {
     await noRatingLabel.click();
     await page.click('button[type="submit"]');
 
-    // Then: Detail-Seite zeigt keinen Sterne-Block
+    // Then: Detail-Seite zeigt keinen bewerteten Zustand mehr (kein aria-label)
     await expect(page).toHaveURL(/\/recipes\/\d+/);
-    await expect(page.locator('.recipe-stars')).not.toBeVisible();
+    await expect(page.locator('#inline-rating')).toBeVisible();
+    await expect(page.locator('#inline-rating')).not.toHaveAttribute('aria-label');
   });
 
   test('K6: Negativbewertung (1-2 Sterne) speicherbar und sichtbar', async ({ page }) => {
@@ -132,9 +138,9 @@ test.describe('Rezept-Bewertung', () => {
     const suffix = Date.now();
     await createRecipe(page, `Zwei-Sterne-${suffix}`, 'Snacks', 2);
 
-    // Then: Rezept ist in Detailansicht sichtbar und zeigt 2 Sterne
-    await expect(page.locator('.recipe-stars')).toBeVisible();
-    await expect(page.locator('.recipe-stars')).toHaveAttribute('aria-label', '2 von 5 Sternen');
+    // Then: Rezept ist in Detailansicht sichtbar und zeigt 2 Sterne (Inline-Rating-Container)
+    await expect(page.locator('#inline-rating')).toBeVisible();
+    await expect(page.locator('#inline-rating')).toHaveAttribute('aria-label', '2 von 5 Sternen');
 
     // And: Rezept ist in der Liste sichtbar
     await page.goto('/');

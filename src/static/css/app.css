@@ -819,3 +819,71 @@ input[type="search"]:focus {
     margin-left: 0.25rem;
     vertical-align: middle;
 }
+
+/* === Inline-Rating (Detailansicht) === */
+
+.inline-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+    margin: 0.25rem 0;
+}
+
+.inline-rating-form {
+    display: flex;
+    flex-direction: row-reverse;
+    flex-wrap: wrap;
+    gap: 0.125rem;
+    align-items: center;
+    /* Verhindert horizontales Überlaufen auf schmalen Viewports */
+    max-width: 100%;
+}
+
+.inline-rating-btn {
+    /* Button-Reset */
+    background: none;
+    border: none;
+    cursor: pointer;
+    /* Touch-Zielfläche mindestens 44x44px (WCAG K8): padding statt min-width für kein Overflow */
+    padding: 10px 6px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #d1d5db;
+    line-height: 1;
+    border-radius: 4px;
+    transition: color 0.1s;
+}
+
+.inline-rating-btn.active {
+    color: #f59e0b;
+}
+
+/* Hover-Effekt: dank flex-direction:row-reverse + ~ Selektor werden
+   alle Sterne vom gehoverten bis zum letzten (= niedrigster Wert) gelb */
+.inline-rating-form:hover .inline-rating-btn {
+    color: #fbbf24;
+}
+
+.inline-rating-form .inline-rating-btn:hover ~ .inline-rating-btn {
+    color: #fbbf24;
+}
+
+.inline-rating-form .inline-rating-btn:not(:hover) {
+    color: #d1d5db;
+}
+
+/* Überschreibt: ab dem gehoverten Stern und alle "danach" (DOM-Reihenfolge = visuell davor) */
+.inline-rating-form:hover .inline-rating-btn:hover,
+.inline-rating-form:hover .inline-rating-btn:hover ~ .inline-rating-btn {
+    color: #f59e0b;
+}
+
+/* Fokus-Ring für Tastatur-Navigation (WCAG K8) */
+.inline-rating-btn:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-radius: 4px;
+}

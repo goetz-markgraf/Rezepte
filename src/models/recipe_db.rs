@@ -113,6 +113,32 @@ pub async fn update_recipe(
     Ok(())
 }
 
+/// Aktualisiert nur das Rating-Feld eines Rezepts. Gibt `RowNotFound` zurück, wenn die ID nicht existiert.
+pub async fn update_recipe_rating(
+    pool: &SqlitePool,
+    id: i64,
+    rating: Option<i32>,
+) -> Result<(), sqlx::Error> {
+    let rows_affected = sqlx::query(
+        r#"
+        UPDATE recipes
+        SET rating = ?1, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?2
+        "#,
+    )
+    .bind(rating)
+    .bind(id)
+    .execute(pool)
+    .await?
+    .rows_affected();
+
+    if rows_affected == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    Ok(())
+}
+
 /// Durchsucht alle Rezepte nach einem Suchbegriff in Titel, Zutaten und Anleitung.
 /// Die Suche ist case-insensitiv. Bei leerem Suchbegriff werden alle Rezepte zurückgegeben.
 /// Ergebnisse sind alphabetisch sortiert (gleiche Logik wie `get_all_recipes`).

@@ -1,12 +1,13 @@
 use crate::error::AppError;
+use crate::models::recipe::validate_rating;
 use crate::models::{
     create_recipe, delete_recipe, filter_recipes_by_categories, filter_recipes_next_seven_days,
-    filter_recipes_not_made_recently, get_recipe_by_id, update_recipe, CreateRecipe, Recipe,
-    UpdateRecipe, VALID_CATEGORIES,
+    filter_recipes_not_made_recently, get_recipe_by_id, update_recipe, update_recipe_rating,
+    CreateRecipe, Recipe, UpdateRecipe, VALID_CATEGORIES,
 };
 use crate::templates::{
-    CategoryFilterItem, ConfirmDeleteTemplate, IndexTemplate, NotFoundTemplate,
-    RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem,
+    CategoryFilterItem, ConfirmDeleteTemplate, IndexTemplate, InlineRatingTemplate,
+    NotFoundTemplate, RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem,
 };
 use axum::{
     extract::{Path, Query, RawQuery, State},
@@ -708,6 +709,38 @@ pub async fn confirm_delete(
         id: recipe.id,
         title: recipe.title,
     };
+    Ok(Html(render_template(template)?))
+}
+
+/// Aktualisiert nur die Bewertung eines Rezepts und gibt das aktualisierte HTML-Fragment zurück.
+/// Antwortet mit dem Inline-Rating-Fragment für HTMX-Swap.
+pub async fn update_recipe_rating_handler(
+    State(pool): State<Arc<SqlitePool>>,
+    Path(id): Path<i64>,
+    axum::extract::RawForm(body): axum::extract::RawForm,
+) -> Result<impl IntoResponse, AppError> {
+    let params = parse_form_data(&body);
+    let rating_raw = params
+        .get("rating")
+        .and_then(|v| v.first())
+        .map(|s| s.as_str());
+    let rating = parse_rating(rating_raw);
+
+    // Validierung: Wert vorhanden und außerhalb 1-5 → 400
+    if let Some(err) = validate_rating(rating) {
+        return Err(AppError::BadRequest(err));
+    }
+
+    update_recipe_rating(&pool, id, rating)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::RowNotFound => {
+                AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", id))
+            }
+            other => AppError::Database(other),
+        })?;
+
+    let template = InlineRatingTemplate { id, rating };
     Ok(Html(render_template(template)?))
 }
 
