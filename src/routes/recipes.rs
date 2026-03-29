@@ -1,7 +1,8 @@
 use crate::error::AppError;
 use crate::models::{
-    create_recipe, delete_recipe, filter_recipes_by_categories, filter_recipes_not_made_recently,
-    get_recipe_by_id, update_recipe, CreateRecipe, Recipe, UpdateRecipe, VALID_CATEGORIES,
+    create_recipe, delete_recipe, filter_recipes_by_categories, filter_recipes_next_seven_days,
+    filter_recipes_not_made_recently, get_recipe_by_id, update_recipe, CreateRecipe, Recipe,
+    UpdateRecipe, VALID_CATEGORIES,
 };
 use crate::templates::{
     CategoryFilterItem, ConfirmDeleteTemplate, IndexTemplate, NotFoundTemplate,
@@ -42,6 +43,23 @@ fn format_planned_date_long(date: Option<time::Date>) -> Option<String> {
 /// Formatiert ein `time::Date` in das kompakte Format: "05.03.2025".
 fn format_planned_date_short(date: Option<time::Date>) -> Option<String> {
     date.map(|d| format!("{:02}.{:02}.{}", d.day(), d.month() as u8, d.year()))
+}
+
+const GERMAN_WEEKDAYS: &[&str] = &["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+
+/// Formatiert ein `time::Date` mit Wochentag: "Mo, 31.03.2026".
+fn format_planned_date_with_weekday(date: Option<time::Date>) -> Option<String> {
+    date.map(|d| {
+        let weekday_idx = d.weekday().number_days_from_monday() as usize;
+        let weekday = GERMAN_WEEKDAYS[weekday_idx];
+        format!(
+            "{}, {:02}.{:02}.{}",
+            weekday,
+            d.day(),
+            d.month() as u8,
+            d.year()
+        )
+    })
 }
 
 /// Formatiert ein `time::Date` für die Texteingabe im deutschen Format: "5.3.2025".
@@ -126,13 +144,14 @@ fn parse_form_data(body: &[u8]) -> std::collections::HashMap<String, Vec<String>
 }
 
 /// Baut die Toggle-URL für eine Kategorie: aktiv→entfernen, inaktiv→hinzufügen.
-/// Bestehender Suchbegriff und `not_made_filter_active` bleiben erhalten.
+/// Bestehender Suchbegriff, `not_made_filter_active` und `next_seven_days_filter_active` bleiben erhalten.
 fn build_category_toggle_url(
     category: &str,
     is_active: bool,
     active_categories: &[String],
     search_query: &str,
     not_made_filter_active: bool,
+    next_seven_days_filter_active: bool,
 ) -> String {
     let mut params: Vec<String> = Vec::new();
 
@@ -153,6 +172,8 @@ fn build_category_toggle_url(
 
     if not_made_filter_active {
         params.push("filter=laenger-nicht-gemacht".to_string());
+    } else if next_seven_days_filter_active {
+        params.push("filter=naechste-7-tage".to_string());
     }
 
     if params.is_empty() {
@@ -167,6 +188,7 @@ fn build_category_filters(
     active_categories: &[String],
     search_query: &str,
     not_made_filter_active: bool,
+    next_seven_days_filter_active: bool,
 ) -> Vec<CategoryFilterItem> {
     VALID_CATEGORIES
         .iter()
@@ -178,6 +200,7 @@ fn build_category_filters(
                 active_categories,
                 search_query,
                 not_made_filter_active,
+                next_seven_days_filter_active,
             );
             CategoryFilterItem {
                 name: cat.to_string(),
@@ -189,14 +212,20 @@ fn build_category_filters(
 }
 
 /// Erstellt die URL zum Zurücksetzen aller Kategorie-Filter (Suchbegriff bleibt erhalten).
-/// Wenn `not_made_filter_active` gesetzt ist, bleibt der Filter erhalten.
-fn build_reset_url(search_query: &str, not_made_filter_active: bool) -> String {
+/// Wenn `not_made_filter_active` oder `next_seven_days_filter_active` gesetzt ist, bleibt der Filter erhalten.
+fn build_reset_url(
+    search_query: &str,
+    not_made_filter_active: bool,
+    next_seven_days_filter_active: bool,
+) -> String {
     let mut params: Vec<String> = Vec::new();
     if !search_query.is_empty() {
         params.push(format!("q={}", urlencoding::encode(search_query)));
     }
     if not_made_filter_active {
         params.push("filter=laenger-nicht-gemacht".to_string());
+    } else if next_seven_days_filter_active {
+        params.push("filter=naechste-7-tage".to_string());
     }
     if params.is_empty() {
         "/".to_string()
@@ -234,6 +263,35 @@ fn build_not_made_toggle_url(
     }
 }
 
+/// Baut die Toggle-URL für den "Nächste 7 Tage"-Filter.
+/// Aktiv → URL ohne `filter`-Parameter (Kategorie + Suche bleiben erhalten).
+/// Inaktiv → URL mit `filter=naechste-7-tage` (Kategorie + Suche bleiben erhalten).
+fn build_next_seven_days_toggle_url(
+    is_active: bool,
+    active_categories: &[String],
+    search_query: &str,
+) -> String {
+    let mut params: Vec<String> = Vec::new();
+
+    if !search_query.is_empty() {
+        params.push(format!("q={}", urlencoding::encode(search_query)));
+    }
+
+    for cat in active_categories {
+        params.push(format!("kategorie={}", urlencoding::encode(cat)));
+    }
+
+    if !is_active {
+        params.push("filter=naechste-7-tage".to_string());
+    }
+
+    if params.is_empty() {
+        "/".to_string()
+    } else {
+        format!("/?{}", params.join("&"))
+    }
+}
+
 /// Normalisiert Kategorienamen aus URL-Parametern auf die kanonische Schreibweise aus VALID_CATEGORIES.
 /// Ungültige Kategorien werden stillschweigend ignoriert.
 fn normalize_categories(raw: Vec<String>) -> Vec<String> {
@@ -251,6 +309,7 @@ fn normalize_categories(raw: Vec<String>) -> Vec<String> {
 /// Unterstützt `?q=suchbegriff` für die Volltextsuche in Titel, Zutaten und Anleitung.
 /// Unterstützt `?kategorie=Brot&kategorie=Kuchen` für den Kategorie-Filter (ODER-Logik).
 /// Unterstützt `?filter=laenger-nicht-gemacht` für den "Länger nicht gemacht"-Filter.
+/// Unterstützt `?filter=naechste-7-tage` für den "Nächste 7 Tage"-Filter.
 pub async fn index(
     State(pool): State<Arc<SqlitePool>>,
     Query(query): Query<IndexQuery>,
@@ -260,9 +319,12 @@ pub async fn index(
     let raw = raw_query.unwrap_or_default();
     let active_categories = normalize_categories(extract_kategorie_params(&raw));
     let not_made_filter_active = query.filter.as_deref() == Some("laenger-nicht-gemacht");
+    let next_seven_days_filter_active = query.filter.as_deref() == Some("naechste-7-tage");
 
     let recipes: Vec<Recipe> = if not_made_filter_active {
         filter_recipes_not_made_recently(&pool, &active_categories, &search_query).await?
+    } else if next_seven_days_filter_active {
+        filter_recipes_next_seven_days(&pool, &active_categories, &search_query).await?
     } else {
         filter_recipes_by_categories(&pool, &active_categories, &search_query).await?
     };
@@ -274,14 +336,32 @@ pub async fn index(
             title: r.title.clone(),
             categories: r.categories_vec(),
             planned_date: format_planned_date_short(r.planned_date),
+            planned_date_weekday: if next_seven_days_filter_active {
+                format_planned_date_with_weekday(r.planned_date)
+            } else {
+                None
+            },
         })
         .collect();
 
-    let category_filters =
-        build_category_filters(&active_categories, &search_query, not_made_filter_active);
-    let reset_categories_url = build_reset_url(&search_query, not_made_filter_active);
+    let category_filters = build_category_filters(
+        &active_categories,
+        &search_query,
+        not_made_filter_active,
+        next_seven_days_filter_active,
+    );
+    let reset_categories_url = build_reset_url(
+        &search_query,
+        not_made_filter_active,
+        next_seven_days_filter_active,
+    );
     let not_made_filter_toggle_url =
         build_not_made_toggle_url(not_made_filter_active, &active_categories, &search_query);
+    let next_seven_days_filter_toggle_url = build_next_seven_days_toggle_url(
+        next_seven_days_filter_active,
+        &active_categories,
+        &search_query,
+    );
 
     let template = IndexTemplate {
         recipes: recipe_items,
@@ -292,6 +372,8 @@ pub async fn index(
         reset_categories_url,
         not_made_filter_active,
         not_made_filter_toggle_url,
+        next_seven_days_filter_active,
+        next_seven_days_filter_toggle_url,
     };
     Ok(Html(render_template(template)?))
 }

@@ -31,7 +31,7 @@ test.describe('Filter "Länger nicht gemacht" (Story 9)', () => {
     await page.goto('/');
 
     // Then: Button "Länger nicht gemacht" ist sichtbar
-    const filterBtn = page.locator('a.sort-filter-btn');
+    const filterBtn = page.locator('a.sort-filter-btn', { hasText: 'Länger nicht gemacht' });
     await expect(filterBtn).toBeVisible();
     await expect(filterBtn).toContainText('Länger nicht gemacht');
 
@@ -58,7 +58,7 @@ test.describe('Filter "Länger nicht gemacht" (Story 9)', () => {
 
     // When: Filter "Länger nicht gemacht" aktiviert wird
     await page.goto('/');
-    await page.locator('a.sort-filter-btn').click();
+    await page.locator('a.sort-filter-btn', { hasText: 'Länger nicht gemacht' }).click();
 
     // Then: Pizza (kein Datum) erscheint als erstes
     const recipeItems = page.locator('.recipe-item h2');
@@ -85,7 +85,7 @@ test.describe('Filter "Länger nicht gemacht" (Story 9)', () => {
 
     // When: Filter "Länger nicht gemacht" aktiviert wird
     await page.goto('/');
-    await page.locator('a.sort-filter-btn').click();
+    await page.locator('a.sort-filter-btn', { hasText: 'Länger nicht gemacht' }).click();
 
     // Then: Linseneintopf ist sichtbar
     await expect(page.locator('#recipe-results')).toContainText(`Linseneintopf ${suffix}`);
@@ -100,13 +100,14 @@ test.describe('Filter "Länger nicht gemacht" (Story 9)', () => {
     await createRecipeWithDate(page, `Gulasch ${suffix}`, ['Mittagessen'], '1.1.2020');
 
     await page.goto('/?filter=laenger-nicht-gemacht');
-    await expect(page.locator('a.sort-filter-btn')).toHaveAttribute('aria-pressed', 'true');
+    const filterBtn = page.locator('a.sort-filter-btn', { hasText: 'Länger nicht gemacht' });
+    await expect(filterBtn).toHaveAttribute('aria-pressed', 'true');
 
     // When: Filter-Button erneut geklickt wird (Toggle)
-    await page.locator('a.sort-filter-btn').click();
+    await filterBtn.click();
 
     // Then: Filter ist nicht mehr aktiv
-    await expect(page.locator('a.sort-filter-btn')).toHaveAttribute('aria-pressed', 'false');
+    await expect(filterBtn).toHaveAttribute('aria-pressed', 'false');
 
     // And: URL hat keinen filter-Parameter mehr
     const url = page.url();
@@ -140,8 +141,9 @@ test.describe('Filter "Länger nicht gemacht" (Story 9)', () => {
     await page.goto('/?filter=laenger-nicht-gemacht');
 
     // Then: Filter-Button ist als aktiv markiert
-    await expect(page.locator('a.sort-filter-btn')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('a.sort-filter-btn')).toHaveClass(/active/);
+    const filterBtn = page.locator('a.sort-filter-btn', { hasText: 'Länger nicht gemacht' });
+    await expect(filterBtn).toHaveAttribute('aria-pressed', 'true');
+    await expect(filterBtn).toHaveClass(/active/);
 
     // And: Rezept ist sichtbar und nach Datum sortiert
     await expect(page.locator('#recipe-results')).toContainText(`Pfannkuchen ${suffix}`);
@@ -156,7 +158,7 @@ test.describe('Filter "Länger nicht gemacht" (Story 9)', () => {
 
     // When: Kategorie "Brot" UND Filter "Länger nicht gemacht" aktiv
     await page.goto(`/?kategorie=Brot`);
-    await page.locator('a.sort-filter-btn').click();
+    await page.locator('a.sort-filter-btn', { hasText: 'Länger nicht gemacht' }).click();
 
     // Then: Nur Brot-Rezepte sichtbar
     await expect(page.locator('#recipe-results')).toContainText(`Dinkelbrot ${suffix}`);

@@ -68,6 +68,10 @@ pub struct IndexTemplate {
     pub not_made_filter_active: bool,
     /// URL zum Umschalten des "Länger nicht gemacht"-Filters.
     pub not_made_filter_toggle_url: String,
+    /// Ob der Filter "Nächste 7 Tage" aktiv ist.
+    pub next_seven_days_filter_active: bool,
+    /// URL zum Umschalten des "Nächste 7 Tage"-Filters.
+    pub next_seven_days_filter_toggle_url: String,
 }
 
 #[derive(Debug)]
@@ -77,6 +81,9 @@ pub struct RecipeListItem {
     pub categories: Vec<String>,
     /// Datum im kompakten Format (TT.MM.JJJJ) oder None.
     pub planned_date: Option<String>,
+    /// Datum mit Wochentag (z.B. "Mo, 31.03.2026") oder None.
+    /// Wird nur beim aktiven "Nächste 7 Tage"-Filter befüllt.
+    pub planned_date_weekday: Option<String>,
 }
 
 impl Default for RecipeFormTemplate {

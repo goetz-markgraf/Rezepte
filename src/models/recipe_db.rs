@@ -259,6 +259,70 @@ pub async fn filter_recipes_not_made_recently(
     Ok(recipes)
 }
 
+/// Filtert Rezepte nach dem Prinzip "Nächste 7 Tage":
+/// - Nur Rezepte mit `planned_date` zwischen heute (inklusive) und heute + 7 Tage (inklusive)
+/// - Rezepte ohne Datum, mit Vergangenheitsdatum oder > heute+7 werden ausgeschlossen
+/// - Sortierung: chronologisch aufsteigend nach Datum, bei gleichem Datum alphabetisch (deutsche Sortierung)
+///
+/// Optional kombinierbar mit Kategorie-Filter (ODER-Logik) und Volltextsuche (UND-Logik).
+pub async fn filter_recipes_next_seven_days(
+    pool: &SqlitePool,
+    categories: &[String],
+    search_query: &str,
+) -> Result<Vec<Recipe>, sqlx::Error> {
+    let category_clause = if categories.is_empty() {
+        String::new()
+    } else {
+        let conditions: Vec<String> = categories
+            .iter()
+            .map(|_| "LOWER(categories) LIKE ?".to_string())
+            .collect();
+        format!("AND ({})", conditions.join(" OR "))
+    };
+
+    let search_clause = if search_query.trim().is_empty() {
+        String::new()
+    } else {
+        "AND (LOWER(title) LIKE ? OR LOWER(ingredients) LIKE ? OR LOWER(instructions) LIKE ?)"
+            .to_string()
+    };
+
+    let sql = format!(
+        "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at \
+         FROM recipes \
+         WHERE planned_date >= DATE('now') \
+           AND planned_date <= DATE('now', '+7 days') \
+         {category_clause} {search_clause} \
+         ORDER BY planned_date ASC"
+    );
+
+    let mut query = sqlx::query_as::<_, Recipe>(&sql);
+
+    for category in categories {
+        let pattern = format!("%\"{}\"%", category.to_lowercase());
+        query = query.bind(pattern);
+    }
+
+    if !search_query.trim().is_empty() {
+        let term = format!("%{}%", search_query.to_lowercase());
+        query = query.bind(term.clone()).bind(term.clone()).bind(term);
+    }
+
+    let mut recipes = query.fetch_all(pool).await?;
+
+    // Sekundärsortierung innerhalb gleichen Datums: alphabetisch (deutsche Sortierung)
+    recipes.sort_by(|a, b| {
+        let date_cmp = a.planned_date.cmp(&b.planned_date);
+        if date_cmp == std::cmp::Ordering::Equal {
+            normalize_for_sort(&a.title).cmp(&normalize_for_sort(&b.title))
+        } else {
+            date_cmp
+        }
+    });
+
+    Ok(recipes)
+}
+
 /// Löscht ein Rezept anhand seiner ID. Gibt `RowNotFound` zurück, wenn die ID nicht existiert.
 pub async fn delete_recipe(pool: &SqlitePool, id: i64) -> Result<(), sqlx::Error> {
     let rows_affected = sqlx::query("DELETE FROM recipes WHERE id = ?1")
@@ -1201,5 +1265,388 @@ mod tests {
         // Then: Nur Dinkelbrot erscheint
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].title, "Dinkelbrot");
+    }
+
+    /// Berechnet ein relatives Datum als deutschen Datumsstring (T.M.JJJJ).
+    fn date_in_days(n: i64) -> String {
+        let today = time::OffsetDateTime::now_utc().date();
+        let target = today + time::Duration::days(n);
+        format!(
+            "{}.{}.{}",
+            target.day(),
+            target.month() as u8,
+            target.year()
+        )
+    }
+
+    #[tokio::test]
+    async fn next_seven_days_returns_recipes_within_window() {
+        // Given: Rezept morgen (im Fenster), Rezept in 8 Tagen (außerhalb)
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let tomorrow = date_in_days(1);
+        let day_eight = date_in_days(8);
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Morgen-Rezept", "Mittagessen", Some(&tomorrow)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Tag-8-Rezept", "Mittagessen", Some(&day_eight)),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter "Nächste 7 Tage"
+        let results = filter_recipes_next_seven_days(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: Nur Morgen-Rezept erscheint
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert!(
+            titles.contains(&"Morgen-Rezept"),
+            "Morgen-Rezept sollte enthalten sein"
+        );
+        assert!(
+            !titles.contains(&"Tag-8-Rezept"),
+            "Tag-8-Rezept sollte nicht enthalten sein"
+        );
+    }
+
+    #[tokio::test]
+    async fn next_seven_days_includes_today() {
+        // Given: Rezept mit heutigem Datum
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let today = date_in_days(0);
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Heute-Rezept", "Mittagessen", Some(&today)),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter aktiv
+        let results = filter_recipes_next_seven_days(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: Heute-Rezept erscheint
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert!(
+            titles.contains(&"Heute-Rezept"),
+            "Heute-Rezept sollte enthalten sein (inklusive Grenze)"
+        );
+    }
+
+    #[tokio::test]
+    async fn next_seven_days_includes_day_seven() {
+        // Given: Rezept in genau 7 Tagen
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let day_seven = date_in_days(7);
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Tag-7-Rezept", "Mittagessen", Some(&day_seven)),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter aktiv
+        let results = filter_recipes_next_seven_days(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: Tag-7-Rezept erscheint (inklusive Grenze)
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert!(
+            titles.contains(&"Tag-7-Rezept"),
+            "Tag-7-Rezept sollte enthalten sein (inklusive Grenze)"
+        );
+    }
+
+    #[tokio::test]
+    async fn next_seven_days_excludes_past_dates() {
+        // Given: Rezept mit Datum gestern
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let yesterday = date_in_days(-1);
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Gestern-Rezept", "Mittagessen", Some(&yesterday)),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter aktiv
+        let results = filter_recipes_next_seven_days(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: Gestern-Rezept erscheint nicht
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert!(
+            !titles.contains(&"Gestern-Rezept"),
+            "Gestern-Rezept sollte ausgeschlossen sein"
+        );
+    }
+
+    #[tokio::test]
+    async fn next_seven_days_excludes_null_dates() {
+        // Given: Rezept ohne Datum
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Ohne-Datum-Rezept", "Mittagessen", None),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter aktiv
+        let results = filter_recipes_next_seven_days(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: Rezept ohne Datum erscheint nicht
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert!(
+            !titles.contains(&"Ohne-Datum-Rezept"),
+            "Rezept ohne Datum sollte ausgeschlossen sein"
+        );
+    }
+
+    #[tokio::test]
+    async fn next_seven_days_excludes_day_eight() {
+        // Given: Rezept in 8 Tagen
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let day_eight = date_in_days(8);
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Tag-8-Rezept", "Mittagessen", Some(&day_eight)),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter aktiv
+        let results = filter_recipes_next_seven_days(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: Tag-8-Rezept erscheint nicht
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert!(
+            !titles.contains(&"Tag-8-Rezept"),
+            "Tag-8-Rezept sollte ausgeschlossen sein"
+        );
+    }
+
+    #[tokio::test]
+    async fn next_seven_days_sorted_chronologically() {
+        // Given: Rezept in 5 Tagen, Rezept in 2 Tagen
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let day_five = date_in_days(5);
+        let day_two = date_in_days(2);
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Spaetes-Rezept", "Mittagessen", Some(&day_five)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Fruehes-Rezept", "Mittagessen", Some(&day_two)),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter aktiv
+        let results = filter_recipes_next_seven_days(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: Fruehes-Rezept (Tag 2) erscheint vor Spaetes-Rezept (Tag 5)
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        let fruehes_idx = titles.iter().position(|&t| t == "Fruehes-Rezept").unwrap();
+        let spaetes_idx = titles.iter().position(|&t| t == "Spaetes-Rezept").unwrap();
+        assert!(
+            fruehes_idx < spaetes_idx,
+            "Früheres Datum soll zuerst erscheinen"
+        );
+    }
+
+    #[tokio::test]
+    async fn next_seven_days_same_date_sorted_alphabetically() {
+        // Given: Zwei Rezepte am gleichen Tag (Umlaut-Test)
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let day_three = date_in_days(3);
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Bananen-Smoothie", "Snacks", Some(&day_three)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Äpfel-Salat", "Snacks", Some(&day_three)),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter aktiv
+        let results = filter_recipes_next_seven_days(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: Äpfel-Salat (Ä wie A) erscheint vor Bananen-Smoothie
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        let aepfel_idx = titles.iter().position(|&t| t == "Äpfel-Salat").unwrap();
+        let bananen_idx = titles
+            .iter()
+            .position(|&t| t == "Bananen-Smoothie")
+            .unwrap();
+        assert!(
+            aepfel_idx < bananen_idx,
+            "Äpfel-Salat (Ä≈A) soll vor Bananen-Smoothie erscheinen"
+        );
+    }
+
+    #[tokio::test]
+    async fn next_seven_days_combined_with_category_filter() {
+        // Given: Brot-Rezept und Mittagessen-Rezept, beide im Fenster
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let day_two = date_in_days(2);
+        let day_three = date_in_days(3);
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Dinkelbrot", "Brot", Some(&day_two)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Spaghetti", "Mittagessen", Some(&day_three)),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter "Nächste 7 Tage" + Kategorie "Brot"
+        let results = filter_recipes_next_seven_days(&pool, &["Brot".to_string()], "")
+            .await
+            .unwrap();
+
+        // Then: Nur Dinkelbrot (Brot), Spaghetti (Mittagessen) ausgeschlossen
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert!(
+            titles.contains(&"Dinkelbrot"),
+            "Dinkelbrot sollte enthalten sein"
+        );
+        assert!(
+            !titles.contains(&"Spaghetti"),
+            "Spaghetti (Mittagessen) sollte ausgeschlossen sein"
+        );
+    }
+
+    #[tokio::test]
+    async fn next_seven_days_combined_with_search_query() {
+        // Given: Zwei Rezepte im Fenster
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let day_two = date_in_days(2);
+        let day_three = date_in_days(3);
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Dinkelbrot", "Brot", Some(&day_two)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Roggenbrot", "Brot", Some(&day_three)),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter "Nächste 7 Tage" + Suchbegriff "dinkel"
+        let results = filter_recipes_next_seven_days(&pool, &[], "dinkel")
+            .await
+            .unwrap();
+
+        // Then: Nur Dinkelbrot erscheint
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "Dinkelbrot");
+    }
+
+    #[tokio::test]
+    async fn next_seven_days_returns_empty_when_no_recipes_in_window() {
+        // Given: Alle Rezepte außerhalb des Fensters
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let yesterday = date_in_days(-1);
+        let day_eight = date_in_days(8);
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Vergangenes", "Mittagessen", Some(&yesterday)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Zu-Weit-Weg", "Mittagessen", Some(&day_eight)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Kein-Datum", "Mittagessen", None),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter aktiv
+        let results = filter_recipes_next_seven_days(&pool, &[], "")
+            .await
+            .unwrap();
+
+        // Then: Leere Liste
+        assert!(
+            results.is_empty(),
+            "Keine Rezepte im 7-Tage-Fenster sollten gefunden werden"
+        );
     }
 }

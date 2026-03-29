@@ -46,13 +46,16 @@
     {% if not_made_filter_active %}
     <input type="hidden" name="filter" value="laenger-nicht-gemacht">
     {% endif %}
+    {% if next_seven_days_filter_active %}
+    <input type="hidden" name="filter" value="naechste-7-tage">
+    {% endif %}
 </form>
 
 <nav class="category-filter" aria-label="Nach Kategorie filtern">
     <a
         href="{{ reset_categories_url }}"
-        class="category-filter-btn{% if active_categories.is_empty() && !not_made_filter_active %} active{% endif %}"
-        aria-pressed="{{ active_categories.is_empty() && !not_made_filter_active }}"
+        class="category-filter-btn{% if active_categories.is_empty() && !not_made_filter_active && !next_seven_days_filter_active %} active{% endif %}"
+        aria-pressed="{{ active_categories.is_empty() && !not_made_filter_active && !next_seven_days_filter_active }}"
         hx-get="{{ reset_categories_url }}"
         hx-target="#recipe-results"
         hx-push-url="true"
@@ -81,6 +84,15 @@
         hx-push-url="true"
         hx-select="#recipe-results"
     >Länger nicht gemacht</a>
+    <a
+        href="{{ next_seven_days_filter_toggle_url }}"
+        class="sort-filter-btn{% if next_seven_days_filter_active %} active{% endif %}"
+        aria-pressed="{{ next_seven_days_filter_active }}"
+        hx-get="{{ next_seven_days_filter_toggle_url }}"
+        hx-target="#recipe-results"
+        hx-push-url="true"
+        hx-select="#recipe-results"
+    >Nächste 7 Tage</a>
 </div>
 
 <script>
@@ -120,6 +132,14 @@
 <p class="search-no-results">Keine Rezepte in dieser Kategorie ohne zukünftiges Datum.</p>
 {% else if recipes.is_empty() && not_made_filter_active %}
 <p class="search-no-results">Keine Rezepte ohne zukünftiges Datum gefunden.</p>
+{% else if recipes.is_empty() && next_seven_days_filter_active && !search_query.is_empty() && !active_categories.is_empty() %}
+<p class="search-no-results">Keine Rezepte für "{{ search_query }}" in den gewählten Kategorien für die nächsten 7 Tage gefunden.</p>
+{% else if recipes.is_empty() && next_seven_days_filter_active && !search_query.is_empty() %}
+<p class="search-no-results">Keine Rezepte für "{{ search_query }}" in den nächsten 7 Tagen gefunden.</p>
+{% else if recipes.is_empty() && next_seven_days_filter_active && !active_categories.is_empty() %}
+<p class="search-no-results">Keine Rezepte in dieser Kategorie für die nächsten 7 Tage geplant.</p>
+{% else if recipes.is_empty() && next_seven_days_filter_active %}
+<p class="search-no-results">Keine Rezepte für die nächsten 7 Tage geplant.</p>
 {% else if recipes.is_empty() && !search_query.is_empty() && !active_categories.is_empty() %}
 <p class="search-no-results">Keine Rezepte für "{{ search_query }}" in den gewählten Kategorien gefunden.</p>
 {% else if recipes.is_empty() && !search_query.is_empty() %}
@@ -143,7 +163,9 @@
                     <span class="category-tag">{{ category }}</span>
                     {% endfor %}
                 </div>
-                {% if let Some(date) = recipe.planned_date %}
+                {% if let Some(date) = recipe.planned_date_weekday %}
+                <span class="recipe-date recipe-date-weekday">{{ date }}</span>
+                {% else if let Some(date) = recipe.planned_date %}
                 <span class="recipe-date">{{ date }}</span>
                 {% endif %}
             </a>
