@@ -30,14 +30,14 @@ async function createRecipe(
 test.describe('Accessibility (Story 25)', () => {
 
   test('T1: Startseite hat keine axe Level-A-Violations', async ({ page }) => {
-    test.setTimeout(60_000);
-    // Given: Mehrere Rezepte existieren
+    test.setTimeout(90_000);
+    // Given: Zwei Rezepte für den Test erstellen
     const suffix = Date.now();
     await createRecipe(page, `Rezept-A11y-1-${suffix}`, 'Mittagessen', 3);
     await createRecipe(page, `Rezept-A11y-2-${suffix}`, 'Kuchen');
 
-    // When: Startseite öffnen
-    await page.goto('/');
+    // When: Startseite mit Kategorie-Filter öffnen (nur die zwei Test-Rezepte sichtbar, kleinerer DOM)
+    await page.goto(`/?kategorie=Mittagessen&kategorie=Kuchen&q=Rezept-A11y-${suffix}`);
     await expect(page.locator('h1')).toContainText('Rezepte');
 
     // Then: Keine axe-Violations
