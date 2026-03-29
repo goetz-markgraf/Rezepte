@@ -61,7 +61,7 @@ Rezepte bewerten und Zubereitungsdaten verwalten.
 
 | Nr | Story | Status |
 |----|-------|--------|
-| 14 | [Rezept mit 3-5 Sternen bewerten](./14-rezept-bewertung/story.md) | Offen |
+| 14 | [Rezept mit 3-5 Sternen bewerten](./14-rezept-bewertung/story.md) | In Arbeit |
 | 15 | [Datum "Geplant am" setzen (Vergangenheit und Zukunft)](./15-datum-setzen/story.md) | Dublette |
 | 16 | [Wochentag-Picker für intuitive Datumauswahl](./16-wochentag-picker/story.md) | Offen |
 | 17 | [Inline-Bewertung ohne Edit-Mode](./17-inline-bewertung/story.md) | Offen |
