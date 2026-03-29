@@ -39,6 +39,11 @@ pub fn create_router(pool: SqlitePool) -> Router {
             "/recipes/:id/rating",
             post(recipes::update_recipe_rating_handler),
         )
+        .route("/saved-filters", post(recipes::create_saved_filter_handler))
+        .route(
+            "/saved-filters/:id/delete",
+            post(recipes::delete_saved_filter_handler),
+        )
         .nest_service("/static", ServeDir::new("src/static"))
         .with_state(pool)
 }

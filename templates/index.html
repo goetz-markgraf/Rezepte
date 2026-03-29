@@ -119,6 +119,69 @@
     {% endif %}
 </div>
 
+{% if !saved_filters.is_empty() %}
+<div class="saved-filters" aria-label="Gespeicherte Filter">
+    {% for sf in saved_filters %}
+    <div class="saved-filter-item">
+        <a
+            href="{{ sf.url }}"
+            class="saved-filter-btn"
+            hx-get="{{ sf.url }}"
+            hx-target="#recipe-results"
+            hx-push-url="true"
+            hx-select="#recipe-results"
+        >{{ sf.name }}</a>
+        <form
+            method="POST"
+            action="/saved-filters/{{ sf.id }}/delete"
+            class="saved-filter-delete-form"
+        >
+            <button
+                type="submit"
+                class="btn-icon saved-filter-delete-btn"
+                aria-label="{{ sf.delete_aria_label }}"
+                hx-post="/saved-filters/{{ sf.id }}/delete"
+                hx-target="closest .saved-filter-item"
+                hx-swap="delete"
+            >{% call icons::icon_x() %}</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if any_filter_active %}
+<div class="save-filter-area">
+    {% if let Some(err) = save_error %}
+        {% if err == "duplikat" %}
+        <p class="save-filter-error" role="alert">
+            Filter "{{ save_name.as_deref().unwrap_or("") }}" existiert bereits.
+            Wähle einen anderen Namen oder lösche den vorhandenen Filter zuerst.
+        </p>
+        {% endif %}
+    {% endif %}
+    <form
+        method="POST"
+        action="/saved-filters"
+        class="save-filter-form"
+    >
+        <input type="hidden" name="query_string" value="{{ current_query_string }}">
+        <label for="save-filter-name" class="visually-hidden">Name für diesen Filter</label>
+        <input
+            id="save-filter-name"
+            name="name"
+            type="text"
+            placeholder="Filtername..."
+            maxlength="100"
+            required
+            class="save-filter-input"
+            {% if let Some(n) = save_name %}value="{{ n }}"{% endif %}
+        >
+        <button type="submit" class="btn-secondary save-filter-submit">Filter speichern</button>
+    </form>
+</div>
+{% endif %}
+
 <script>
 (function() {
     var input = document.getElementById('q');

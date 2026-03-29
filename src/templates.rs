@@ -152,6 +152,16 @@ pub struct CategoryFilterItem {
     pub toggle_url: String,
 }
 
+/// Ein gespeicherter Filter für die Template-Darstellung.
+pub struct SavedFilterItem {
+    pub id: i64,
+    pub name: String,
+    /// Ziel-URL für den Klick: "/?<query_string>"
+    pub url: String,
+    /// ARIA-Label für den Löschen-Button: "Filter '<name>' löschen"
+    pub delete_aria_label: String,
+}
+
 /// Template für die Rezept-Übersichtsseite.
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -182,6 +192,15 @@ pub struct IndexTemplate {
     /// Ob irgendein Filter aktiv ist (Kategorie, Suche, Datumsfilter oder Bewertung).
     /// Steuert die Sichtbarkeit des "Alle Filter zurücksetzen"-Buttons.
     pub any_filter_active: bool,
+    /// Alle gespeicherten Filter (aus DB, für die Anzeige).
+    pub saved_filters: Vec<SavedFilterItem>,
+    /// Query-String des aktuellen Filterzustands (für das Speichern-Formular).
+    /// Leer wenn kein Filter aktiv. Format: "kategorie=Brot&bewertung=gut"
+    pub current_query_string: String,
+    /// Fehler beim Speichern: "duplikat" | None
+    pub save_error: Option<String>,
+    /// Der Name, der beim Speichern verwendet wurde (für Fehlermeldung im Template).
+    pub save_name: Option<String>,
 }
 
 #[derive(Debug)]

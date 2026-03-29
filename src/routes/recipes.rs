@@ -1,17 +1,18 @@
 use crate::error::AppError;
 use crate::models::recipe::validate_rating;
 use crate::models::{
-    create_recipe, delete_recipe, filter_recipes_by_categories, filter_recipes_next_seven_days,
-    filter_recipes_not_made_recently, get_recipe_by_id, update_recipe, update_recipe_rating,
-    CreateRecipe, Recipe, UpdateRecipe, VALID_CATEGORIES,
+    create_recipe, create_saved_filter, delete_recipe, delete_saved_filter,
+    filter_recipes_by_categories, filter_recipes_next_seven_days, filter_recipes_not_made_recently,
+    get_all_saved_filters, get_recipe_by_id, update_recipe, update_recipe_rating, CreateRecipe,
+    CreateSavedFilter, Recipe, UpdateRecipe, VALID_CATEGORIES,
 };
 use crate::templates::{
     CategoryFilterItem, ConfirmDeleteTemplate, IndexTemplate, InlineRatingTemplate,
-    NotFoundTemplate, RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem,
+    NotFoundTemplate, RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem, SavedFilterItem,
 };
 use axum::{
     extract::{Path, Query, RawQuery, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::{Html, IntoResponse, Redirect},
 };
 use serde::Deserialize;
@@ -79,6 +80,8 @@ pub struct IndexQuery {
     pub deleted: Option<String>,
     pub q: Option<String>,
     pub bewertung: Option<String>,
+    pub save_error: Option<String>,
+    pub save_name: Option<String>,
 }
 
 /// Extrahiert alle `kategorie`-Parameter aus dem Raw-Query-String.
@@ -373,6 +376,38 @@ fn build_bewertung_toggle_url(
     }
 }
 
+/// Baut den Query-String aus den aktiven Filterparametern (ohne führendes `?`).
+/// Ergebnis wird für das Speichern-Formular verwendet.
+fn build_current_query_string(
+    active_categories: &[String],
+    search_query: &str,
+    not_made_filter_active: bool,
+    next_seven_days_filter_active: bool,
+    bewertung: Option<&str>,
+) -> String {
+    let mut params: Vec<String> = Vec::new();
+
+    if !search_query.is_empty() {
+        params.push(format!("q={}", urlencoding::encode(search_query)));
+    }
+
+    for cat in active_categories {
+        params.push(format!("kategorie={}", urlencoding::encode(cat)));
+    }
+
+    if not_made_filter_active {
+        params.push("filter=laenger-nicht-gemacht".to_string());
+    } else if next_seven_days_filter_active {
+        params.push("filter=naechste-7-tage".to_string());
+    }
+
+    if let Some(b) = bewertung {
+        params.push(format!("bewertung={}", urlencoding::encode(b)));
+    }
+
+    params.join("&")
+}
+
 /// Normalisiert Kategorienamen aus URL-Parametern auf die kanonische Schreibweise aus VALID_CATEGORIES.
 /// Ungültige Kategorien werden stillschweigend ignoriert.
 fn normalize_categories(raw: Vec<String>) -> Vec<String> {
@@ -505,6 +540,25 @@ pub async fn index(
         || next_seven_days_filter_active
         || bewertung.is_some();
 
+    let current_query_string = build_current_query_string(
+        &active_categories,
+        &search_query,
+        not_made_filter_active,
+        next_seven_days_filter_active,
+        bewertung.as_deref(),
+    );
+
+    let saved_filters = get_all_saved_filters(&pool).await?;
+    let saved_filter_items: Vec<SavedFilterItem> = saved_filters
+        .into_iter()
+        .map(|sf| SavedFilterItem {
+            id: sf.id,
+            name: sf.name.clone(),
+            url: format!("/?{}", sf.query_string),
+            delete_aria_label: format!("Filter '{}' löschen", sf.name),
+        })
+        .collect();
+
     let template = IndexTemplate {
         recipes: recipe_items,
         deleted_title: query.deleted,
@@ -520,6 +574,10 @@ pub async fn index(
         bewertung_gut_toggle_url,
         bewertung_favoriten_toggle_url,
         any_filter_active,
+        saved_filters: saved_filter_items,
+        current_query_string,
+        save_error: query.save_error,
+        save_name: query.save_name,
     };
     Ok(Html(render_template(template)?))
 }
@@ -786,4 +844,87 @@ pub async fn delete_recipe_handler(
 
     let encoded_title = urlencoding::encode(&title);
     Ok(Redirect::to(&format!("/?deleted={encoded_title}")).into_response())
+}
+
+/// Speichert den aktuellen Filterzustand unter einem Namen.
+/// Bei Duplikat-Namen → Redirect mit Fehler-Query-Parameter.
+pub async fn create_saved_filter_handler(
+    State(pool): State<Arc<SqlitePool>>,
+    axum::extract::RawForm(body): axum::extract::RawForm,
+) -> Result<impl IntoResponse, AppError> {
+    let params = parse_form_data(&body);
+
+    let name = params
+        .get("name")
+        .and_then(|v| v.first())
+        .cloned()
+        .unwrap_or_default();
+    let query_string = params
+        .get("query_string")
+        .and_then(|v| v.first())
+        .cloned()
+        .unwrap_or_default();
+
+    let filter = CreateSavedFilter {
+        name: name.clone(),
+        query_string: query_string.clone(),
+    };
+
+    if !filter.is_valid() {
+        let encoded_name = urlencoding::encode(&name);
+        let redirect_url = if query_string.is_empty() {
+            format!("/?save_error=ungueltig&save_name={encoded_name}")
+        } else {
+            format!(
+                "/?{}&save_error=ungueltig&save_name={encoded_name}",
+                query_string
+            )
+        };
+        return Ok(Redirect::to(&redirect_url).into_response());
+    }
+
+    match create_saved_filter(&pool, &filter).await {
+        Ok(_) => Ok(Redirect::to(&format!("/?{}", query_string)).into_response()),
+        Err(sqlx::Error::Database(db_err)) if db_err.is_unique_violation() => {
+            let encoded_name = urlencoding::encode(&name);
+            let redirect_url = if query_string.is_empty() {
+                format!("/?save_error=duplikat&save_name={encoded_name}")
+            } else {
+                format!(
+                    "/?{}&save_error=duplikat&save_name={encoded_name}",
+                    query_string
+                )
+            };
+            Ok(Redirect::to(&redirect_url).into_response())
+        }
+        Err(e) => Err(AppError::Database(e)),
+    }
+}
+
+/// Löscht einen gespeicherten Filter anhand seiner ID.
+/// Bei HTMX-Request: leere 200-Antwort (HTMX entfernt das Element per `hx-swap="delete"`).
+/// Ohne HTMX: Redirect zu `/`.
+pub async fn delete_saved_filter_handler(
+    State(pool): State<Arc<SqlitePool>>,
+    Path(id): Path<i64>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, AppError> {
+    delete_saved_filter(&pool, id).await.map_err(|e| match e {
+        sqlx::Error::RowNotFound => {
+            AppError::NotFound(format!("Gespeicherter Filter mit ID {} nicht gefunden", id))
+        }
+        other => AppError::Database(other),
+    })?;
+
+    let is_htmx = headers
+        .get("HX-Request")
+        .and_then(|v| v.to_str().ok())
+        .map(|v| v == "true")
+        .unwrap_or(false);
+
+    if is_htmx {
+        Ok(StatusCode::OK.into_response())
+    } else {
+        Ok(Redirect::to("/").into_response())
+    }
 }

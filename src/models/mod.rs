@@ -1,5 +1,7 @@
 pub mod recipe;
 pub mod recipe_db;
+pub mod saved_filter;
+pub mod saved_filter_db;
 
 pub use recipe::{CreateRecipe, Recipe, UpdateRecipe, VALID_CATEGORIES};
 pub use recipe_db::{
@@ -7,3 +9,5 @@ pub use recipe_db::{
     filter_recipes_not_made_recently, get_recipe_by_id, get_recipes_current_week,
     get_recipes_drei_tage, update_recipe, update_recipe_rating,
 };
+pub use saved_filter::CreateSavedFilter;
+pub use saved_filter_db::{create_saved_filter, delete_saved_filter, get_all_saved_filters};
