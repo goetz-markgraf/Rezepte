@@ -78,7 +78,7 @@ Spezifische Features für die Wochenplanung am Mittwoch/Donnerstag.
 | Nr | Story | Status |
 |----|-------|--------|
 | 18 | [Wochenvorschau für geplante Rezepte](./18-wochenvorschau/story.md) | Abgeschlossen |
-| 19 | [Wochenvorschau nach Wochentagen formatiert](./19-wochentage-formatierung/story.md) | In Arbeit |
+| 19 | [Wochenvorschau nach Wochentagen formatiert](./19-wochentage-formatierung/story.md) | Abgeschlossen |
 | 20 | ["Heute gekocht" Ansicht mit Highlight](./20-heute-gekocht/story.md) | Offen |
 
 ---
