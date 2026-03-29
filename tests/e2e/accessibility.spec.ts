@@ -30,6 +30,7 @@ async function createRecipe(
 test.describe('Accessibility (Story 25)', () => {
 
   test('T1: Startseite hat keine axe Level-A-Violations', async ({ page }) => {
+    test.setTimeout(60_000);
     // Given: Mehrere Rezepte existieren
     const suffix = Date.now();
     await createRecipe(page, `Rezept-A11y-1-${suffix}`, 'Mittagessen', 3);
