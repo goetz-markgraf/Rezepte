@@ -114,6 +114,9 @@
         hx-push-url="true"
         hx-select="#recipe-results"
     >★★★★★ Favoriten</a>
+    {% if any_filter_active %}
+    <a href="/" class="btn-link reset-all-filters-btn" aria-label="Alle Filter zurücksetzen">Alle Filter zurücksetzen</a>
+    {% endif %}
 </div>
 
 <script>
@@ -145,7 +148,15 @@
 </script>
 
 <div id="recipe-results" aria-live="polite">
-{% if recipes.is_empty() && not_made_filter_active && !search_query.is_empty() && !active_categories.is_empty() %}
+{% if recipes.is_empty() && not_made_filter_active && bewertung_filter.is_some() && !search_query.is_empty() && !active_categories.is_empty() %}
+<p class="search-no-results">Keine Rezepte für "{{ search_query }}" mit dieser Bewertung in den gewählten Kategorien ohne zukünftiges Datum gefunden.</p>
+{% else if recipes.is_empty() && not_made_filter_active && bewertung_filter.is_some() && !search_query.is_empty() %}
+<p class="search-no-results">Keine Rezepte für "{{ search_query }}" mit dieser Bewertung ohne zukünftiges Datum gefunden.</p>
+{% else if recipes.is_empty() && not_made_filter_active && bewertung_filter.is_some() && !active_categories.is_empty() %}
+<p class="search-no-results">Keine Rezepte mit dieser Bewertung in den gewählten Kategorien ohne zukünftiges Datum gefunden.</p>
+{% else if recipes.is_empty() && not_made_filter_active && bewertung_filter.is_some() %}
+<p class="search-no-results">Keine Rezepte mit dieser Bewertung ohne zukünftiges Datum gefunden.</p>
+{% else if recipes.is_empty() && not_made_filter_active && !search_query.is_empty() && !active_categories.is_empty() %}
 <p class="search-no-results">Keine Rezepte für "{{ search_query }}" in den gewählten Kategorien ohne zukünftiges Datum gefunden.</p>
 {% else if recipes.is_empty() && not_made_filter_active && !search_query.is_empty() %}
 <p class="search-no-results">Keine Rezepte für "{{ search_query }}" ohne zukünftiges Datum gefunden.</p>
@@ -153,6 +164,14 @@
 <p class="search-no-results">Keine Rezepte in dieser Kategorie ohne zukünftiges Datum.</p>
 {% else if recipes.is_empty() && not_made_filter_active %}
 <p class="search-no-results">Keine Rezepte ohne zukünftiges Datum gefunden.</p>
+{% else if recipes.is_empty() && next_seven_days_filter_active && bewertung_filter.is_some() && !search_query.is_empty() && !active_categories.is_empty() %}
+<p class="search-no-results">Keine Rezepte für "{{ search_query }}" mit dieser Bewertung in den gewählten Kategorien für die nächsten 7 Tage gefunden.</p>
+{% else if recipes.is_empty() && next_seven_days_filter_active && bewertung_filter.is_some() && !search_query.is_empty() %}
+<p class="search-no-results">Keine Rezepte für "{{ search_query }}" mit dieser Bewertung in den nächsten 7 Tagen gefunden.</p>
+{% else if recipes.is_empty() && next_seven_days_filter_active && bewertung_filter.is_some() && !active_categories.is_empty() %}
+<p class="search-no-results">Keine Rezepte mit dieser Bewertung in den gewählten Kategorien für die nächsten 7 Tage geplant.</p>
+{% else if recipes.is_empty() && next_seven_days_filter_active && bewertung_filter.is_some() %}
+<p class="search-no-results">Keine Rezepte mit dieser Bewertung für die nächsten 7 Tage geplant.</p>
 {% else if recipes.is_empty() && next_seven_days_filter_active && !search_query.is_empty() && !active_categories.is_empty() %}
 <p class="search-no-results">Keine Rezepte für "{{ search_query }}" in den gewählten Kategorien für die nächsten 7 Tage gefunden.</p>
 {% else if recipes.is_empty() && next_seven_days_filter_active && !search_query.is_empty() %}

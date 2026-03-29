@@ -586,6 +586,33 @@ input[type="search"]:focus {
     color: white;
 }
 
+/* "Alle Filter zurücksetzen"-Button */
+.reset-all-filters-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    text-decoration: none;
+    color: #6b7280;
+    background: none;
+    border: 1px solid #d1d5db;
+    border-radius: 9999px;
+    cursor: pointer;
+    min-height: 44px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.reset-all-filters-btn:hover {
+    color: var(--error-color);
+    border-color: var(--error-color);
+}
+
+.reset-all-filters-btn:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
 .recipe-date-weekday {
     font-weight: 500;
 }

@@ -78,7 +78,6 @@ pub struct RecipeDetailQuery {
 pub struct IndexQuery {
     pub deleted: Option<String>,
     pub q: Option<String>,
-    pub filter: Option<String>,
     pub bewertung: Option<String>,
 }
 
@@ -96,6 +95,19 @@ fn extract_kategorie_params(raw_query: &str) -> Vec<String> {
             }
         })
         .collect()
+}
+
+/// Extrahiert den ersten `filter`-Parameter aus dem Raw-Query-String.
+/// Bei mehrfach gesetztem `filter` (z.B. DeepLink-Konflikt) gewinnt der erste Wert.
+fn extract_filter_param(raw_query: &str) -> Option<String> {
+    raw_query.split('&').find_map(|pair| {
+        let (key, value) = pair.split_once('=')?;
+        if key == "filter" {
+            urlencoding::decode(value).ok().map(|v| v.into_owned())
+        } else {
+            None
+        }
+    })
 }
 
 /// Formatiert einen SQLite-Timestamp (z.B. "2026-03-27 10:45:00") in ein deutsches Datumsformat ("27.03.2026").
@@ -388,8 +400,11 @@ pub async fn index(
     let search_query = query.q.unwrap_or_default();
     let raw = raw_query.unwrap_or_default();
     let active_categories = normalize_categories(extract_kategorie_params(&raw));
-    let not_made_filter_active = query.filter.as_deref() == Some("laenger-nicht-gemacht");
-    let next_seven_days_filter_active = query.filter.as_deref() == Some("naechste-7-tage");
+    // filter-Parameter aus Raw-Query extrahieren, damit mehrfache filter=-Werte (DeepLink-Konflikt)
+    // graceful behandelt werden: erster Wert gewinnt, kein 400-Fehler.
+    let filter_param = extract_filter_param(&raw);
+    let not_made_filter_active = filter_param.as_deref() == Some("laenger-nicht-gemacht");
+    let next_seven_days_filter_active = filter_param.as_deref() == Some("naechste-7-tage");
 
     // Bewertungsfilter: nur "gut" und "favoriten" akzeptieren, Rest ignorieren
     let bewertung: Option<String> = query.bewertung.and_then(|b| {
@@ -484,6 +499,12 @@ pub async fn index(
         next_seven_days_filter_active,
     );
 
+    let any_filter_active = !active_categories.is_empty()
+        || !search_query.is_empty()
+        || not_made_filter_active
+        || next_seven_days_filter_active
+        || bewertung.is_some();
+
     let template = IndexTemplate {
         recipes: recipe_items,
         deleted_title: query.deleted,
@@ -498,6 +519,7 @@ pub async fn index(
         bewertung_filter: bewertung,
         bewertung_gut_toggle_url,
         bewertung_favoriten_toggle_url,
+        any_filter_active,
     };
     Ok(Html(render_template(template)?))
 }

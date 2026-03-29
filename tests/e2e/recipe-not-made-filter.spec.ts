@@ -51,7 +51,7 @@ test.describe('Filter "Länger nicht gemacht" (Story 9)', () => {
 
   test('K2: Sortierung nach Datum aufsteigend, NULL-Daten zuerst', async ({ page }) => {
     // Given: Drei Rezepte mit unterschiedlichen Daten
-    const suffix = Date.now();
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     await createRecipeWithDate(page, `Spaghetti Bolognese ${suffix}`, ['Mittagessen'], '1.1.2026');
     await createRecipeWithDate(page, `Pfannkuchen ${suffix}`, ['Snacks'], '15.6.2025');
     await createRecipeWithDate(page, `Pizza ${suffix}`, ['Mittagessen']); // kein Datum

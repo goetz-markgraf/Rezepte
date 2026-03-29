@@ -82,6 +82,9 @@ pub struct IndexTemplate {
     pub bewertung_gut_toggle_url: String,
     /// Toggle-URL für den "Favoriten" (5 Sterne) Bewertungsfilter.
     pub bewertung_favoriten_toggle_url: String,
+    /// Ob irgendein Filter aktiv ist (Kategorie, Suche, Datumsfilter oder Bewertung).
+    /// Steuert die Sichtbarkeit des "Alle Filter zurücksetzen"-Buttons.
+    pub any_filter_active: bool,
 }
 
 #[derive(Debug)]
