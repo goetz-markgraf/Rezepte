@@ -92,7 +92,7 @@ Features zur Aufrechterhaltung der Datenqualität.
 | Nr | Story | Status |
 |----|-------|--------|
 | 21 | [Duplikaterkennung während Titeleingabe](./21-duplikaterkennung/story.md) | Abgeschlossen |
-| 22 | [Dubletten-Prüfung und Übersicht](./22-dubletten-pruefung/story.md) | Offen |
+| 22 | [Dubletten-Prüfung und Übersicht](./22-dubletten-pruefung/story.md) | In Arbeit |
 | 23 | [Rezepte mergen (Duplikate zusammenführen)](./23-rezepte-mergen/story.md) | Offen |
 
 ---
