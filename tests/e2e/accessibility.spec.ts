@@ -100,7 +100,7 @@ test.describe('Accessibility (Story 25)', () => {
     await page.locator('body').click();
 
     // Tab mehrfach drücken bis wir auf dem "Neues Rezept"-Link sind
-    const newRecipeLink = page.locator('a[href="/recipes/new"]');
+    const newRecipeLink = page.locator('.actions a[href="/recipes/new"]');
     await newRecipeLink.focus();
     await page.keyboard.press('Enter');
 
