@@ -48,7 +48,7 @@ Intelligente Filter und Suche für schnelle Rezeptfindung.
 | 09 | [Filter "Länger nicht gemacht"](./09-filter-laenger-nicht-gemacht/story.md) | Abgeschlossen |
 | 10 | [Filter "Nächste 7 Tage" (geplante Rezepte)](./10-filter-nächste-7-tage/story.md) | Abgeschlossen |
 | 11 | [Filter nach Bewertung (Beliebtheit)](./11-filter-bewertung/story.md) | Abgeschlossen |
-| 12 | [Kombinierte Filter (mehrere Filter gleichzeitig)](./12-kombinierte-filter/story.md) | Offen |
+| 12 | [Kombinierte Filter (mehrere Filter gleichzeitig)](./12-kombinierte-filter/story.md) | In Arbeit |
 | 13 | [Gespeicherte Filter für Schnellzugriff](./13-gespeicherte-filter/story.md) | Offen |
 
 ---
