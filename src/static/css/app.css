@@ -21,28 +21,35 @@ body {
     line-height: 1.6;
 }
 
+/* === Mobile: Basis (bis 767px) === */
+
 header {
     background-color: var(--card-bg);
     border-bottom: 1px solid var(--border-color);
-    padding: 1rem 2rem;
-    margin-bottom: 2rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
 }
 
 header .site-title {
     font-size: 1.5rem;
     font-weight: bold;
     color: var(--text-color);
+    text-decoration: none;
+}
+
+header .site-title:hover {
+    color: var(--primary-color);
 }
 
 main {
-    max-width: 800px;
-    margin: 0 auto;
     padding: 0 1rem;
 }
 
 h1 {
     margin-bottom: 1.5rem;
-    font-size: 2rem;
+    font-size: 1.5rem;
 }
 
 .form-group {
@@ -62,6 +69,7 @@ textarea {
     border: 1px solid var(--border-color);
     border-radius: 0.375rem;
     font-size: 1rem;
+    min-height: 44px;
 }
 
 .checkbox-group {
@@ -74,6 +82,8 @@ textarea {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.5rem 0;
 }
 
 .btn-primary,
@@ -86,6 +96,7 @@ textarea {
     font-weight: 500;
     text-decoration: none;
     cursor: pointer;
+    min-height: 44px;
 }
 
 .btn-primary {
@@ -97,11 +108,19 @@ textarea {
     background-color: var(--bg-color);
     color: var(--text-color);
     border: 1px solid var(--border-color);
-    margin-left: 1rem;
 }
 
 .form-actions {
     margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-actions .btn-primary,
+.form-actions .btn-secondary {
+    width: 100%;
+    text-align: center;
 }
 
 .errors {
@@ -142,13 +161,13 @@ textarea {
 
 .recipe-item-content {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: stretch;
 }
 
 .recipe-item-link {
     display: block;
-    padding: 1.5rem;
+    padding: 1rem;
     min-height: 44px;
     text-decoration: none;
     color: inherit;
@@ -162,7 +181,7 @@ textarea {
 }
 
 .recipe-item-actions {
-    padding: 1rem;
+    padding: 0.5rem 1rem 1rem;
     flex-shrink: 0;
 }
 
@@ -185,7 +204,7 @@ textarea {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
-    padding: 2rem;
+    padding: 1rem;
 }
 
 section.ingredients,
@@ -217,39 +236,18 @@ pre {
 .actions {
     margin-top: 2rem;
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
     gap: 1rem;
-    flex-wrap: wrap;
-    align-items: center;
 }
 
-@media (max-width: 600px) {
-    .recipe-detail .actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .recipe-detail .actions .btn-primary,
-    .recipe-detail .actions .btn-secondary,
-    .recipe-detail .actions .btn-danger {
-        display: block;
-        width: 100%;
-        margin-left: 0;
-        text-align: center;
-    }
-
-    .recipe-item-content {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .recipe-item-link {
-        min-height: 44px;
-        padding: 1rem;
-    }
-
-    .recipe-item-actions {
-        padding: 0.5rem 1rem 1rem;
-    }
+.actions .btn-primary,
+.actions .btn-secondary,
+.actions .btn-danger {
+    display: block;
+    width: 100%;
+    margin-left: 0;
+    text-align: center;
 }
 
 .success {
@@ -291,7 +289,7 @@ pre {
     font-weight: 500;
     text-decoration: none;
     cursor: pointer;
-    margin-left: 1rem;
+    min-height: 44px;
 }
 
 .btn-danger:hover {
@@ -302,9 +300,7 @@ pre {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
-    padding: 2rem;
-    max-width: 600px;
-    margin: 0 auto;
+    padding: 1rem;
 }
 
 .confirm-question {
@@ -330,12 +326,19 @@ pre {
 
 .confirm-actions {
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
     gap: 1rem;
-    align-items: center;
+}
+
+.confirm-actions .btn-primary,
+.confirm-actions .btn-danger {
+    text-align: center;
+    width: 100%;
 }
 
 .inline-form {
-    display: inline;
+    display: block;
 }
 
 /* Icon-Styling */
@@ -402,6 +405,7 @@ pre {
 
 .search-input-group {
     display: flex;
+    flex-direction: column;
     gap: 0.5rem;
     align-items: stretch;
 }
@@ -414,6 +418,7 @@ input[type="search"] {
     border-radius: 0.375rem;
     font-size: 1rem;
     min-height: 44px;
+    width: 100%;
 }
 
 input[type="search"]::-webkit-search-cancel-button {
@@ -457,16 +462,6 @@ input[type="search"]:focus {
     text-align: center;
 }
 
-@media (max-width: 600px) {
-    .search-input-group {
-        flex-direction: column;
-    }
-
-    input[type="search"] {
-        width: 100%;
-    }
-}
-
 /* Kategorie-Filter */
 .category-filter {
     display: flex;
@@ -476,7 +471,8 @@ input[type="search"]:focus {
 }
 
 .category-filter-btn {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     padding: 0.375rem 1rem;
     border: 1px solid var(--border-color);
     border-radius: 9999px;
@@ -487,9 +483,7 @@ input[type="search"]:focus {
     background-color: var(--card-bg);
     cursor: pointer;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
-    min-height: 36px;
-    display: inline-flex;
-    align-items: center;
+    min-height: 44px;
 }
 
 .category-filter-btn:hover {
@@ -565,7 +559,7 @@ input[type="search"]:focus {
     background-color: var(--card-bg);
     cursor: pointer;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
-    min-height: 36px;
+    min-height: 44px;
 }
 
 .sort-filter-btn:hover {
@@ -587,4 +581,110 @@ input[type="search"]:focus {
     background-color: #6d28d9;
     border-color: #6d28d9;
     color: white;
+}
+
+/* === Tablet: ab 768px === */
+@media (min-width: 768px) {
+    header {
+        padding: 1rem 2rem;
+        margin-bottom: 2rem;
+    }
+
+    main {
+        padding: 0 2rem;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    .recipe-item-content {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .recipe-item-link {
+        padding: 1.5rem;
+    }
+
+    .recipe-item-actions {
+        padding: 1rem;
+    }
+
+    .recipe-detail {
+        padding: 2rem;
+    }
+
+    .actions {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .actions .btn-primary,
+    .actions .btn-secondary,
+    .actions .btn-danger {
+        display: inline-block;
+        width: auto;
+    }
+
+    .form-actions {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .form-actions .btn-primary,
+    .form-actions .btn-secondary {
+        width: auto;
+    }
+
+    .confirm-delete {
+        padding: 2rem;
+    }
+
+    .confirm-actions {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .confirm-actions .btn-primary,
+    .confirm-actions .btn-danger {
+        width: auto;
+    }
+
+    .inline-form {
+        display: inline;
+    }
+
+    .search-input-group {
+        flex-direction: row;
+        align-items: stretch;
+    }
+
+    input[type="search"] {
+        width: auto;
+    }
+}
+
+/* === Desktop: ab 1024px === */
+@media (min-width: 1024px) {
+    header {
+        padding: 1rem 2rem;
+    }
+
+    header .inner {
+        max-width: 960px;
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+    }
+
+    .confirm-delete {
+        max-width: 600px;
+        margin: 0 auto;
+    }
 }
