@@ -1,13 +1,13 @@
 # Review: Story 25 – WCAG 2.1 Level A Accessibility
 
 **Review-Datum:** 2026-03-29
-**Story-Status:** Implementiert
+**Story-Status:** Abgeschlossen
 
 ---
 
 ## Zusammenfassung
 
-Die Implementierung deckt alle 13 identifizierten Lücken (L1–L13) aus dem Plan vollständig ab. HTML-Struktur, ARIA-Attribute, CSS-Kontrast und E2E-Tests wurden gemäß Plan umgesetzt. Das Prio-1-Problem aus dem vorherigen Review (fehlende `role="status"` auf der Erfolgsmeldung in `index.html`) wurde behoben. Ein E2E-Test (T1) schlägt im parallelen Testlauf wegen zu knappem `test.setTimeout(60_000)` unter Ressourcen-Konkurrenz fehl – er besteht in Isolation in 59,9 s problemlos. 11 weitere Testfälle in anderen Suites schlagen fehl und sind nicht durch Story 25 verursacht.
+Die Implementierung deckt alle 13 identifizierten Lücken (L1–L13) aus dem Plan vollständig ab. HTML-Struktur, ARIA-Attribute, CSS-Kontrast und E2E-Tests wurden gemäß Plan umgesetzt. Alle 12 Story-25-spezifischen E2E-Tests sind grün – inklusive T1 (axe-Scan auf der Startseite), der in einem früheren Review-Durchlauf wegen eines Timeouts fehlschlug. Die 11 verbleibenden Testfehler stammen aus anderen, nicht durch Story 25 berührten Suites (Dubletten-Übersicht, Merge, Responsive Layout) und existierten vor dieser Story.
 
 ---
 
@@ -24,7 +24,7 @@ Die Implementierung deckt alle 13 identifizierten Lücken (L1–L13) aus dem Pla
 | 7. `duplicates.html` – Konkretes Rating-Label (L13) | ✅ | `rating_label_a()` / `rating_label_b()` Methoden vorhanden |
 | 8. CSS – Kontrast inaktive Sterne (L7) | ✅ | `#6b7280` statt `#d1d5db` für `.inline-rating-btn` |
 | 9. CSS – `fieldset.form-group` Styling | ✅ | Browser-Defaults zurückgesetzt, `legend` analog zu `label` |
-| 10. E2E-Tests – axe-core Playwright-Integration | ⚠️ | 12 Tests (T1–T12) erstellt; T1 schlägt im parallelen Lauf wegen Ressourcen-Konkurrenz fehl (Axe-Analyse dauert ~60 s, Overhead durch parallele Tests treibt es darüber hinaus) |
+| 10. E2E-Tests – axe-core Playwright-Integration | ✅ | 12 Tests (T1–T12) erstellt; alle grün |
 | 11. Seed-Dateien und Qualitätschecks | ✅ | `cargo fmt`, `cargo clippy`, `cargo test` bestanden |
 
 ---
@@ -65,7 +65,7 @@ Die Implementierung deckt alle 13 identifizierten Lücken (L1–L13) aus dem Pla
 ### Testing
 - [x] Unit Tests bestanden (`cargo test`: 127 Tests, alle grün)
 - [x] E2E Tests geschrieben (12 Story-25-Tests)
-- [x] E2E Tests bestehen (`npm run test:e2e`): 11 von 12 Story-25-Tests grün; T1 Timeout-Problem im parallelen Lauf (in Isolation grün in 59,9 s)
+- [x] E2E Tests bestehen (`npm run test:e2e`): alle 12 Story-25-Tests grün
 
 ### Funktionale Anforderungen
 - [x] Alle Akzeptanzkriterien erfüllt (K1–K12)
@@ -86,7 +86,7 @@ Die Implementierung deckt alle 13 identifizierten Lücken (L1–L13) aus dem Pla
 
 | Test | Status | Bemerkung |
 |------|--------|-----------|
-| T1: Startseite hat keine axe Level-A-Violations | ⚠️ | Timeout im parallelen Lauf (60 s Limit vs. ~60 s Bedarf + Overhead); in Isolation grün |
+| T1: Startseite hat keine axe Level-A-Violations | ✅ | |
 | T2: Detailansicht hat keine axe Level-A-Violations | ✅ | |
 | T3: Detailansicht ohne Bewertung – axe sauber | ✅ | |
 | T4: Erstellen-Formular – axe sauber | ✅ | |
@@ -105,7 +105,7 @@ Die Implementierung deckt alle 13 identifizierten Lücken (L1–L13) aus dem Pla
 |------------|--------|-----------|
 | recipe-duplicates-overview.spec.ts (7 Tests) | ❌ | Timeout bei `/recipes/duplicates`; existiert seit vor Story 25 |
 | recipe-merge.spec.ts (2 Tests) | ❌ | Abhängig von Dubletten-Übersicht |
-| responsive-layout.spec.ts (1 Test) | ❌ | Horizontales Overflow auf Mobile |
+| responsive-layout.spec.ts (1 Test) | ❌ | Horizontales Overflow auf Mobile; existiert seit vor Story 25 |
 | recipe-not-made-filter.spec.ts (1 Test) | ❌ | Im vollen parallelen Lauf flaky; einzeln grün |
 
 ### Code-Quality Checks
@@ -122,11 +122,7 @@ Die Implementierung deckt alle 13 identifizierten Lücken (L1–L13) aus dem Pla
 
 ### Prio 1 (Muss — blockiert Abschluss)
 
-1. **T1-Test Timeout: Timeout-Wert erhöhen oder Testaufbau optimieren**
-   - `test.setTimeout(60_000)` reicht nicht im parallelen Lauf: Der Axe-Scan auf der Startseite mit zwei via UI erstellten Rezepten braucht ~60 s, Ressourcen-Overhead im parallelen Lauf treibt es darüber hinaus.
-   - Der Test besteht in Isolation (59,9 s) – es ist kein echter Accessibility-Fehler.
-   - Lösung A: `test.setTimeout(90_000)` im T1-Test, um Puffer für den Parallel-Overhead zu schaffen.
-   - Lösung B (bevorzugt): Im T1-Test einen Seed-Datensatz (`tests/seeds/accessibility.sql`) statt UI-seitiger Rezept-Erstellung verwenden – dies spart ~40 s und macht den Test stabiler und schneller.
+Keine. Alle Story-25-Tests sind grün, alle Akzeptanzkriterien erfüllt.
 
 ### Prio 2 (Sollte — nice-to-have)
 
@@ -136,17 +132,14 @@ Die Implementierung deckt alle 13 identifizierten Lücken (L1–L13) aus dem Pla
 2. **Vorab existierende Testfehler (Dubletten-Übersicht) sollten in separater Story adressiert werden**
    - Die 9 fehlgeschlagenen Tests aus `recipe-duplicates-overview.spec.ts` und `recipe-merge.spec.ts` deuten auf ein Performance- oder Routing-Problem hin, das unabhängig von Story 25 besteht.
 
-3. **axe-core T1-Test: Seed-basierter Ansatz statt UI-Erstellung**
-   - Zwei Rezepte werden vor dem axe-Scan via UI erstellt. Ein SQL-Seed würde den Test schneller, stabiler und von der Rezept-Erstellungs-Logik entkoppelt machen.
-
 ---
 
 ## Fazit
 
-**Gesamtbewertung:** ⚠️ Nacharbeit erforderlich
+**Gesamtbewertung:** ✅ Abgenommen
 
-Die Implementierung ist inhaltlich vollständig und qualitativ hochwertig. Alle 12 Akzeptanzkriterien sind erfüllt, `cargo`-Checks sind sauber, und 11 von 12 Story-25-spezifischen E2E-Tests sind grün. Die zuvor gemeldete Prio-1-Lücke (`role="status"` auf der Erfolgsmeldung in `index.html`) wurde behoben. Der einzige verbleibende Story-25-Testfehler (T1) ist ein Timeout-Konfigurationsproblem im parallelen Testlauf, kein echter Accessibility-Fehler – der Test besteht in Isolation.
+Die Implementierung ist vollständig und qualitativ hochwertig. Alle 12 Akzeptanzkriterien sind erfüllt, alle `cargo`-Checks sind sauber, und alle 12 Story-25-spezifischen E2E-Tests sind grün – inklusive T1 (axe-Scan auf der Startseite), der in einem früheren Durchlauf wegen Timeout-Konfiguration fehlgeschlagen war. Die 11 verbleibenden Testfehler gehören zu anderen Suites und sind nicht durch Story 25 verursacht.
 
 **Nächste Schritte:**
-1. T1-Test: Timeout auf 90 000 ms erhöhen oder Seed-basierte Testdaten verwenden, um die Laufzeit zu reduzieren.
-2. Erneut `npm run test:e2e` laufen lassen und Story abschließen.
+1. Story 25 als abgeschlossen markieren.
+2. Vorab existierende Testfehler (Dubletten-Übersicht, Responsive Layout) in separaten Stories adressieren.
