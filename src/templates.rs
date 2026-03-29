@@ -1,5 +1,70 @@
 use askama::Template;
 
+/// Ein einzelner Rezepteintrag auf der "Heute gekocht"-Seite.
+pub struct HeuteRezeptItem {
+    pub id: i64,
+    pub title: String,
+    pub rating: Option<i32>,
+}
+
+impl HeuteRezeptItem {
+    /// Gibt true zurück, wenn die aktuelle Bewertung dem Wert `n` entspricht.
+    pub fn rating_is_active(&self, n: i32) -> bool {
+        self.rating == Some(n)
+    }
+
+    /// Gibt true zurück, wenn der Stern `n` ausgefüllt sein soll (rating >= n).
+    pub fn star_filled(&self, n: i32) -> bool {
+        self.rating.unwrap_or(0) >= n
+    }
+}
+
+/// Ein Tagesabschnitt auf der "Heute gekocht"-Seite (Gestern, Heute oder Morgen).
+pub struct HeuteTagesabschnitt {
+    /// Label: "Gestern", "Heute", "Morgen"
+    pub label: String,
+    /// Wochentag-Name: "Montag" bis "Sonntag"
+    pub wochentag_name: String,
+    /// Datum: "30. März"
+    pub datum_kurz: String,
+    /// true wenn dieser Abschnitt = heute (für visuelle Hervorhebung)
+    pub ist_heute: bool,
+    /// Rezepte dieses Abschnitts (kann leer sein)
+    pub rezepte: Vec<HeuteRezeptItem>,
+}
+
+/// Template für die "Heute gekocht"-Seite.
+#[derive(Template)]
+#[template(path = "heute.html")]
+pub struct HeuteTemplate {
+    /// Alle 3 Tagesabschnitte: gestern, heute, morgen
+    pub abschnitte: Vec<HeuteTagesabschnitt>,
+    /// Datum-Zeile im Seitenkopf: "Donnerstag, 2. April 2026"
+    pub heute_anzeige: String,
+}
+
+/// Template für das Inline-Rating-Fragment auf der "Heute gekocht"-Seite.
+/// Nutzt `id="inline-rating-{{ id }}"` statt `id="inline-rating"` für eindeutige IDs
+/// bei mehreren gleichzeitig sichtbaren Rezepten.
+#[derive(Template)]
+#[template(path = "recipes/_inline_rating_heute.html")]
+pub struct InlineRatingHeuteTemplate {
+    pub id: i64,
+    pub rating: Option<i32>,
+}
+
+impl InlineRatingHeuteTemplate {
+    /// Gibt true zurück, wenn die aktuelle Bewertung dem Wert `n` entspricht.
+    pub fn rating_is_active(&self, n: i32) -> bool {
+        self.rating == Some(n)
+    }
+
+    /// Gibt true zurück, wenn der Stern `n` ausgefüllt sein soll (rating >= n).
+    pub fn star_filled(&self, n: i32) -> bool {
+        self.rating.unwrap_or(0) >= n
+    }
+}
+
 /// Ein einzelner Rezepteintrag in der Wochenvorschau.
 pub struct WochentagesEintragItem {
     pub id: i64,

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Heute gekocht{% endblock %}
+
+{% block content %}
+<div class="heute-seite-header">
+    <h1>Heute gekocht</h1>
+    <p class="heute-seite-datum">{{ heute_anzeige }}</p>
+</div>
+
+{% for abschnitt in abschnitte %}
+<section class="tagesabschnitt{% if abschnitt.ist_heute %} tagesabschnitt-heute{% endif %}"
+         {% if abschnitt.ist_heute %}aria-label="Hervorgehoben: heute"{% endif %}>
+    <header class="tagesabschnitt-header">
+        <h2 class="tagesabschnitt-label">
+            {{ abschnitt.label }}
+            {% if abschnitt.ist_heute %}
+            <span class="heute-label" aria-hidden="true">Heute</span>
+            {% endif %}
+        </h2>
+        <p class="tagesabschnitt-datum">{{ abschnitt.wochentag_name }}, {{ abschnitt.datum_kurz }}</p>
+    </header>
+
+    {% if abschnitt.rezepte.is_empty() %}
+        {% if abschnitt.ist_heute %}
+        <p class="nichts-geplant-heute">Für heute noch kein Rezept geplant</p>
+        {% else %}
+        <p class="nichts-geplant">Nichts geplant</p>
+        {% endif %}
+    {% else %}
+    <ul class="heute-rezept-liste">
+        {% for rezept in abschnitt.rezepte %}
+        <li class="heute-rezept-item">
+            <a href="/recipes/{{ rezept.id }}" class="heute-rezept-titel">{{ rezept.title }}</a>
+            <div id="inline-rating-{{ rezept.id }}" class="inline-rating"
+                 title="Bewertung antippen zum Ändern"
+                 {% if let Some(r) = rezept.rating %}aria-label="{{ r }} von 5 Sternen"{% endif %}>
+                <form method="POST" action="/heute/recipes/{{ rezept.id }}/rating" class="inline-rating-form">
+                    <button
+                        type="submit"
+                        name="rating"
+                        value="{% if rezept.rating_is_active(5) %}{% else %}5{% endif %}"
+                        class="inline-rating-btn{% if rezept.rating_is_active(5) %} active{% endif %}"
+                        aria-label="5 Sterne{% if rezept.rating_is_active(5) %} – aktiv (antippen zum Zurücksetzen){% else %} – inaktiv{% endif %}"
+                        hx-post="/heute/recipes/{{ rezept.id }}/rating"
+                        hx-vals='{"rating": "{% if rezept.rating_is_active(5) %}{% else %}5{% endif %}"}'
+                        hx-target="#inline-rating-{{ rezept.id }}"
+                        hx-swap="outerHTML"
+                    >{% if rezept.star_filled(5) %}★{% else %}☆{% endif %}</button>
+                    <button
+                        type="submit"
+                        name="rating"
+                        value="{% if rezept.rating_is_active(4) %}{% else %}4{% endif %}"
+                        class="inline-rating-btn{% if rezept.rating_is_active(4) %} active{% endif %}"
+                        aria-label="4 Sterne{% if rezept.rating_is_active(4) %} – aktiv (antippen zum Zurücksetzen){% else %} – inaktiv{% endif %}"
+                        hx-post="/heute/recipes/{{ rezept.id }}/rating"
+                        hx-vals='{"rating": "{% if rezept.rating_is_active(4) %}{% else %}4{% endif %}"}'
+                        hx-target="#inline-rating-{{ rezept.id }}"
+                        hx-swap="outerHTML"
+                    >{% if rezept.star_filled(4) %}★{% else %}☆{% endif %}</button>
+                    <button
+                        type="submit"
+                        name="rating"
+                        value="{% if rezept.rating_is_active(3) %}{% else %}3{% endif %}"
+                        class="inline-rating-btn{% if rezept.rating_is_active(3) %} active{% endif %}"
+                        aria-label="3 Sterne{% if rezept.rating_is_active(3) %} – aktiv (antippen zum Zurücksetzen){% else %} – inaktiv{% endif %}"
+                        hx-post="/heute/recipes/{{ rezept.id }}/rating"
+                        hx-vals='{"rating": "{% if rezept.rating_is_active(3) %}{% else %}3{% endif %}"}'
+                        hx-target="#inline-rating-{{ rezept.id }}"
+                        hx-swap="outerHTML"
+                    >{% if rezept.star_filled(3) %}★{% else %}☆{% endif %}</button>
+                    <button
+                        type="submit"
+                        name="rating"
+                        value="{% if rezept.rating_is_active(2) %}{% else %}2{% endif %}"
+                        class="inline-rating-btn{% if rezept.rating_is_active(2) %} active{% endif %}"
+                        aria-label="2 Sterne{% if rezept.rating_is_active(2) %} – aktiv (antippen zum Zurücksetzen){% else %} – inaktiv{% endif %}"
+                        hx-post="/heute/recipes/{{ rezept.id }}/rating"
+                        hx-vals='{"rating": "{% if rezept.rating_is_active(2) %}{% else %}2{% endif %}"}'
+                        hx-target="#inline-rating-{{ rezept.id }}"
+                        hx-swap="outerHTML"
+                    >{% if rezept.star_filled(2) %}★{% else %}☆{% endif %}</button>
+                    <button
+                        type="submit"
+                        name="rating"
+                        value="{% if rezept.rating_is_active(1) %}{% else %}1{% endif %}"
+                        class="inline-rating-btn{% if rezept.rating_is_active(1) %} active{% endif %}"
+                        aria-label="1 Stern{% if rezept.rating_is_active(1) %} – aktiv (antippen zum Zurücksetzen){% else %} – inaktiv{% endif %}"
+                        hx-post="/heute/recipes/{{ rezept.id }}/rating"
+                        hx-vals='{"rating": "{% if rezept.rating_is_active(1) %}{% else %}1{% endif %}"}'
+                        hx-target="#inline-rating-{{ rezept.id }}"
+                        hx-swap="outerHTML"
+                    >{% if rezept.star_filled(1) %}★{% else %}☆{% endif %}</button>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</section>
+{% endfor %}
+
+<div class="heute-seite-actions">
+    <a href="/wochenvorschau" class="btn-link">Zur Wochenvorschau</a>
+    <a href="/" class="btn-link">Zur Rezeptliste</a>
+</div>
+{% endblock %}

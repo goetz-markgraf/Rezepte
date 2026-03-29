@@ -7,6 +7,7 @@ use sqlx::SqlitePool;
 use std::sync::Arc;
 use tower_http::services::ServeDir;
 
+pub mod heute;
 pub mod recipes;
 pub mod wochenvorschau;
 
@@ -19,6 +20,11 @@ pub fn create_router(pool: SqlitePool) -> Router {
         .route(
             "/wochenvorschau",
             get(wochenvorschau::wochenvorschau_handler),
+        )
+        .route("/heute", get(heute::heute_handler))
+        .route(
+            "/heute/recipes/:id/rating",
+            post(heute::heute_rating_handler),
         )
         .route("/recipes", post(recipes::create_recipe_handler))
         .route("/recipes/new", get(recipes::new_recipe_form))

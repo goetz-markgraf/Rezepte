@@ -429,6 +429,28 @@ pub async fn get_recipes_current_week(
     .await
 }
 
+/// Gibt alle Rezepte im Datumsbereich [gestern, morgen] zurück (für "Heute gekocht"-Ansicht).
+/// Sortierung: aufsteigend nach Datum, dann alphabetisch nach Titel.
+pub async fn get_recipes_drei_tage(
+    pool: &SqlitePool,
+    gestern: time::Date,
+    morgen: time::Date,
+) -> Result<Vec<Recipe>, sqlx::Error> {
+    sqlx::query_as::<_, Recipe>(
+        r#"
+        SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating
+        FROM recipes
+        WHERE planned_date >= ?1
+          AND planned_date <= ?2
+        ORDER BY planned_date ASC, title ASC
+        "#,
+    )
+    .bind(gestern)
+    .bind(morgen)
+    .fetch_all(pool)
+    .await
+}
+
 /// Löscht ein Rezept anhand seiner ID. Gibt `RowNotFound` zurück, wenn die ID nicht existiert.
 pub async fn delete_recipe(pool: &SqlitePool, id: i64) -> Result<(), sqlx::Error> {
     let rows_affected = sqlx::query("DELETE FROM recipes WHERE id = ?1")
@@ -2287,5 +2309,163 @@ mod tests {
         assert_eq!(recipes[0].title, "Montag-Essen");
         assert_eq!(recipes[1].title, "Apfel-Brot");
         assert_eq!(recipes[2].title, "Zebra-Kuchen");
+    }
+
+    // === Tests für get_recipes_drei_tage ===
+
+    #[tokio::test]
+    async fn get_recipes_drei_tage_returns_recipe_for_today() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = crate::db::create_pool(&db_url).await.unwrap();
+
+        let today = time::OffsetDateTime::now_utc().date();
+        let gestern = today - time::Duration::days(1);
+        let morgen = today + time::Duration::days(1);
+        let today_str = format!("{}.{}.{}", today.day(), today.month() as u8, today.year());
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Heute-Rezept", "Mittagessen", Some(&today_str)),
+        )
+        .await
+        .unwrap();
+
+        let recipes = get_recipes_drei_tage(&pool, gestern, morgen).await.unwrap();
+        assert_eq!(recipes.len(), 1);
+        assert_eq!(recipes[0].title, "Heute-Rezept");
+    }
+
+    #[tokio::test]
+    async fn get_recipes_drei_tage_returns_recipe_for_gestern() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = crate::db::create_pool(&db_url).await.unwrap();
+
+        let today = time::OffsetDateTime::now_utc().date();
+        let gestern = today - time::Duration::days(1);
+        let morgen = today + time::Duration::days(1);
+        let gestern_str = format!(
+            "{}.{}.{}",
+            gestern.day(),
+            gestern.month() as u8,
+            gestern.year()
+        );
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Gestern-Rezept", "Mittagessen", Some(&gestern_str)),
+        )
+        .await
+        .unwrap();
+
+        let recipes = get_recipes_drei_tage(&pool, gestern, morgen).await.unwrap();
+        assert_eq!(recipes.len(), 1);
+        assert_eq!(recipes[0].title, "Gestern-Rezept");
+    }
+
+    #[tokio::test]
+    async fn get_recipes_drei_tage_returns_recipe_for_morgen() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = crate::db::create_pool(&db_url).await.unwrap();
+
+        let today = time::OffsetDateTime::now_utc().date();
+        let gestern = today - time::Duration::days(1);
+        let morgen = today + time::Duration::days(1);
+        let morgen_str = format!(
+            "{}.{}.{}",
+            morgen.day(),
+            morgen.month() as u8,
+            morgen.year()
+        );
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Morgen-Rezept", "Mittagessen", Some(&morgen_str)),
+        )
+        .await
+        .unwrap();
+
+        let recipes = get_recipes_drei_tage(&pool, gestern, morgen).await.unwrap();
+        assert_eq!(recipes.len(), 1);
+        assert_eq!(recipes[0].title, "Morgen-Rezept");
+    }
+
+    #[tokio::test]
+    async fn get_recipes_drei_tage_excludes_recipe_from_two_days_ago() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = crate::db::create_pool(&db_url).await.unwrap();
+
+        let today = time::OffsetDateTime::now_utc().date();
+        let gestern = today - time::Duration::days(1);
+        let morgen = today + time::Duration::days(1);
+        let vorgestern = today - time::Duration::days(2);
+        let vorgestern_str = format!(
+            "{}.{}.{}",
+            vorgestern.day(),
+            vorgestern.month() as u8,
+            vorgestern.year()
+        );
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Vorgestern-Rezept", "Mittagessen", Some(&vorgestern_str)),
+        )
+        .await
+        .unwrap();
+
+        let recipes = get_recipes_drei_tage(&pool, gestern, morgen).await.unwrap();
+        assert!(recipes.is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_recipes_drei_tage_excludes_recipe_without_date() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = crate::db::create_pool(&db_url).await.unwrap();
+
+        let today = time::OffsetDateTime::now_utc().date();
+        let gestern = today - time::Duration::days(1);
+        let morgen = today + time::Duration::days(1);
+
+        create_recipe(&pool, &make_recipe("Kein-Datum-Rezept", "Mittagessen"))
+            .await
+            .unwrap();
+
+        let recipes = get_recipes_drei_tage(&pool, gestern, morgen).await.unwrap();
+        assert!(recipes.is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_recipes_drei_tage_returns_multiple_recipes_for_today() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = crate::db::create_pool(&db_url).await.unwrap();
+
+        let today = time::OffsetDateTime::now_utc().date();
+        let gestern = today - time::Duration::days(1);
+        let morgen = today + time::Duration::days(1);
+        let today_str = format!("{}.{}.{}", today.day(), today.month() as u8, today.year());
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Spaghetti", "Mittagessen", Some(&today_str)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Salat", "Mittagessen", Some(&today_str)),
+        )
+        .await
+        .unwrap();
+
+        let recipes = get_recipes_drei_tage(&pool, gestern, morgen).await.unwrap();
+        assert_eq!(recipes.len(), 2);
+        // Alphabetisch: Salat vor Spaghetti
+        assert_eq!(recipes[0].title, "Salat");
+        assert_eq!(recipes[1].title, "Spaghetti");
     }
 }
