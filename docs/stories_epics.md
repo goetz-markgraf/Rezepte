@@ -106,7 +106,7 @@ Nicht-funktionale Anforderungen und technische Features.
 | Nr | Story | Status |
 |----|-------|--------|
 | 24 | [Multi-Device Zugriff im LAN](./24-multi-device/story.md) | Dublette |
-| 25 | [WCAG 2.1 Level A Accessibility](./25-accessibility/story.md) | In Arbeit |
+| 25 | [WCAG 2.1 Level A Accessibility](./25-accessibility/story.md) | Abgeschlossen |
 
 
 ---
