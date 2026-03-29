@@ -91,9 +91,9 @@ test.describe('Rezept-Bewertung', () => {
     await createRecipe(page, `Unbewertet-Detail-${suffix}`, 'Brot');
 
     // When: Detail-Seite ist geöffnet
-    // Then: Inline-Rating-Container vorhanden, aber ohne aria-label (keine Bewertung)
+    // Then: Inline-Rating-Container vorhanden, aria-label zeigt "Noch keine Bewertung" (Story 25, L10)
     await expect(page.locator('#inline-rating')).toBeVisible();
-    await expect(page.locator('#inline-rating')).not.toHaveAttribute('aria-label');
+    await expect(page.locator('#inline-rating')).toHaveAttribute('aria-label', 'Noch keine Bewertung');
   });
 
   test('K4: Bewertung in der Listenansicht', async ({ page }) => {
@@ -127,10 +127,10 @@ test.describe('Rezept-Bewertung', () => {
     await noRatingLabel.click();
     await page.click('button[type="submit"]');
 
-    // Then: Detail-Seite zeigt keinen bewerteten Zustand mehr (kein aria-label)
+    // Then: Detail-Seite zeigt keinen bewerteten Zustand mehr (aria-label = "Noch keine Bewertung")
     await expect(page).toHaveURL(/\/recipes\/\d+/);
     await expect(page.locator('#inline-rating')).toBeVisible();
-    await expect(page.locator('#inline-rating')).not.toHaveAttribute('aria-label');
+    await expect(page.locator('#inline-rating')).toHaveAttribute('aria-label', 'Noch keine Bewertung');
   });
 
   test('K6: Negativbewertung (1-2 Sterne) speicherbar und sichtbar', async ({ page }) => {

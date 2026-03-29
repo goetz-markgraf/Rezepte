@@ -27,7 +27,9 @@ test.describe('Rezept erstellen', () => {
     // Given: Das Formular für ein neues Rezept ist geöffnet
     await page.goto('/recipes/new');
 
-    // When: Ohne Titel gespeichert wird
+    // When: Browser-Validierung umgangen (required-Attribut) und ohne Titel gespeichert wird
+    // Story 25 (L6) fügte required-Attribut hinzu – wir testen Server-seitige Validierung
+    await page.locator('input[name="title"]').evaluate((el: HTMLInputElement) => el.removeAttribute('required'));
     await page.fill('input[name="title"]', '');
     await page.click('button[type="submit"]');
 

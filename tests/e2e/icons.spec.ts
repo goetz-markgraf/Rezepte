@@ -21,8 +21,9 @@ test.describe('Icons in der UI', () => {
     // When: Die Rezeptliste aufgerufen wird
     await page.goto('/');
 
-    // Then: Bearbeiten-Link hat aria-label und enthält ein SVG-Icon
-    const editLink = page.locator('a[aria-label="Rezept bearbeiten"]').first();
+    // Then: Bearbeiten-Link hat aria-label mit Rezepttitel und enthält ein SVG-Icon
+    // aria-label ist jetzt "<Titel> bearbeiten" statt "Rezept bearbeiten" (Story 25, L4)
+    const editLink = page.locator(`a[aria-label="${title} bearbeiten"]`).first();
     await expect(editLink).toBeVisible();
     await expect(editLink.locator('svg')).toBeVisible();
   });
@@ -79,7 +80,8 @@ test.describe('Icons in der UI', () => {
 
     // When: Die Rezeptliste aufgerufen und der Bearbeiten-Link fokussiert wird
     await page.goto('/');
-    const editLink = page.locator('a[aria-label="Rezept bearbeiten"]').first();
+    // aria-label ist jetzt "<Titel> bearbeiten" statt "Rezept bearbeiten" (Story 25, L4)
+    const editLink = page.locator(`a[aria-label="${title} bearbeiten"]`).first();
     await expect(editLink).toBeVisible();
     await editLink.focus();
 

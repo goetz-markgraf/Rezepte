@@ -1,6 +1,6 @@
 <div id="inline-rating-{{ id }}" class="inline-rating"
      title="Bewertung antippen zum Ändern"
-     {% if let Some(r) = rating %}aria-label="{{ r }} von 5 Sternen"{% endif %}>
+     aria-label="{% if let Some(r) = rating %}{{ r }} von 5 Sternen{% else %}Noch keine Bewertung{% endif %}">
     <form method="POST" action="/heute/recipes/{{ id }}/rating" class="inline-rating-form">
         <button
             type="submit"

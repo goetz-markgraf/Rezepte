@@ -1031,6 +1031,40 @@ input[type="search"]:focus {
     }
 }
 
+/* === Fieldset als form-group (Kategorien, Accessibility) === */
+
+fieldset.form-group {
+    border: none;
+    padding: 0;
+    margin: 0;
+    margin-bottom: 1.5rem;
+    min-inline-size: 0;
+}
+
+fieldset.form-group legend {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    float: left;
+    width: 100%;
+}
+
+fieldset.form-group legend + * {
+    clear: both;
+}
+
+/* === Merge-Konfliktzeilen als fieldset: Browser-Defaults zurücksetzen === */
+
+fieldset.merge-field-row {
+    min-inline-size: auto;
+}
+
+fieldset.merge-field-row legend.merge-field-label {
+    float: none;
+    width: auto;
+    padding: 0;
+}
+
 /* === Sterne-Bewertung === */
 
 .star-rating {
@@ -1061,7 +1095,7 @@ input[type="search"]:focus {
     min-width: 44px;
     cursor: pointer;
     font-size: 1.5rem;
-    color: #d1d5db;
+    color: #6b7280;
     transition: color 0.15s;
     padding: 0 0.25rem;
 }
@@ -1135,7 +1169,7 @@ input[type="search"]:focus {
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
-    color: #d1d5db;
+    color: #6b7280;
     line-height: 1;
     border-radius: 4px;
     transition: color 0.1s;
@@ -1156,7 +1190,7 @@ input[type="search"]:focus {
 }
 
 .inline-rating-form .inline-rating-btn:not(:hover) {
-    color: #d1d5db;
+    color: #9ca3af;
 }
 
 /* Überschreibt: ab dem gehoverten Stern und alle "danach" (DOM-Reihenfolge = visuell davor) */

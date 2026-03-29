@@ -7,7 +7,7 @@
 <h1>{% if let Some(_) = recipe_id %}Rezept bearbeiten{% else %}Neues Rezept{% endif %}</h1>
 
 {% if !errors.is_empty() %}
-<div class="errors">
+<div class="errors" role="alert" id="form-errors">
     <ul>
         {% for error in errors %}
         <li>{{ error }}</li>
@@ -18,13 +18,15 @@
 
 <form method="POST" action="{% if let Some(id) = recipe_id %}/recipes/{{ id }}{% else %}/recipes{% endif %}">
     <div class="form-group">
-        <label for="title">Titel *</label>
+        <label for="title">Titel <span aria-hidden="true">*</span><span class="visually-hidden">Pflichtfeld</span></label>
         <input
             type="text"
             id="title"
             name="title"
             value="{{ title }}"
             maxlength="100"
+            required
+            aria-required="true"
             hx-get="/recipes/check-duplicate"
             hx-trigger="input changed delay:400ms"
             hx-target="#duplicate-hint"
@@ -36,8 +38,8 @@
     </div>
     <div id="duplicate-hint" aria-live="polite"></div>
 
-    <div class="form-group">
-        <label>Kategorien *</label>
+    <fieldset class="form-group">
+        <legend>Kategorien <span aria-hidden="true">*</span><span class="visually-hidden">Pflichtfeld</span></legend>
         <div class="checkbox-group">
             {% for category in categories %}
             <label class="checkbox-label">
@@ -47,7 +49,7 @@
             </label>
             {% endfor %}
         </div>
-    </div>
+    </fieldset>
 
     <fieldset class="form-group star-rating">
         <legend>Bewertung</legend>
@@ -89,7 +91,6 @@
                 placeholder="T.M.JJJJ"
                 value="{{ planned_date }}"
                 autocomplete="off"
-                aria-describedby="planned_date_error"
             >
             <input type="date" id="date-picker" class="date-picker-hidden" aria-hidden="true" tabindex="-1">
             <button

@@ -324,6 +324,22 @@ impl DublettenPaarItem {
             None => String::new(),
         }
     }
+
+    /// Gibt ein beschreibendes Bewertungs-Label für Screenreader zurück (z.B. "3 von 5 Sternen").
+    pub fn rating_label_a(&self) -> String {
+        match self.bewertung_a {
+            Some(r) => format!("{} von 5 Sternen", r),
+            None => String::new(),
+        }
+    }
+
+    /// Gibt ein beschreibendes Bewertungs-Label für Screenreader zurück (z.B. "3 von 5 Sternen").
+    pub fn rating_label_b(&self) -> String {
+        match self.bewertung_b {
+            Some(r) => format!("{} von 5 Sternen", r),
+            None => String::new(),
+        }
+    }
 }
 
 /// Template für die Dubletten-Übersichtsseite.

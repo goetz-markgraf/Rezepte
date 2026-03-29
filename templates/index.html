@@ -59,12 +59,14 @@
     <a
         href="{{ reset_categories_url }}"
         class="category-filter-btn{% if active_categories.is_empty() && !not_made_filter_active && !next_seven_days_filter_active && bewertung_filter.is_none() %} active{% endif %}"
+        role="button"
         aria-pressed="{{ active_categories.is_empty() && !not_made_filter_active && !next_seven_days_filter_active && bewertung_filter.is_none() }}"
     >Alle</a>
     {% for filter in category_filters %}
     <a
         href="{{ filter.toggle_url }}"
         class="category-filter-btn{% if filter.is_active %} active{% endif %}"
+        role="button"
         aria-pressed="{{ filter.is_active }}"
     >{{ filter.name }}</a>
     {% endfor %}
@@ -74,21 +76,25 @@
     <a
         href="{{ not_made_filter_toggle_url }}"
         class="sort-filter-btn{% if not_made_filter_active %} active{% endif %}"
+        role="button"
         aria-pressed="{{ not_made_filter_active }}"
     >Länger nicht gemacht</a>
     <a
         href="{{ next_seven_days_filter_toggle_url }}"
         class="sort-filter-btn{% if next_seven_days_filter_active %} active{% endif %}"
+        role="button"
         aria-pressed="{{ next_seven_days_filter_active }}"
     >Nächste 7 Tage</a>
     <a
         href="{{ bewertung_gut_toggle_url }}"
         class="sort-filter-btn{% if bewertung_filter.as_deref() == Some("gut") %} active{% endif %}"
+        role="button"
         aria-pressed="{{ bewertung_filter.as_deref() == Some("gut") }}"
     >★★★+ Nur Gute</a>
     <a
         href="{{ bewertung_favoriten_toggle_url }}"
         class="sort-filter-btn{% if bewertung_filter.as_deref() == Some("favoriten") %} active{% endif %}"
+        role="button"
         aria-pressed="{{ bewertung_filter.as_deref() == Some("favoriten") }}"
     >★★★★★ Favoriten</a>
     {% if any_filter_active %}
@@ -97,7 +103,7 @@
 </div>
 
 {% if !saved_filters.is_empty() %}
-<div class="saved-filters" aria-label="Gespeicherte Filter">
+<nav class="saved-filters" aria-label="Gespeicherte Filter">
     {% for sf in saved_filters %}
     <div class="saved-filter-item">
         <a
@@ -120,7 +126,7 @@
         </form>
     </div>
     {% endfor %}
-</div>
+</nav>
 {% endif %}
 
 {% if any_filter_active %}
@@ -254,7 +260,7 @@
                 {% endif %}
             </a>
             <div class="recipe-item-actions">
-                <a href="/recipes/{{ recipe.id }}/edit" class="btn-icon" aria-label="Rezept bearbeiten">{% call icons::icon_pencil() %}</a>
+                <a href="/recipes/{{ recipe.id }}/edit" class="btn-icon" aria-label="{{ recipe.title }} bearbeiten">{% call icons::icon_pencil() %}</a>
             </div>
         </div>
     </li>

@@ -104,12 +104,12 @@ test.describe('Inline-Bewertung (Story 17)', () => {
     await activeBtn.click();
     await page.waitForFunction(() => document.querySelector('#inline-rating') !== null);
 
-    // Then: Die Bewertung wird entfernt (kein aria-label mehr)
-    await expect(page.locator('#inline-rating')).not.toHaveAttribute('aria-label');
+    // Then: Die Bewertung wird entfernt (aria-label = "Noch keine Bewertung", Story 25 L10)
+    await expect(page.locator('#inline-rating')).toHaveAttribute('aria-label', 'Noch keine Bewertung');
 
     // And: Nach einer Seitenneuladung hat das Rezept keine Bewertung
     await page.reload();
-    await expect(page.locator('#inline-rating')).not.toHaveAttribute('aria-label');
+    await expect(page.locator('#inline-rating')).toHaveAttribute('aria-label', 'Noch keine Bewertung');
   });
 
   test('K6: Inline-Bewertung und Edit-Mode zeigen gleichen Wert', async ({ page }) => {
