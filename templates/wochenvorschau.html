@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Wochenvorschau{% endblock %}
+
+{% block content %}
+<div class="wochenvorschau-header">
+    <h1>Wochenvorschau <span class="kw-label">{{ kw_anzeige }}</span></h1>
+</div>
+
+{% if !hat_rezepte %}
+<div class="empty-state">
+    <p>Für diese Woche noch nichts geplant</p>
+</div>
+{% endif %}
+
+<dl class="wochenvorschau-liste">
+    {% for tag in tage %}
+    <div class="wochentag-abschnitt{% if tag.rezepte.is_empty() %} wochentag-leer{% endif %}">
+        <dt class="wochentag-titel">{{ tag.datum_anzeige }}</dt>
+        <dd class="wochentag-inhalt">
+            {% if tag.rezepte.is_empty() %}
+            <span class="nichts-geplant">Nichts geplant</span>
+            {% else %}
+            <ul class="wochentag-rezepte">
+                {% for rezept in tag.rezepte %}
+                <li><a href="/recipes/{{ rezept.id }}">{{ rezept.title }}</a></li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </dd>
+    </div>
+    {% endfor %}
+</dl>
+
+<div class="wochenvorschau-actions">
+    <a href="/" class="btn-link">Zur Rezeptliste</a>
+</div>
+{% endblock %}

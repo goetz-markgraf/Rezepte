@@ -8,6 +8,7 @@ use std::sync::Arc;
 use tower_http::services::ServeDir;
 
 pub mod recipes;
+pub mod wochenvorschau;
 
 pub fn create_router(pool: SqlitePool) -> Router {
     let pool = Arc::new(pool);
@@ -15,6 +16,10 @@ pub fn create_router(pool: SqlitePool) -> Router {
     Router::new()
         .route("/", get(recipes::index))
         .route("/health", get(health_check))
+        .route(
+            "/wochenvorschau",
+            get(wochenvorschau::wochenvorschau_handler),
+        )
         .route("/recipes", post(recipes::create_recipe_handler))
         .route("/recipes/new", get(recipes::new_recipe_form))
         .route(

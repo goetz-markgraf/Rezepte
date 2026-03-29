@@ -1,5 +1,31 @@
 use askama::Template;
 
+/// Ein einzelner Rezepteintrag in der Wochenvorschau.
+pub struct WochentagesEintragItem {
+    pub id: i64,
+    pub title: String,
+}
+
+/// Ein Wochentag in der Wochenvorschau mit seinen Rezepten.
+pub struct Wochentag {
+    /// Anzeige-String: "Montag, 30. März"
+    pub datum_anzeige: String,
+    /// Liste der an diesem Tag geplanten Rezepte.
+    pub rezepte: Vec<WochentagesEintragItem>,
+}
+
+/// Template für die Wochenvorschau-Seite.
+#[derive(Template)]
+#[template(path = "wochenvorschau.html")]
+pub struct WochenvorschauTemplate {
+    /// Alle 7 Wochentage (Montag bis Sonntag) mit ihren Rezepten.
+    pub tage: Vec<Wochentag>,
+    /// KW-Anzeige: "KW 14 · 30. März – 5. April 2026"
+    pub kw_anzeige: String,
+    /// true wenn mindestens ein Rezept in der Woche geplant ist.
+    pub hat_rezepte: bool,
+}
+
 #[derive(Template)]
 #[template(path = "error/not_found.html")]
 pub struct NotFoundTemplate {

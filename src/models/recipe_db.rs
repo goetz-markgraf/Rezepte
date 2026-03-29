@@ -407,6 +407,28 @@ pub async fn filter_recipes_next_seven_days(
     Ok(recipes)
 }
 
+/// Gibt alle Rezepte der laufenden Kalenderwoche zurück (Montag bis Sonntag).
+/// Sortierung: aufsteigend nach Datum, dann alphabetisch nach Titel.
+pub async fn get_recipes_current_week(
+    pool: &SqlitePool,
+    monday: time::Date,
+    sunday: time::Date,
+) -> Result<Vec<Recipe>, sqlx::Error> {
+    sqlx::query_as::<_, Recipe>(
+        r#"
+        SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating
+        FROM recipes
+        WHERE planned_date >= ?1
+          AND planned_date <= ?2
+        ORDER BY planned_date ASC, title ASC
+        "#,
+    )
+    .bind(monday)
+    .bind(sunday)
+    .fetch_all(pool)
+    .await
+}
+
 /// Löscht ein Rezept anhand seiner ID. Gibt `RowNotFound` zurück, wenn die ID nicht existiert.
 pub async fn delete_recipe(pool: &SqlitePool, id: i64) -> Result<(), sqlx::Error> {
     let rows_affected = sqlx::query("DELETE FROM recipes WHERE id = ?1")
@@ -2073,5 +2095,197 @@ mod tests {
             results.is_empty(),
             "Ohne 5-Sterne-Rezept soll Favoriten-Filter leer sein"
         );
+    }
+
+    fn make_fixed_date(year: i32, month: u8, day: u8) -> time::Date {
+        time::Date::from_calendar_date(year, time::Month::try_from(month).unwrap(), day).unwrap()
+    }
+
+    #[tokio::test]
+    async fn get_recipes_current_week_returns_recipe_in_week() {
+        // Given: Pool mit Rezept in der Woche (Mittwoch)
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let monday = make_fixed_date(2026, 3, 30);
+        let sunday = make_fixed_date(2026, 4, 5);
+
+        // Rezept am Mittwoch 1.4.2026
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Mittwoch-Gericht", "Mittagessen", Some("1.4.2026")),
+        )
+        .await
+        .unwrap();
+
+        // When: Abfrage für diese Woche
+        let recipes = get_recipes_current_week(&pool, monday, sunday)
+            .await
+            .unwrap();
+
+        // Then: Rezept wird zurückgegeben
+        assert_eq!(recipes.len(), 1);
+        assert_eq!(recipes[0].title, "Mittwoch-Gericht");
+    }
+
+    #[tokio::test]
+    async fn get_recipes_current_week_excludes_recipe_before_monday() {
+        // Given: Pool mit Rezept vor Montag (Sonntag der Vorwoche, 29.3.2026)
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let monday = make_fixed_date(2026, 3, 30);
+        let sunday = make_fixed_date(2026, 4, 5);
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Letzte-Woche-Gericht", "Mittagessen", Some("29.3.2026")),
+        )
+        .await
+        .unwrap();
+
+        // When: Abfrage für diese Woche
+        let recipes = get_recipes_current_week(&pool, monday, sunday)
+            .await
+            .unwrap();
+
+        // Then: Kein Rezept zurückgegeben
+        assert!(
+            recipes.is_empty(),
+            "Rezept von letzter Woche soll nicht erscheinen"
+        );
+    }
+
+    #[tokio::test]
+    async fn get_recipes_current_week_excludes_recipe_after_sunday() {
+        // Given: Pool mit Rezept nach Sonntag (Montag nächste Woche, 6.4.2026)
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let monday = make_fixed_date(2026, 3, 30);
+        let sunday = make_fixed_date(2026, 4, 5);
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Naechste-Woche-Gericht", "Mittagessen", Some("6.4.2026")),
+        )
+        .await
+        .unwrap();
+
+        // When: Abfrage für diese Woche
+        let recipes = get_recipes_current_week(&pool, monday, sunday)
+            .await
+            .unwrap();
+
+        // Then: Kein Rezept zurückgegeben
+        assert!(
+            recipes.is_empty(),
+            "Rezept der nächsten Woche soll nicht erscheinen"
+        );
+    }
+
+    #[tokio::test]
+    async fn get_recipes_current_week_excludes_recipe_without_date() {
+        // Given: Pool mit Rezept ohne Datum
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let monday = make_fixed_date(2026, 3, 30);
+        let sunday = make_fixed_date(2026, 4, 5);
+
+        create_recipe(&pool, &make_recipe("Ohne-Datum", "Mittagessen"))
+            .await
+            .unwrap();
+
+        // When: Abfrage für diese Woche
+        let recipes = get_recipes_current_week(&pool, monday, sunday)
+            .await
+            .unwrap();
+
+        // Then: Kein Rezept zurückgegeben
+        assert!(
+            recipes.is_empty(),
+            "Rezept ohne Datum soll nicht in Wochenvorschau erscheinen"
+        );
+    }
+
+    #[tokio::test]
+    async fn get_recipes_current_week_returns_multiple_recipes_same_day() {
+        // Given: Zwei Rezepte am gleichen Tag (Dienstag, 31.3.2026)
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let monday = make_fixed_date(2026, 3, 30);
+        let sunday = make_fixed_date(2026, 4, 5);
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Gericht A", "Mittagessen", Some("31.3.2026")),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Gericht B", "Mittagessen", Some("31.3.2026")),
+        )
+        .await
+        .unwrap();
+
+        // When: Abfrage für diese Woche
+        let recipes = get_recipes_current_week(&pool, monday, sunday)
+            .await
+            .unwrap();
+
+        // Then: Beide Rezepte zurückgegeben
+        assert_eq!(recipes.len(), 2);
+        let titles: Vec<&str> = recipes.iter().map(|r| r.title.as_str()).collect();
+        assert!(titles.contains(&"Gericht A"));
+        assert!(titles.contains(&"Gericht B"));
+    }
+
+    #[tokio::test]
+    async fn get_recipes_current_week_sorts_by_date_then_title() {
+        // Given: Drei Rezepte – zwei am Dienstag 31.3., eines am Montag 30.3.
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let monday = make_fixed_date(2026, 3, 30);
+        let sunday = make_fixed_date(2026, 4, 5);
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Zebra-Kuchen", "Kuchen", Some("31.3.2026")),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Apfel-Brot", "Brot", Some("31.3.2026")),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Montag-Essen", "Mittagessen", Some("30.3.2026")),
+        )
+        .await
+        .unwrap();
+
+        // When: Abfrage für diese Woche
+        let recipes = get_recipes_current_week(&pool, monday, sunday)
+            .await
+            .unwrap();
+
+        // Then: 3 Rezepte, Montag-Essen zuerst, dann Apfel-Brot, dann Zebra-Kuchen
+        assert_eq!(recipes.len(), 3);
+        assert_eq!(recipes[0].title, "Montag-Essen");
+        assert_eq!(recipes[1].title, "Apfel-Brot");
+        assert_eq!(recipes[2].title, "Zebra-Kuchen");
     }
 }
