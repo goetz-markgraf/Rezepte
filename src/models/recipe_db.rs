@@ -141,21 +141,67 @@ pub async fn search_recipes(pool: &SqlitePool, query: &str) -> Result<Vec<Recipe
     Ok(recipes)
 }
 
-/// Filtert Rezepte nach Kategorien und/oder Suchbegriff.
+/// Gibt eine statische SQL-Klausel für den Bewertungsfilter zurück.
 ///
-/// - Beide leer → alle Rezepte
+/// - `Some("gut")` → `AND rating >= 3`
+/// - `Some("favoriten")` → `AND rating = 5`
+/// - Alles andere → leerer String (kein Filter)
+///
+/// Kein SQL-Injection-Risiko: Die Klausel vergleicht nur gegen konstante Integer-Literale.
+fn rating_sql_clause(bewertung: Option<&str>) -> &'static str {
+    match bewertung {
+        Some("gut") => "AND rating >= 3",
+        Some("favoriten") => "AND rating = 5",
+        _ => "",
+    }
+}
+
+/// Filtert Rezepte nach Kategorien, Suchbegriff und/oder Bewertung.
+///
+/// - Alle leer → alle Rezepte
 /// - Nur `search_query` → Volltextsuche (wie `search_recipes`)
 /// - Nur `categories` → ODER-Logik: Rezept erscheint, wenn mindestens eine Kategorie passt
 /// - Beides gesetzt → UND-Verknüpfung: Kategorie-Filter UND Suchbegriff
+/// - `bewertung` → zusätzliche SQL-Bedingung (AND-Logik): `gut` = rating >= 3, `favoriten` = rating = 5
 ///
 /// Ergebnisse sind alphabetisch sortiert (deutsche Sortierung mit Umlauten).
 pub async fn filter_recipes_by_categories(
     pool: &SqlitePool,
     categories: &[String],
     search_query: &str,
+    bewertung: Option<&str>,
 ) -> Result<Vec<Recipe>, sqlx::Error> {
-    if categories.is_empty() {
+    let rating_clause = rating_sql_clause(bewertung);
+
+    if categories.is_empty() && rating_clause.is_empty() {
         return search_recipes(pool, search_query).await;
+    }
+
+    if categories.is_empty() {
+        // Nur Bewertungsfilter (und ggf. Suche)
+        let sql = if search_query.trim().is_empty() {
+            format!(
+                "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating \
+                 FROM recipes WHERE 1=1 {rating_clause}"
+            )
+        } else {
+            format!(
+                "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating \
+                 FROM recipes WHERE (LOWER(title) LIKE ? OR LOWER(ingredients) LIKE ? OR LOWER(instructions) LIKE ?) \
+                 {rating_clause}"
+            )
+        };
+        let mut query = sqlx::query_as::<_, Recipe>(&sql);
+        if !search_query.trim().is_empty() {
+            let search_term = format!("%{}%", search_query.to_lowercase());
+            query = query
+                .bind(search_term.clone())
+                .bind(search_term.clone())
+                .bind(search_term);
+        }
+        let mut recipes = query.fetch_all(pool).await?;
+        recipes.sort_by(|a, b| normalize_for_sort(&a.title).cmp(&normalize_for_sort(&b.title)));
+        return Ok(recipes);
     }
 
     let category_conditions: Vec<String> = categories
@@ -167,13 +213,14 @@ pub async fn filter_recipes_by_categories(
     let sql = if search_query.trim().is_empty() {
         format!(
             "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating \
-             FROM recipes WHERE {category_clause}"
+             FROM recipes WHERE ({category_clause}) {rating_clause}"
         )
     } else {
         format!(
             "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating \
              FROM recipes WHERE ({category_clause}) \
-             AND (LOWER(title) LIKE ? OR LOWER(ingredients) LIKE ? OR LOWER(instructions) LIKE ?)"
+             AND (LOWER(title) LIKE ? OR LOWER(ingredients) LIKE ? OR LOWER(instructions) LIKE ?) \
+             {rating_clause}"
         )
     };
 
@@ -204,11 +251,13 @@ pub async fn filter_recipes_by_categories(
 /// - Dann aufsteigend nach Datum (ältestes zuerst)
 /// - Innerhalb gleichen Datums alphabetisch nach Titel (deutsche Sortierung)
 ///
-/// Optional kombinierbar mit Kategorie-Filter (ODER-Logik) und Volltextsuche (UND-Logik).
+/// Optional kombinierbar mit Kategorie-Filter (ODER-Logik), Volltextsuche (UND-Logik)
+/// und Bewertungsfilter (`bewertung`: `"gut"` = rating >= 3, `"favoriten"` = rating = 5).
 pub async fn filter_recipes_not_made_recently(
     pool: &SqlitePool,
     categories: &[String],
     search_query: &str,
+    bewertung: Option<&str>,
 ) -> Result<Vec<Recipe>, sqlx::Error> {
     let category_clause = if categories.is_empty() {
         String::new()
@@ -227,11 +276,13 @@ pub async fn filter_recipes_not_made_recently(
             .to_string()
     };
 
+    let rating_clause = rating_sql_clause(bewertung);
+
     let sql = format!(
         "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating \
          FROM recipes \
          WHERE (planned_date IS NULL OR planned_date <= DATE('now')) \
-         {category_clause} {search_clause} \
+         {category_clause} {search_clause} {rating_clause} \
          ORDER BY CASE WHEN planned_date IS NULL THEN 0 ELSE 1 END ASC, planned_date ASC"
     );
 
@@ -267,11 +318,13 @@ pub async fn filter_recipes_not_made_recently(
 /// - Rezepte ohne Datum, mit Vergangenheitsdatum oder > heute+7 werden ausgeschlossen
 /// - Sortierung: chronologisch aufsteigend nach Datum, bei gleichem Datum alphabetisch (deutsche Sortierung)
 ///
-/// Optional kombinierbar mit Kategorie-Filter (ODER-Logik) und Volltextsuche (UND-Logik).
+/// Optional kombinierbar mit Kategorie-Filter (ODER-Logik), Volltextsuche (UND-Logik)
+/// und Bewertungsfilter (`bewertung`: `"gut"` = rating >= 3, `"favoriten"` = rating = 5).
 pub async fn filter_recipes_next_seven_days(
     pool: &SqlitePool,
     categories: &[String],
     search_query: &str,
+    bewertung: Option<&str>,
 ) -> Result<Vec<Recipe>, sqlx::Error> {
     let category_clause = if categories.is_empty() {
         String::new()
@@ -290,12 +343,14 @@ pub async fn filter_recipes_next_seven_days(
             .to_string()
     };
 
+    let rating_clause = rating_sql_clause(bewertung);
+
     let sql = format!(
         "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating \
          FROM recipes \
          WHERE planned_date >= DATE('now') \
            AND planned_date <= DATE('now', '+7 days') \
-         {category_clause} {search_clause} \
+         {category_clause} {search_clause} {rating_clause} \
          ORDER BY planned_date ASC"
     );
 
@@ -743,7 +798,7 @@ mod tests {
             .await
             .unwrap();
 
-        let results = filter_recipes_by_categories(&pool, &["Brot".to_string()], "")
+        let results = filter_recipes_by_categories(&pool, &["Brot".to_string()], "", None)
             .await
             .unwrap();
         assert_eq!(results.len(), 1);
@@ -778,10 +833,14 @@ mod tests {
             .await
             .unwrap();
 
-        let results =
-            filter_recipes_by_categories(&pool, &["Kuchen".to_string(), "Brot".to_string()], "")
-                .await
-                .unwrap();
+        let results = filter_recipes_by_categories(
+            &pool,
+            &["Kuchen".to_string(), "Brot".to_string()],
+            "",
+            None,
+        )
+        .await
+        .unwrap();
 
         let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
         assert!(
@@ -808,7 +867,7 @@ mod tests {
             .await
             .unwrap();
 
-        let results = filter_recipes_by_categories(&pool, &["Snacks".to_string()], "")
+        let results = filter_recipes_by_categories(&pool, &["Snacks".to_string()], "", None)
             .await
             .unwrap();
         assert!(results.is_empty());
@@ -828,7 +887,7 @@ mod tests {
             .await
             .unwrap();
 
-        let results = filter_recipes_by_categories(&pool, &["Brot".to_string()], "dinkel")
+        let results = filter_recipes_by_categories(&pool, &["Brot".to_string()], "dinkel", None)
             .await
             .unwrap();
 
@@ -848,7 +907,9 @@ mod tests {
                 .unwrap();
         }
 
-        let results = filter_recipes_by_categories(&pool, &[], "").await.unwrap();
+        let results = filter_recipes_by_categories(&pool, &[], "", None)
+            .await
+            .unwrap();
         assert_eq!(results.len(), 3);
     }
 
@@ -864,7 +925,7 @@ mod tests {
                 .unwrap();
         }
 
-        let results = filter_recipes_by_categories(&pool, &["Brot".to_string()], "")
+        let results = filter_recipes_by_categories(&pool, &["Brot".to_string()], "", None)
             .await
             .unwrap();
 
@@ -1031,7 +1092,7 @@ mod tests {
         .unwrap();
 
         // When: Filter "Länger nicht gemacht" aktiv
-        let results = filter_recipes_not_made_recently(&pool, &[], "")
+        let results = filter_recipes_not_made_recently(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1067,7 +1128,7 @@ mod tests {
         .unwrap();
 
         // When: Filter aktiv
-        let results = filter_recipes_not_made_recently(&pool, &[], "")
+        let results = filter_recipes_not_made_recently(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1097,7 +1158,7 @@ mod tests {
         .unwrap();
 
         // When: Filter aktiv
-        let results = filter_recipes_not_made_recently(&pool, &[], "")
+        let results = filter_recipes_not_made_recently(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1140,7 +1201,7 @@ mod tests {
         .unwrap();
 
         // When: Filter aktiv
-        let results = filter_recipes_not_made_recently(&pool, &[], "")
+        let results = filter_recipes_not_made_recently(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1172,7 +1233,7 @@ mod tests {
         .unwrap();
 
         // When: Filter aktiv
-        let results = filter_recipes_not_made_recently(&pool, &[], "")
+        let results = filter_recipes_not_made_recently(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1201,7 +1262,7 @@ mod tests {
         .unwrap();
 
         // When: Filter aktiv
-        let results = filter_recipes_not_made_recently(&pool, &[], "")
+        let results = filter_recipes_not_made_recently(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1237,7 +1298,7 @@ mod tests {
         .unwrap();
 
         // When: Filter "Länger nicht gemacht" + Kategorie "Brot"
-        let results = filter_recipes_not_made_recently(&pool, &["Brot".to_string()], "")
+        let results = filter_recipes_not_made_recently(&pool, &["Brot".to_string()], "", None)
             .await
             .unwrap();
 
@@ -1278,7 +1339,7 @@ mod tests {
         .unwrap();
 
         // When: Filter "Länger nicht gemacht" + Suchbegriff "dinkel"
-        let results = filter_recipes_not_made_recently(&pool, &[], "dinkel")
+        let results = filter_recipes_not_made_recently(&pool, &[], "dinkel", None)
             .await
             .unwrap();
 
@@ -1323,7 +1384,7 @@ mod tests {
         .unwrap();
 
         // When: Filter "Nächste 7 Tage"
-        let results = filter_recipes_next_seven_days(&pool, &[], "")
+        let results = filter_recipes_next_seven_days(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1355,7 +1416,7 @@ mod tests {
         .unwrap();
 
         // When: Filter aktiv
-        let results = filter_recipes_next_seven_days(&pool, &[], "")
+        let results = filter_recipes_next_seven_days(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1383,7 +1444,7 @@ mod tests {
         .unwrap();
 
         // When: Filter aktiv
-        let results = filter_recipes_next_seven_days(&pool, &[], "")
+        let results = filter_recipes_next_seven_days(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1411,7 +1472,7 @@ mod tests {
         .unwrap();
 
         // When: Filter aktiv
-        let results = filter_recipes_next_seven_days(&pool, &[], "")
+        let results = filter_recipes_next_seven_days(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1438,7 +1499,7 @@ mod tests {
         .unwrap();
 
         // When: Filter aktiv
-        let results = filter_recipes_next_seven_days(&pool, &[], "")
+        let results = filter_recipes_next_seven_days(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1466,7 +1527,7 @@ mod tests {
         .unwrap();
 
         // When: Filter aktiv
-        let results = filter_recipes_next_seven_days(&pool, &[], "")
+        let results = filter_recipes_next_seven_days(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1502,7 +1563,7 @@ mod tests {
         .unwrap();
 
         // When: Filter aktiv
-        let results = filter_recipes_next_seven_days(&pool, &[], "")
+        let results = filter_recipes_next_seven_days(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1539,7 +1600,7 @@ mod tests {
         .unwrap();
 
         // When: Filter aktiv
-        let results = filter_recipes_next_seven_days(&pool, &[], "")
+        let results = filter_recipes_next_seven_days(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1580,7 +1641,7 @@ mod tests {
         .unwrap();
 
         // When: Filter "Nächste 7 Tage" + Kategorie "Brot"
-        let results = filter_recipes_next_seven_days(&pool, &["Brot".to_string()], "")
+        let results = filter_recipes_next_seven_days(&pool, &["Brot".to_string()], "", None)
             .await
             .unwrap();
 
@@ -1620,7 +1681,7 @@ mod tests {
         .unwrap();
 
         // When: Filter "Nächste 7 Tage" + Suchbegriff "dinkel"
-        let results = filter_recipes_next_seven_days(&pool, &[], "dinkel")
+        let results = filter_recipes_next_seven_days(&pool, &[], "dinkel", None)
             .await
             .unwrap();
 
@@ -1659,7 +1720,7 @@ mod tests {
         .unwrap();
 
         // When: Filter aktiv
-        let results = filter_recipes_next_seven_days(&pool, &[], "")
+        let results = filter_recipes_next_seven_days(&pool, &[], "", None)
             .await
             .unwrap();
 
@@ -1667,6 +1728,324 @@ mod tests {
         assert!(
             results.is_empty(),
             "Keine Rezepte im 7-Tage-Fenster sollten gefunden werden"
+        );
+    }
+
+    fn make_recipe_with_rating(title: &str, category: &str, rating: Option<i32>) -> CreateRecipe {
+        CreateRecipe {
+            title: title.to_string(),
+            categories: vec![category.to_string()],
+            ingredients: None,
+            instructions: None,
+            planned_date_input: None,
+            rating,
+        }
+    }
+
+    #[tokio::test]
+    async fn rating_filter_gut_returns_only_three_plus_stars() {
+        // Given: Rezepte mit 1, 2, 3, 4, 5 Sternen und ohne Bewertung
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("EinStern", "Mittagessen", Some(1)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("ZweiSterne", "Mittagessen", Some(2)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("DreiSterne", "Mittagessen", Some(3)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("VierSterne", "Mittagessen", Some(4)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("FünfSterne", "Mittagessen", Some(5)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("KeineSterne", "Mittagessen", None),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter "gut" angewendet
+        let results = filter_recipes_by_categories(&pool, &[], "", Some("gut"))
+            .await
+            .unwrap();
+
+        // Then: Nur Rezepte mit 3+ Sternen
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert!(
+            titles.contains(&"DreiSterne"),
+            "3 Sterne soll enthalten sein"
+        );
+        assert!(
+            titles.contains(&"VierSterne"),
+            "4 Sterne soll enthalten sein"
+        );
+        assert!(
+            titles.contains(&"FünfSterne"),
+            "5 Sterne soll enthalten sein"
+        );
+        assert!(
+            !titles.contains(&"EinStern"),
+            "1 Stern soll nicht enthalten sein"
+        );
+        assert!(
+            !titles.contains(&"ZweiSterne"),
+            "2 Sterne sollen nicht enthalten sein"
+        );
+        assert!(
+            !titles.contains(&"KeineSterne"),
+            "NULL soll nicht enthalten sein"
+        );
+    }
+
+    #[tokio::test]
+    async fn rating_filter_favoriten_returns_only_five_stars() {
+        // Given: Rezepte mit 1-5 Sternen
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("DreiSterne", "Mittagessen", Some(3)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("VierSterne", "Mittagessen", Some(4)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("FünfSterne", "Mittagessen", Some(5)),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter "favoriten" angewendet
+        let results = filter_recipes_by_categories(&pool, &[], "", Some("favoriten"))
+            .await
+            .unwrap();
+
+        // Then: Nur 5-Sterne-Rezept
+        let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
+        assert_eq!(titles, vec!["FünfSterne"]);
+    }
+
+    #[tokio::test]
+    async fn rating_filter_none_returns_all_recipes() {
+        // Given: Rezepte mit verschiedenen Bewertungen
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("Rezept1", "Mittagessen", Some(1)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("Rezept2", "Mittagessen", Some(5)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("Rezept3", "Mittagessen", None),
+        )
+        .await
+        .unwrap();
+
+        // When: Kein Bewertungsfilter
+        let results = filter_recipes_by_categories(&pool, &[], "", None)
+            .await
+            .unwrap();
+
+        // Then: Alle 3 Rezepte
+        assert_eq!(results.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn rating_filter_excludes_unrated_recipes() {
+        // Given: Ein Rezept ohne Bewertung
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("UnbewertetesRezept", "Brot", None),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter "gut" angewendet
+        let results = filter_recipes_by_categories(&pool, &[], "", Some("gut"))
+            .await
+            .unwrap();
+
+        // Then: Leere Liste — unbewertete Rezepte werden ausgeblendet
+        assert!(results.is_empty(), "NULL-Bewertung soll nicht erscheinen");
+    }
+
+    #[tokio::test]
+    async fn rating_filter_combined_with_category() {
+        // Given: Brot 4 Sterne, Mittagessen 4 Sterne, Brot 1 Stern
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("GutesBrot", "Brot", Some(4)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("GutesMittagessen", "Mittagessen", Some(4)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("SchlechtesBrot", "Brot", Some(1)),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter "gut" + Kategorie "Brot"
+        let results = filter_recipes_by_categories(&pool, &["Brot".to_string()], "", Some("gut"))
+            .await
+            .unwrap();
+
+        // Then: Nur "GutesBrot"
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "GutesBrot");
+    }
+
+    #[tokio::test]
+    async fn rating_filter_combined_with_search() {
+        // Given: "Dinkelbrot" 4 Sterne, "Roggenbrot" 4 Sterne, "Dinkelpfannkuchen" 1 Stern
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("Dinkelbrot", "Brot", Some(4)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("Roggenbrot", "Brot", Some(4)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("Dinkelpfannkuchen", "Snacks", Some(1)),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter "gut" + Suche "dinkel"
+        let results = filter_recipes_by_categories(&pool, &[], "dinkel", Some("gut"))
+            .await
+            .unwrap();
+
+        // Then: Nur "Dinkelbrot"
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "Dinkelbrot");
+    }
+
+    #[tokio::test]
+    async fn rating_filter_gut_returns_empty_if_no_qualifying_recipes() {
+        // Given: Rezepte mit 1 und 2 Sternen
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("EinStern", "Mittagessen", Some(1)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("ZweiSterne", "Mittagessen", Some(2)),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter "gut" angewendet
+        let results = filter_recipes_by_categories(&pool, &[], "", Some("gut"))
+            .await
+            .unwrap();
+
+        // Then: Leere Liste
+        assert!(
+            results.is_empty(),
+            "Kein Rezept mit 3+ Sternen soll erscheinen"
+        );
+    }
+
+    #[tokio::test]
+    async fn rating_filter_favoriten_returns_empty_if_no_five_star() {
+        // Given: Nur Rezepte mit 1-4 Sternen
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("VierSterne", "Mittagessen", Some(4)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_rating("DreiSterne", "Mittagessen", Some(3)),
+        )
+        .await
+        .unwrap();
+
+        // When: Filter "favoriten" angewendet
+        let results = filter_recipes_by_categories(&pool, &[], "", Some("favoriten"))
+            .await
+            .unwrap();
+
+        // Then: Leere Liste
+        assert!(
+            results.is_empty(),
+            "Ohne 5-Sterne-Rezept soll Favoriten-Filter leer sein"
         );
     }
 }

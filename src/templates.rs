@@ -76,6 +76,12 @@ pub struct IndexTemplate {
     pub next_seven_days_filter_active: bool,
     /// URL zum Umschalten des "Nächste 7 Tage"-Filters.
     pub next_seven_days_filter_toggle_url: String,
+    /// Aktiver Bewertungsfilter: `Some("gut")` | `Some("favoriten")` | `None`.
+    pub bewertung_filter: Option<String>,
+    /// Toggle-URL für den "Nur Gute" (3+ Sterne) Bewertungsfilter.
+    pub bewertung_gut_toggle_url: String,
+    /// Toggle-URL für den "Favoriten" (5 Sterne) Bewertungsfilter.
+    pub bewertung_favoriten_toggle_url: String,
 }
 
 #[derive(Debug)]

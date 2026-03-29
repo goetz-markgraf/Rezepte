@@ -78,6 +78,7 @@ pub struct IndexQuery {
     pub deleted: Option<String>,
     pub q: Option<String>,
     pub filter: Option<String>,
+    pub bewertung: Option<String>,
 }
 
 /// Extrahiert alle `kategorie`-Parameter aus dem Raw-Query-String.
@@ -150,7 +151,7 @@ fn parse_form_data(body: &[u8]) -> std::collections::HashMap<String, Vec<String>
 }
 
 /// Baut die Toggle-URL für eine Kategorie: aktiv→entfernen, inaktiv→hinzufügen.
-/// Bestehender Suchbegriff, `not_made_filter_active` und `next_seven_days_filter_active` bleiben erhalten.
+/// Bestehender Suchbegriff, `not_made_filter_active`, `next_seven_days_filter_active` und `bewertung` bleiben erhalten.
 fn build_category_toggle_url(
     category: &str,
     is_active: bool,
@@ -158,6 +159,7 @@ fn build_category_toggle_url(
     search_query: &str,
     not_made_filter_active: bool,
     next_seven_days_filter_active: bool,
+    bewertung: Option<&str>,
 ) -> String {
     let mut params: Vec<String> = Vec::new();
 
@@ -182,6 +184,10 @@ fn build_category_toggle_url(
         params.push("filter=naechste-7-tage".to_string());
     }
 
+    if let Some(b) = bewertung {
+        params.push(format!("bewertung={}", urlencoding::encode(b)));
+    }
+
     if params.is_empty() {
         "/".to_string()
     } else {
@@ -195,6 +201,7 @@ fn build_category_filters(
     search_query: &str,
     not_made_filter_active: bool,
     next_seven_days_filter_active: bool,
+    bewertung: Option<&str>,
 ) -> Vec<CategoryFilterItem> {
     VALID_CATEGORIES
         .iter()
@@ -207,6 +214,7 @@ fn build_category_filters(
                 search_query,
                 not_made_filter_active,
                 next_seven_days_filter_active,
+                bewertung,
             );
             CategoryFilterItem {
                 name: cat.to_string(),
@@ -218,11 +226,12 @@ fn build_category_filters(
 }
 
 /// Erstellt die URL zum Zurücksetzen aller Kategorie-Filter (Suchbegriff bleibt erhalten).
-/// Wenn `not_made_filter_active` oder `next_seven_days_filter_active` gesetzt ist, bleibt der Filter erhalten.
+/// Wenn `not_made_filter_active`, `next_seven_days_filter_active` oder `bewertung` gesetzt ist, bleiben diese erhalten.
 fn build_reset_url(
     search_query: &str,
     not_made_filter_active: bool,
     next_seven_days_filter_active: bool,
+    bewertung: Option<&str>,
 ) -> String {
     let mut params: Vec<String> = Vec::new();
     if !search_query.is_empty() {
@@ -233,6 +242,9 @@ fn build_reset_url(
     } else if next_seven_days_filter_active {
         params.push("filter=naechste-7-tage".to_string());
     }
+    if let Some(b) = bewertung {
+        params.push(format!("bewertung={}", urlencoding::encode(b)));
+    }
     if params.is_empty() {
         "/".to_string()
     } else {
@@ -241,12 +253,13 @@ fn build_reset_url(
 }
 
 /// Baut die Toggle-URL für den "Länger nicht gemacht"-Filter.
-/// Aktiv → URL ohne `filter`-Parameter (Kategorie + Suche bleiben erhalten).
-/// Inaktiv → URL mit `filter=laenger-nicht-gemacht` (Kategorie + Suche bleiben erhalten).
+/// Aktiv → URL ohne `filter`-Parameter (Kategorie + Suche + bewertung bleiben erhalten).
+/// Inaktiv → URL mit `filter=laenger-nicht-gemacht` (Kategorie + Suche + bewertung bleiben erhalten).
 fn build_not_made_toggle_url(
     is_active: bool,
     active_categories: &[String],
     search_query: &str,
+    bewertung: Option<&str>,
 ) -> String {
     let mut params: Vec<String> = Vec::new();
 
@@ -262,6 +275,10 @@ fn build_not_made_toggle_url(
         params.push("filter=laenger-nicht-gemacht".to_string());
     }
 
+    if let Some(b) = bewertung {
+        params.push(format!("bewertung={}", urlencoding::encode(b)));
+    }
+
     if params.is_empty() {
         "/".to_string()
     } else {
@@ -270,12 +287,13 @@ fn build_not_made_toggle_url(
 }
 
 /// Baut die Toggle-URL für den "Nächste 7 Tage"-Filter.
-/// Aktiv → URL ohne `filter`-Parameter (Kategorie + Suche bleiben erhalten).
-/// Inaktiv → URL mit `filter=naechste-7-tage` (Kategorie + Suche bleiben erhalten).
+/// Aktiv → URL ohne `filter`-Parameter (Kategorie + Suche + bewertung bleiben erhalten).
+/// Inaktiv → URL mit `filter=naechste-7-tage` (Kategorie + Suche + bewertung bleiben erhalten).
 fn build_next_seven_days_toggle_url(
     is_active: bool,
     active_categories: &[String],
     search_query: &str,
+    bewertung: Option<&str>,
 ) -> String {
     let mut params: Vec<String> = Vec::new();
 
@@ -289,6 +307,50 @@ fn build_next_seven_days_toggle_url(
 
     if !is_active {
         params.push("filter=naechste-7-tage".to_string());
+    }
+
+    if let Some(b) = bewertung {
+        params.push(format!("bewertung={}", urlencoding::encode(b)));
+    }
+
+    if params.is_empty() {
+        "/".to_string()
+    } else {
+        format!("/?{}", params.join("&"))
+    }
+}
+
+/// Baut die Toggle-URL für den Bewertungsfilter.
+/// Wenn der aktuelle Wert dem Zielwert entspricht (Toggle: deaktivieren), wird `bewertung` aus der URL entfernt.
+/// Andernfalls wird `bewertung={value}` gesetzt (ggf. ersetzt).
+/// Alle anderen Parameter (q, kategorie, filter) bleiben erhalten.
+fn build_bewertung_toggle_url(
+    value: &str,
+    current: Option<&str>,
+    active_categories: &[String],
+    search_query: &str,
+    not_made_filter_active: bool,
+    next_seven_days_filter_active: bool,
+) -> String {
+    let mut params: Vec<String> = Vec::new();
+
+    if !search_query.is_empty() {
+        params.push(format!("q={}", urlencoding::encode(search_query)));
+    }
+
+    for cat in active_categories {
+        params.push(format!("kategorie={}", urlencoding::encode(cat)));
+    }
+
+    if not_made_filter_active {
+        params.push("filter=laenger-nicht-gemacht".to_string());
+    } else if next_seven_days_filter_active {
+        params.push("filter=naechste-7-tage".to_string());
+    }
+
+    // Toggle: gleiches Value → deaktivieren (kein bewertung-Parameter)
+    if current != Some(value) {
+        params.push(format!("bewertung={}", urlencoding::encode(value)));
     }
 
     if params.is_empty() {
@@ -316,6 +378,7 @@ fn normalize_categories(raw: Vec<String>) -> Vec<String> {
 /// Unterstützt `?kategorie=Brot&kategorie=Kuchen` für den Kategorie-Filter (ODER-Logik).
 /// Unterstützt `?filter=laenger-nicht-gemacht` für den "Länger nicht gemacht"-Filter.
 /// Unterstützt `?filter=naechste-7-tage` für den "Nächste 7 Tage"-Filter.
+/// Unterstützt `?bewertung=gut` (rating >= 3) und `?bewertung=favoriten` (rating = 5) für den Bewertungsfilter.
 pub async fn index(
     State(pool): State<Arc<SqlitePool>>,
     Query(query): Query<IndexQuery>,
@@ -327,12 +390,39 @@ pub async fn index(
     let not_made_filter_active = query.filter.as_deref() == Some("laenger-nicht-gemacht");
     let next_seven_days_filter_active = query.filter.as_deref() == Some("naechste-7-tage");
 
+    // Bewertungsfilter: nur "gut" und "favoriten" akzeptieren, Rest ignorieren
+    let bewertung: Option<String> = query.bewertung.and_then(|b| {
+        if b == "gut" || b == "favoriten" {
+            Some(b)
+        } else {
+            None
+        }
+    });
+
     let recipes: Vec<Recipe> = if not_made_filter_active {
-        filter_recipes_not_made_recently(&pool, &active_categories, &search_query).await?
+        filter_recipes_not_made_recently(
+            &pool,
+            &active_categories,
+            &search_query,
+            bewertung.as_deref(),
+        )
+        .await?
     } else if next_seven_days_filter_active {
-        filter_recipes_next_seven_days(&pool, &active_categories, &search_query).await?
+        filter_recipes_next_seven_days(
+            &pool,
+            &active_categories,
+            &search_query,
+            bewertung.as_deref(),
+        )
+        .await?
     } else {
-        filter_recipes_by_categories(&pool, &active_categories, &search_query).await?
+        filter_recipes_by_categories(
+            &pool,
+            &active_categories,
+            &search_query,
+            bewertung.as_deref(),
+        )
+        .await?
     };
 
     let recipe_items: Vec<RecipeListItem> = recipes
@@ -356,18 +446,41 @@ pub async fn index(
         &search_query,
         not_made_filter_active,
         next_seven_days_filter_active,
+        bewertung.as_deref(),
     );
     let reset_categories_url = build_reset_url(
         &search_query,
         not_made_filter_active,
         next_seven_days_filter_active,
+        bewertung.as_deref(),
     );
-    let not_made_filter_toggle_url =
-        build_not_made_toggle_url(not_made_filter_active, &active_categories, &search_query);
+    let not_made_filter_toggle_url = build_not_made_toggle_url(
+        not_made_filter_active,
+        &active_categories,
+        &search_query,
+        bewertung.as_deref(),
+    );
     let next_seven_days_filter_toggle_url = build_next_seven_days_toggle_url(
         next_seven_days_filter_active,
         &active_categories,
         &search_query,
+        bewertung.as_deref(),
+    );
+    let bewertung_gut_toggle_url = build_bewertung_toggle_url(
+        "gut",
+        bewertung.as_deref(),
+        &active_categories,
+        &search_query,
+        not_made_filter_active,
+        next_seven_days_filter_active,
+    );
+    let bewertung_favoriten_toggle_url = build_bewertung_toggle_url(
+        "favoriten",
+        bewertung.as_deref(),
+        &active_categories,
+        &search_query,
+        not_made_filter_active,
+        next_seven_days_filter_active,
     );
 
     let template = IndexTemplate {
@@ -381,6 +494,9 @@ pub async fn index(
         not_made_filter_toggle_url,
         next_seven_days_filter_active,
         next_seven_days_filter_toggle_url,
+        bewertung_filter: bewertung,
+        bewertung_gut_toggle_url,
+        bewertung_favoriten_toggle_url,
     };
     Ok(Html(render_template(template)?))
 }
