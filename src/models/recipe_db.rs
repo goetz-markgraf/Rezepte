@@ -474,6 +474,61 @@ pub struct SimilarRecipe {
     pub rating: Option<i32>,
 }
 
+/// Ein Paar potentiell doppelter Rezepte.
+pub struct DublettenPaar {
+    pub rezept_a: SimilarRecipe,
+    pub rezept_b: SimilarRecipe,
+}
+
+/// Findet alle potentiellen Dubletten-Paare in der Datenbank.
+///
+/// Algorithmus:
+/// 1. Alle Rezepte alphabetisch laden
+/// 2. Für jedes Rezept `find_similar_recipes` aufrufen
+/// 3. Paare als (min(id_a, id_b), max(id_a, id_b)) deduplizieren
+/// 4. Reihenfolge: erstes Auftreten (alphabetisch nach Titel von Rezept A)
+pub async fn find_all_duplicate_pairs(
+    pool: &SqlitePool,
+) -> Result<Vec<DublettenPaar>, sqlx::Error> {
+    let all_recipes = get_all_recipes(pool).await?;
+    let mut seen: std::collections::HashSet<(i64, i64)> = std::collections::HashSet::new();
+    let mut result: Vec<DublettenPaar> = Vec::new();
+
+    for recipe in &all_recipes {
+        let candidates = find_similar_recipes(pool, &recipe.title, Some(recipe.id)).await?;
+        for kandidat in candidates {
+            let id_a = recipe.id.min(kandidat.id);
+            let id_b = recipe.id.max(kandidat.id);
+            if seen.insert((id_a, id_b)) {
+                // Rezept A = das alphabetisch frühere (kleinere ID nach Sortierung),
+                // aber wir wollen konsistente Darstellung: A = das aktuelle Rezept
+                let (rezept_a, rezept_b) = if recipe.id < kandidat.id {
+                    (
+                        SimilarRecipe {
+                            id: recipe.id,
+                            title: recipe.title.clone(),
+                            rating: recipe.rating,
+                        },
+                        kandidat,
+                    )
+                } else {
+                    (
+                        kandidat,
+                        SimilarRecipe {
+                            id: recipe.id,
+                            title: recipe.title.clone(),
+                            rating: recipe.rating,
+                        },
+                    )
+                };
+                result.push(DublettenPaar { rezept_a, rezept_b });
+            }
+        }
+    }
+
+    Ok(result)
+}
+
 /// Sucht bis zu 3 Rezepte, deren Titel den eingegebenen Begriff enthält
 /// (case-insensitive LIKE-Suche). Optional kann eine ID ausgeschlossen werden
 /// (für die Bearbeitung eines bestehenden Rezepts).
@@ -2640,5 +2695,126 @@ mod tests {
 
         // Then: Leere Liste
         assert!(results.is_empty());
+    }
+
+    // === Tests für find_all_duplicate_pairs ===
+
+    #[tokio::test]
+    async fn find_all_duplicate_pairs_zwei_aehnliche_rezepte_ergeben_ein_paar() {
+        // Given: Zwei Rezepte, wobei Titel A ein Substring von Titel B ist
+        // (find_similar_recipes sucht per LIKE %title%, A als Suchbegriff findet B)
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        // "Dinkel" ist Substring von "Dinkelbrot"
+        create_recipe(&pool, &make_recipe("Dinkel", "Brot"))
+            .await
+            .unwrap();
+        create_recipe(&pool, &make_recipe("Dinkelbrot", "Brot"))
+            .await
+            .unwrap();
+
+        // When: Alle Dubletten-Paare finden
+        let paare = find_all_duplicate_pairs(&pool).await.unwrap();
+
+        // Then: Genau ein Paar
+        assert_eq!(paare.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn find_all_duplicate_pairs_keine_aehnlichen_rezepte_leere_liste() {
+        // Given: Zwei Rezepte ohne Ähnlichkeit
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(&pool, &make_recipe("Spaghetti Bolognese", "Mittagessen"))
+            .await
+            .unwrap();
+        create_recipe(&pool, &make_recipe("Apfelkuchen", "Kuchen"))
+            .await
+            .unwrap();
+
+        // When: Alle Dubletten-Paare finden
+        let paare = find_all_duplicate_pairs(&pool).await.unwrap();
+
+        // Then: Leere Liste
+        assert!(paare.is_empty());
+    }
+
+    #[tokio::test]
+    async fn find_all_duplicate_pairs_paar_erscheint_nur_einmal() {
+        // Given: Titel A ist Substring von Titel B
+        // A findet B (LIKE %A% matcht B), B findet A nicht (LIKE %B% matcht A nicht)
+        // → Trotzdem nur 1 Paar im Ergebnis (Deduplizierung per geordnetem Paar)
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(&pool, &make_recipe("Dinkel", "Brot"))
+            .await
+            .unwrap();
+        create_recipe(&pool, &make_recipe("Dinkelbrot", "Brot"))
+            .await
+            .unwrap();
+
+        // When: Alle Dubletten-Paare finden
+        let paare = find_all_duplicate_pairs(&pool).await.unwrap();
+
+        // Then: Genau ein Paar (Deduplizierung, auch wenn nur einseitig gefunden)
+        assert_eq!(paare.len(), 1, "Paar soll genau einmal erscheinen");
+    }
+
+    #[tokio::test]
+    async fn find_all_duplicate_pairs_rezept_nicht_mit_sich_selbst_gepaart() {
+        // Given: Ein einzelnes Rezept
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(&pool, &make_recipe("Dinkelbrot", "Brot"))
+            .await
+            .unwrap();
+
+        // When: Alle Dubletten-Paare finden
+        let paare = find_all_duplicate_pairs(&pool).await.unwrap();
+
+        // Then: Leere Liste (kein Selbst-Paar)
+        assert!(
+            paare.is_empty(),
+            "Rezept darf nicht mit sich selbst gepaart werden"
+        );
+    }
+
+    #[tokio::test]
+    async fn find_all_duplicate_pairs_drei_aehnliche_rezepte_korrekte_paare() {
+        // Given: Drei verschachtelte Titel: "Brot" ⊂ "Brotkorb" ⊂ "Brotkorb klein"
+        // "Brot" findet "Brotkorb" und "Brotkorb klein"
+        // "Brotkorb" findet "Brotkorb klein"
+        // → 3 eindeutige Paare
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        create_recipe(&pool, &make_recipe("Brot", "Brot"))
+            .await
+            .unwrap();
+        create_recipe(&pool, &make_recipe("Brotkorb", "Brot"))
+            .await
+            .unwrap();
+        create_recipe(&pool, &make_recipe("Brotkorb klein", "Brot"))
+            .await
+            .unwrap();
+
+        // When: Alle Dubletten-Paare finden
+        let paare = find_all_duplicate_pairs(&pool).await.unwrap();
+
+        // Then: 3 Paare: (Brot↔Brotkorb), (Brot↔Brotkorb klein), (Brotkorb↔Brotkorb klein)
+        assert_eq!(
+            paare.len(),
+            3,
+            "Bei 3 verschachtelt-ähnlichen Rezepten sollen 3 eindeutige Paare entstehen"
+        );
     }
 }

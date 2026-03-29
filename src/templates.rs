@@ -297,3 +297,38 @@ impl RecipeListItem {
         }
     }
 }
+
+/// Ein einzelnes Dubletten-Paar für das Template.
+pub struct DublettenPaarItem {
+    pub id_a: i64,
+    pub titel_a: String,
+    pub bewertung_a: Option<i32>,
+    pub id_b: i64,
+    pub titel_b: String,
+    pub bewertung_b: Option<i32>,
+}
+
+impl DublettenPaarItem {
+    /// Gibt die Sterndarstellung für Rezept A zurück (z.B. "★★★") oder einen leeren String.
+    pub fn sterne_a(&self) -> String {
+        match self.bewertung_a {
+            Some(r) => "★".repeat(r as usize),
+            None => String::new(),
+        }
+    }
+
+    /// Gibt die Sterndarstellung für Rezept B zurück (z.B. "★★★") oder einen leeren String.
+    pub fn sterne_b(&self) -> String {
+        match self.bewertung_b {
+            Some(r) => "★".repeat(r as usize),
+            None => String::new(),
+        }
+    }
+}
+
+/// Template für die Dubletten-Übersichtsseite.
+#[derive(Template)]
+#[template(path = "recipes/duplicates.html")]
+pub struct DublettenUebersichtTemplate {
+    pub paare: Vec<DublettenPaarItem>,
+}

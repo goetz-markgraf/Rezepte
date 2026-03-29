@@ -3,13 +3,14 @@ use crate::models::recipe::validate_rating;
 use crate::models::{
     create_recipe, create_saved_filter, delete_recipe, delete_saved_filter,
     filter_recipes_by_categories, filter_recipes_next_seven_days, filter_recipes_not_made_recently,
-    find_similar_recipes, get_all_saved_filters, get_recipe_by_id, update_recipe,
-    update_recipe_rating, CreateRecipe, CreateSavedFilter, Recipe, UpdateRecipe, VALID_CATEGORIES,
+    find_all_duplicate_pairs, find_similar_recipes, get_all_saved_filters, get_recipe_by_id,
+    update_recipe, update_recipe_rating, CreateRecipe, CreateSavedFilter, Recipe, UpdateRecipe,
+    VALID_CATEGORIES,
 };
 use crate::templates::{
-    CategoryFilterItem, ConfirmDeleteTemplate, DuplicateHintTemplate, IndexTemplate,
-    InlineRatingTemplate, NotFoundTemplate, RecipeDetailTemplate, RecipeFormTemplate,
-    RecipeListItem, SavedFilterItem,
+    CategoryFilterItem, ConfirmDeleteTemplate, DublettenPaarItem, DublettenUebersichtTemplate,
+    DuplicateHintTemplate, IndexTemplate, InlineRatingTemplate, NotFoundTemplate,
+    RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem, SavedFilterItem,
 };
 use askama::Template;
 use axum::{
@@ -954,4 +955,25 @@ pub async fn check_duplicate(
     let html = template.render().unwrap_or_default();
 
     Html(html)
+}
+
+/// Zeigt die Dubletten-Übersichtsseite an.
+/// Findet alle potentiellen Dubletten-Paare und stellt sie als vollständige HTML-Seite dar.
+pub async fn duplicates_handler(
+    State(pool): State<Arc<SqlitePool>>,
+) -> Result<impl IntoResponse, AppError> {
+    let paare = find_all_duplicate_pairs(&pool).await?;
+    let paar_items: Vec<DublettenPaarItem> = paare
+        .into_iter()
+        .map(|p| DublettenPaarItem {
+            id_a: p.rezept_a.id,
+            titel_a: p.rezept_a.title,
+            bewertung_a: p.rezept_a.rating,
+            id_b: p.rezept_b.id,
+            titel_b: p.rezept_b.title,
+            bewertung_b: p.rezept_b.rating,
+        })
+        .collect();
+    let template = DublettenUebersichtTemplate { paare: paar_items };
+    Ok(Html(render_template(template)?))
 }
