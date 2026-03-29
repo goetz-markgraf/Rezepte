@@ -36,13 +36,22 @@ pub fn parse_german_date(input: &str) -> Result<Date, String> {
         .map_err(|_| "Kein gültiges Datum. Bitte im Format T.M.JJJJ eingeben.".to_string())
 }
 
-/// Validiert die gemeinsamen Felder eines Rezept-Formulars (Titel, Kategorien, Zutaten, Anleitung).
+/// Validiert die Bewertung (Rating). Gibt eine Fehlermeldung zurück, wenn der Wert ungültig ist.
+/// Gültige Werte: None (keine Bewertung) oder 1-5.
+pub fn validate_rating(rating: Option<i32>) -> Option<String> {
+    rating
+        .filter(|&r| !(1..=5).contains(&r))
+        .map(|_| "Bewertung muss zwischen 1 und 5 Sternen liegen".to_string())
+}
+
+/// Validiert die gemeinsamen Felder eines Rezept-Formulars (Titel, Kategorien, Zutaten, Anleitung, Bewertung).
 /// Gibt eine Liste von Fehlermeldungen zurück, falls die Validierung fehlschlägt.
 pub fn validate_recipe_fields(
     title: &str,
     categories: &[String],
     ingredients: Option<&str>,
     instructions: Option<&str>,
+    rating: Option<i32>,
 ) -> Vec<String> {
     let mut errors = Vec::new();
 
@@ -74,6 +83,10 @@ pub fn validate_recipe_fields(
         }
     }
 
+    if let Some(err) = validate_rating(rating) {
+        errors.push(err);
+    }
+
     errors
 }
 
@@ -87,6 +100,8 @@ pub struct Recipe {
     pub planned_date: Option<Date>,
     pub created_at: String,
     pub updated_at: String,
+    /// Bewertung 1-5 Sterne. None bedeutet keine Bewertung.
+    pub rating: Option<i32>,
 }
 
 impl Recipe {
@@ -103,6 +118,8 @@ pub struct CreateRecipe {
     pub instructions: Option<String>,
     /// Roheingabe des Datums aus dem Formular (deutsches Format T.M.JJJJ oder leer).
     pub planned_date_input: Option<String>,
+    /// Bewertung 1-5 Sterne. None bedeutet keine Bewertung.
+    pub rating: Option<i32>,
 }
 
 impl CreateRecipe {
@@ -113,6 +130,7 @@ impl CreateRecipe {
             &self.categories,
             self.ingredients.as_deref(),
             self.instructions.as_deref(),
+            self.rating,
         );
 
         if let Some(ref input) = self.planned_date_input {
@@ -152,6 +170,8 @@ pub struct UpdateRecipe {
     pub instructions: Option<String>,
     /// Roheingabe des Datums aus dem Formular (deutsches Format T.M.JJJJ oder leer).
     pub planned_date_input: Option<String>,
+    /// Bewertung 1-5 Sterne. None bedeutet keine Bewertung.
+    pub rating: Option<i32>,
 }
 
 impl UpdateRecipe {
@@ -162,6 +182,7 @@ impl UpdateRecipe {
             &self.categories,
             self.ingredients.as_deref(),
             self.instructions.as_deref(),
+            self.rating,
         );
 
         if let Some(ref input) = self.planned_date_input {
@@ -250,6 +271,49 @@ mod tests {
     }
 
     #[test]
+    fn validate_rating_rejects_zero() {
+        // Given: Bewertung 0 (unter dem Minimum)
+        let result = validate_rating(Some(0));
+        // Then: Fehlermeldung zurückgegeben
+        assert!(result.is_some());
+        assert!(result
+            .unwrap()
+            .contains("Bewertung muss zwischen 1 und 5 Sternen liegen"));
+    }
+
+    #[test]
+    fn validate_rating_accepts_one() {
+        // Given: Bewertung 1 (Minimum)
+        let result = validate_rating(Some(1));
+        // Then: Kein Fehler
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn validate_rating_accepts_five() {
+        // Given: Bewertung 5 (Maximum)
+        let result = validate_rating(Some(5));
+        // Then: Kein Fehler
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn validate_rating_rejects_six() {
+        // Given: Bewertung 6 (über dem Maximum)
+        let result = validate_rating(Some(6));
+        // Then: Fehlermeldung zurückgegeben
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn validate_rating_accepts_none() {
+        // Given: Keine Bewertung (None)
+        let result = validate_rating(None);
+        // Then: Kein Fehler (Bewertung ist optional)
+        assert!(result.is_none());
+    }
+
+    #[test]
     fn create_recipe_validates_title() {
         let recipe = CreateRecipe {
             title: "".to_string(),
@@ -257,6 +321,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: None,
+            rating: None,
         };
 
         let result = recipe.validate();
@@ -274,6 +339,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: None,
+            rating: None,
         };
 
         let result = recipe.validate();
@@ -291,6 +357,7 @@ mod tests {
             ingredients: Some("Nudeln, Eier, Speck".to_string()),
             instructions: Some("Kochen und mischen".to_string()),
             planned_date_input: None,
+            rating: None,
         };
 
         let result = recipe.validate();
@@ -306,6 +373,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: Some("5.3.2025".to_string()),
+            rating: None,
         };
         // Then: Validierung erfolgreich
         assert!(recipe.validate().is_ok());
@@ -320,6 +388,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: Some("morgen".to_string()),
+            rating: None,
         };
         // Then: Fehlermeldung über das Datum
         let result = recipe.validate();
@@ -337,6 +406,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: Some("".to_string()),
+            rating: None,
         };
         // Then: Validierung erfolgreich (kein Datum = kein Fehler)
         assert!(recipe.validate().is_ok());
@@ -350,6 +420,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: None,
+            rating: None,
         };
 
         let result = recipe.validate();
@@ -364,6 +435,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: None,
+            rating: None,
         };
 
         let json = recipe.categories_json();

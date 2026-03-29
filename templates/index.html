@@ -157,7 +157,7 @@
     <li class="recipe-item">
         <div class="recipe-item-content">
             <a href="/recipes/{{ recipe.id }}" class="recipe-item-link">
-                <h2>{{ recipe.title }}</h2>
+                <h2>{{ recipe.title }}{% if let Some(r) = recipe.rating %} <span class="recipe-stars recipe-stars-list" aria-label="{{ r }} von 5 Sternen">{{ recipe.stars_display() }}</span>{% endif %}</h2>
                 <div class="categories">
                     {% for category in recipe.categories %}
                     <span class="category-tag">{{ category }}</span>

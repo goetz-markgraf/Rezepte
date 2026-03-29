@@ -113,6 +113,12 @@ pub fn format_date(date_str: &str) -> String {
     date_str.to_string()
 }
 
+/// Parst einen rohen Rating-String aus dem Formular. Leer oder fehlend → None.
+fn parse_rating(raw: Option<&str>) -> Option<i32> {
+    raw.filter(|s| !s.trim().is_empty())
+        .and_then(|s| s.trim().parse::<i32>().ok())
+}
+
 fn render_template<T: askama::Template>(template: T) -> Result<String, AppError> {
     template
         .render()
@@ -341,6 +347,7 @@ pub async fn index(
             } else {
                 None
             },
+            rating: r.rating,
         })
         .collect();
 
@@ -408,6 +415,12 @@ pub async fn create_recipe_handler(
         .filter(|s| !s.is_empty())
         .cloned();
     let planned_date_raw = params.get("planned_date").and_then(|v| v.first()).cloned();
+    let rating = parse_rating(
+        params
+            .get("rating")
+            .and_then(|v| v.first())
+            .map(|s| s.as_str()),
+    );
 
     let recipe = CreateRecipe {
         title: title.clone(),
@@ -415,6 +428,7 @@ pub async fn create_recipe_handler(
         ingredients: ingredients.clone(),
         instructions: instructions.clone(),
         planned_date_input: planned_date_raw.clone(),
+        rating,
     };
 
     if let Err(errors) = recipe.validate() {
@@ -430,6 +444,7 @@ pub async fn create_recipe_handler(
             instructions: instructions.unwrap_or_default(),
             recipe_id: None,
             planned_date: planned_date_raw.unwrap_or_default(),
+            rating,
         };
         return Ok((StatusCode::BAD_REQUEST, Html(render_template(template)?)).into_response());
     }
@@ -465,6 +480,7 @@ pub async fn show_recipe(
         updated_at: format_date(&recipe.updated_at),
         success: query.success.as_deref() == Some("1"),
         planned_date,
+        rating: recipe.rating,
     };
 
     Ok(Html(render_template(template)?).into_response())
@@ -489,6 +505,7 @@ pub async fn edit_recipe_form(
         instructions: recipe.instructions.unwrap_or_default(),
         recipe_id: Some(id),
         planned_date,
+        rating: recipe.rating,
     };
 
     Ok(Html(render_template(template)?))
@@ -519,6 +536,12 @@ pub async fn update_recipe_handler(
         .filter(|s| !s.is_empty())
         .cloned();
     let planned_date_raw = params.get("planned_date").and_then(|v| v.first()).cloned();
+    let rating = parse_rating(
+        params
+            .get("rating")
+            .and_then(|v| v.first())
+            .map(|s| s.as_str()),
+    );
 
     let recipe = UpdateRecipe {
         title: title.clone(),
@@ -526,6 +549,7 @@ pub async fn update_recipe_handler(
         ingredients: ingredients.clone(),
         instructions: instructions.clone(),
         planned_date_input: planned_date_raw.clone(),
+        rating,
     };
 
     if let Err(errors) = recipe.validate() {
@@ -538,6 +562,7 @@ pub async fn update_recipe_handler(
             instructions: instructions.unwrap_or_default(),
             recipe_id: Some(id),
             planned_date: planned_date_raw.unwrap_or_default(),
+            rating,
         };
         return Ok((StatusCode::BAD_REQUEST, Html(render_template(template)?)).into_response());
     }

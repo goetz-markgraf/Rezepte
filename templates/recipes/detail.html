@@ -19,6 +19,9 @@
             <span class="category-tag">{{ category }}</span>
             {% endfor %}
         </div>
+        {% if let Some(r) = rating %}
+        <span class="recipe-stars" aria-label="{{ r }} von 5 Sternen">{{ self.stars_display() }}</span>
+        {% endif %}
     </header>
 
     {% if let Some(ingredients) = ingredients %}

@@ -8,8 +8,8 @@ pub async fn create_recipe(pool: &SqlitePool, recipe: &CreateRecipe) -> Result<i
 
     let result = sqlx::query(
         r#"
-        INSERT INTO recipes (title, categories, ingredients, instructions, planned_date)
-        VALUES (?1, ?2, ?3, ?4, ?5)
+        INSERT INTO recipes (title, categories, ingredients, instructions, planned_date, rating)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6)
         "#,
     )
     .bind(&recipe.title)
@@ -17,6 +17,7 @@ pub async fn create_recipe(pool: &SqlitePool, recipe: &CreateRecipe) -> Result<i
     .bind(&recipe.ingredients)
     .bind(&recipe.instructions)
     .bind(planned_date)
+    .bind(recipe.rating)
     .execute(pool)
     .await?;
 
@@ -27,7 +28,7 @@ pub async fn create_recipe(pool: &SqlitePool, recipe: &CreateRecipe) -> Result<i
 pub async fn get_recipe_by_id(pool: &SqlitePool, id: i64) -> Result<Option<Recipe>, sqlx::Error> {
     let recipe = sqlx::query_as::<_, Recipe>(
         r#"
-        SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at
+        SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating
         FROM recipes
         WHERE id = ?1
         "#,
@@ -60,7 +61,7 @@ fn normalize_for_sort(title: &str) -> String {
 pub async fn get_all_recipes(pool: &SqlitePool) -> Result<Vec<Recipe>, sqlx::Error> {
     let mut recipes = sqlx::query_as::<_, Recipe>(
         r#"
-        SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at
+        SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating
         FROM recipes
         "#,
     )
@@ -83,14 +84,15 @@ pub async fn update_recipe(
 
     let rows_affected = sqlx::query(
         r#"
-        UPDATE recipes 
-        SET title = ?1, 
-            categories = ?2, 
-            ingredients = ?3, 
+        UPDATE recipes
+        SET title = ?1,
+            categories = ?2,
+            ingredients = ?3,
             instructions = ?4,
             planned_date = ?5,
+            rating = ?6,
             updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?6
+        WHERE id = ?7
         "#,
     )
     .bind(&recipe.title)
@@ -98,6 +100,7 @@ pub async fn update_recipe(
     .bind(&recipe.ingredients)
     .bind(&recipe.instructions)
     .bind(planned_date)
+    .bind(recipe.rating)
     .bind(id)
     .execute(pool)
     .await?
@@ -122,7 +125,7 @@ pub async fn search_recipes(pool: &SqlitePool, query: &str) -> Result<Vec<Recipe
 
     let mut recipes = sqlx::query_as::<_, Recipe>(
         r#"
-        SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at
+        SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating
         FROM recipes
         WHERE LOWER(title) LIKE ?1
            OR LOWER(ingredients) LIKE ?1
@@ -163,12 +166,12 @@ pub async fn filter_recipes_by_categories(
 
     let sql = if search_query.trim().is_empty() {
         format!(
-            "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at \
+            "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating \
              FROM recipes WHERE {category_clause}"
         )
     } else {
         format!(
-            "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at \
+            "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating \
              FROM recipes WHERE ({category_clause}) \
              AND (LOWER(title) LIKE ? OR LOWER(ingredients) LIKE ? OR LOWER(instructions) LIKE ?)"
         )
@@ -225,7 +228,7 @@ pub async fn filter_recipes_not_made_recently(
     };
 
     let sql = format!(
-        "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at \
+        "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating \
          FROM recipes \
          WHERE (planned_date IS NULL OR planned_date <= DATE('now')) \
          {category_clause} {search_clause} \
@@ -288,7 +291,7 @@ pub async fn filter_recipes_next_seven_days(
     };
 
     let sql = format!(
-        "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at \
+        "SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating \
          FROM recipes \
          WHERE planned_date >= DATE('now') \
            AND planned_date <= DATE('now', '+7 days') \
@@ -351,6 +354,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: None,
+            rating: None,
         }
     }
 
@@ -435,6 +439,7 @@ mod tests {
             ingredients: Some("Zutat 1, Zutat 2".to_string()),
             instructions: Some("Anleitung".to_string()),
             planned_date_input: None,
+            rating: None,
         };
 
         let id = create_recipe(&pool, &recipe).await.unwrap();
@@ -484,6 +489,7 @@ mod tests {
             ingredients: Some("Original Zutaten".to_string()),
             instructions: Some("Original Anleitung".to_string()),
             planned_date_input: None,
+            rating: None,
         };
         let id = create_recipe(&pool, &recipe).await.unwrap();
 
@@ -494,6 +500,7 @@ mod tests {
             ingredients: Some("Neue Zutaten".to_string()),
             instructions: Some("Neue Anleitung".to_string()),
             planned_date_input: None,
+            rating: None,
         };
 
         update_recipe(&pool, id, &updated).await.unwrap();
@@ -517,6 +524,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: None,
+            rating: None,
         };
 
         let result = update_recipe(&pool, 9999, &updated).await;
@@ -544,6 +552,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: None,
+            rating: None,
         };
         update_recipe(&pool, id, &updated).await.unwrap();
 
@@ -590,6 +599,7 @@ mod tests {
                 ingredients: Some("Hackfleisch, Tomaten".to_string()),
                 instructions: Some("Sauce kochen".to_string()),
                 planned_date_input: None,
+                rating: None,
             },
         )
         .await
@@ -614,6 +624,7 @@ mod tests {
                 ingredients: Some("Dinkelvollkornmehl, Eier, Milch".to_string()),
                 instructions: Some("Teig mischen".to_string()),
                 planned_date_input: None,
+                rating: None,
             },
         )
         .await
@@ -638,6 +649,7 @@ mod tests {
                 ingredients: Some("Mehl, Hefe, Wasser".to_string()),
                 instructions: Some("Teig kneten und im Ofen backen".to_string()),
                 planned_date_input: None,
+                rating: None,
             },
         )
         .await
@@ -707,6 +719,7 @@ mod tests {
                 ingredients: Some("Bolognese-Soße, Hackfleisch".to_string()),
                 instructions: Some("Bolognese zubereiten".to_string()),
                 planned_date_input: None,
+                rating: None,
             },
         )
         .await
@@ -755,6 +768,7 @@ mod tests {
                 ingredients: None,
                 instructions: None,
                 planned_date_input: None,
+                rating: None,
             },
         )
         .await
@@ -885,6 +899,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: Some("5.3.2025".to_string()),
+            rating: None,
         };
 
         // When: Rezept erstellt und zurückgelesen wird
@@ -928,6 +943,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: Some("1.1.2025".to_string()),
+            rating: None,
         };
         let id = create_recipe(&pool, &recipe).await.unwrap();
 
@@ -938,6 +954,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: Some("15.4.2026".to_string()),
+            rating: None,
         };
         update_recipe(&pool, id, &updated).await.unwrap();
 
@@ -962,6 +979,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: Some("1.1.2025".to_string()),
+            rating: None,
         };
         let id = create_recipe(&pool, &recipe).await.unwrap();
 
@@ -972,6 +990,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: Some("".to_string()),
+            rating: None,
         };
         update_recipe(&pool, id, &updated).await.unwrap();
 
@@ -987,6 +1006,7 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: date.map(|d| d.to_string()),
+            rating: None,
         }
     }
 

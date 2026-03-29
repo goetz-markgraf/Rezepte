@@ -18,6 +18,8 @@ pub struct RecipeFormTemplate {
     pub recipe_id: Option<i64>,
     /// Datum im deutschen Format (T.M.JJJJ) oder leer.
     pub planned_date: String,
+    /// Bewertung 1-5 Sterne. None bedeutet keine Bewertung.
+    pub rating: Option<i32>,
 }
 
 #[derive(Template)]
@@ -33,6 +35,8 @@ pub struct RecipeDetailTemplate {
     pub success: bool,
     /// Datum im langen deutschen Format (z.B. "5. März 2025") oder None.
     pub planned_date: Option<String>,
+    /// Bewertung 1-5 Sterne. None bedeutet keine Bewertung.
+    pub rating: Option<i32>,
 }
 
 /// Template für die Bestätigungsseite zum Löschen eines Rezepts.
@@ -84,6 +88,8 @@ pub struct RecipeListItem {
     /// Datum mit Wochentag (z.B. "Mo, 31.03.2026") oder None.
     /// Wird nur beim aktiven "Nächste 7 Tage"-Filter befüllt.
     pub planned_date_weekday: Option<String>,
+    /// Bewertung 1-5 Sterne. None bedeutet keine Bewertung.
+    pub rating: Option<i32>,
 }
 
 impl Default for RecipeFormTemplate {
@@ -100,6 +106,7 @@ impl Default for RecipeFormTemplate {
             instructions: String::new(),
             recipe_id: None,
             planned_date: String::new(),
+            rating: None,
         }
     }
 }
@@ -107,5 +114,32 @@ impl Default for RecipeFormTemplate {
 impl RecipeFormTemplate {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Gibt true zurück, wenn die aktuelle Bewertung dem Wert `n` entspricht.
+    pub fn rating_is(&self, n: i32) -> bool {
+        self.rating == Some(n)
+    }
+}
+
+impl RecipeDetailTemplate {
+    /// Gibt die Sterndarstellung für die Detailansicht zurück (z.B. "★★★★☆" für 4).
+    /// Gibt einen leeren String zurück, wenn keine Bewertung vorhanden ist.
+    pub fn stars_display(&self) -> String {
+        match self.rating {
+            Some(r) => (1..=5).map(|n| if n <= r { '★' } else { '☆' }).collect(),
+            None => String::new(),
+        }
+    }
+}
+
+impl RecipeListItem {
+    /// Gibt die Sterndarstellung für die Listenansicht zurück (nur ausgefüllte Sterne).
+    /// Gibt einen leeren String zurück, wenn keine Bewertung vorhanden ist.
+    pub fn stars_display(&self) -> String {
+        match self.rating {
+            Some(r) => "★".repeat(r as usize),
+            None => String::new(),
+        }
     }
 }
