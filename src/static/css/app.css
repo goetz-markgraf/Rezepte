@@ -101,11 +101,48 @@ header .site-title:hover {
     opacity: 0.85;
 }
 
+/* Heutiger Wochentag — hervorgehoben */
+.wochentag-heute {
+    border-color: var(--primary-color);
+    border-width: 2px;
+    background-color: #eff6ff;
+}
+
+/* Vergangene Wochentage — visuell gedämpft */
+.wochentag-vergangen {
+    opacity: 0.6;
+}
+
 .wochentag-titel {
-    font-weight: 700;
-    font-size: 1.1rem;
     margin-bottom: 0.25rem;
     color: var(--text-color);
+}
+
+/* Wochentag-Name: primär, groß, fett */
+.wochentag-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-right: 0.5rem;
+}
+
+/* Kurzdatum: sekundär, kleiner, schwächer */
+.wochentag-datum {
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: #6b7280;
+}
+
+/* Heute-Badge */
+.heute-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    background-color: #dbeafe;
+    border-radius: 0.25rem;
+    padding: 0 0.375rem;
+    margin-left: 0.5rem;
+    vertical-align: middle;
 }
 
 .wochentag-inhalt {

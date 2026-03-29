@@ -50,6 +50,15 @@ function futureDateInDays(days: number): string {
   return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
 }
 
+/**
+ * Berechnet den Offset des heutigen Tags von Montag (0=Montag, 6=Sonntag).
+ */
+function daysFromMondayToday(): number {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0=So, 1=Mo, …, 6=Sa
+  return dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+}
+
 test.describe('Wochenvorschau (Story 18)', () => {
   test('K1: /wochenvorschau ist aufrufbar und in Navigation verlinkt', async ({ page }) => {
     // Given: Die App ist gestartet
@@ -195,5 +204,71 @@ test.describe('Wochenvorschau (Story 18)', () => {
     await expect(page.locator('.kw-label')).toBeVisible();
     const kwText = await page.locator('.kw-label').textContent();
     expect(kwText).toMatch(/KW \d+/);
+  });
+});
+
+test.describe('Wochenvorschau Formatierung (Story 19)', () => {
+  test('K1: 7x span.wochentag-name und 7x span.wochentag-datum sichtbar', async ({ page }) => {
+    // Given: Die Wochenvorschau ist geöffnet
+    await page.goto('/wochenvorschau');
+
+    // Then: span.wochentag-name Elemente sichtbar (7 Stück)
+    const nameElems = page.locator('strong.wochentag-name');
+    await expect(nameElems).toHaveCount(7);
+
+    // And: Wochentag-Namen sind korrekt
+    await expect(page.locator('body')).toContainText('Montag');
+
+    // And: span.wochentag-datum Elemente sichtbar (7 Stück)
+    const datumElems = page.locator('span.wochentag-datum');
+    await expect(datumElems).toHaveCount(7);
+  });
+
+  test('K2: Genau ein Element mit Klasse wochentag-heute', async ({ page }) => {
+    // Given: /wochenvorschau
+    await page.goto('/wochenvorschau');
+
+    // Then: Genau ein Element mit Klasse wochentag-heute
+    const heuteElems = page.locator('.wochentag-heute');
+    await expect(heuteElems).toHaveCount(1);
+  });
+
+  test('K2: Heute-Badge sichtbar mit Text "Heute"', async ({ page }) => {
+    // Given: /wochenvorschau
+    await page.goto('/wochenvorschau');
+
+    // Then: .heute-badge mit Text "Heute" sichtbar
+    const badge = page.locator('.heute-badge');
+    await expect(badge).toBeVisible();
+    await expect(badge).toContainText('Heute');
+  });
+
+  test('K3: Anzahl wochentag-vergangen entspricht Anzahl Tage seit Montag', async ({ page }) => {
+    // Given: /wochenvorschau aufgerufen
+    await page.goto('/wochenvorschau');
+
+    // Anzahl vergangener Tage = Offset des heutigen Tags von Montag
+    const daysFromMonday = daysFromMondayToday();
+
+    // Then: Genau so viele Elemente mit wochentag-vergangen wie Tage seit Montag
+    await expect(page.locator('.wochentag-vergangen')).toHaveCount(daysFromMonday);
+  });
+
+  test('K4: Smoke-Test — Rezept für heute erscheint unter .wochentag-heute', async ({ page }) => {
+    // Given: Rezept für heute erstellt
+    const suffix = Date.now();
+    const title = `Story19-Smoke-${suffix}`;
+    const daysFromMonday = daysFromMondayToday();
+    const todayDate = currentWeekDateFromMonday(daysFromMonday);
+    await createRecipeWithDate(page, title, ['Mittagessen'], todayDate);
+
+    // When: /wochenvorschau aufgerufen
+    await page.goto('/wochenvorschau');
+
+    // Then: Rezept unter heutigem Tag sichtbar
+    await expect(page.locator('.wochentag-heute')).toContainText(title);
+
+    // And: Link zur Detailansicht vorhanden
+    await expect(page.locator(`.wochentag-heute a:has-text("${title}")`)).toBeVisible();
   });
 });

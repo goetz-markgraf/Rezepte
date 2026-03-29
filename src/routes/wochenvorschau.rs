@@ -36,11 +36,15 @@ fn german_weekday_long(weekday: time::Weekday) -> &'static str {
     GERMAN_WEEKDAYS_LONG[weekday.number_days_from_monday() as usize]
 }
 
-/// Formatiert ein Datum als "Montag, 30. März".
-fn format_day_display(date: time::Date) -> String {
-    let weekday_name = german_weekday_long(date.weekday());
+/// Gibt den deutschen Wochentag-Namen als owned String zurück: "Montag" bis "Sonntag".
+fn format_weekday_name(date: time::Date) -> String {
+    german_weekday_long(date.weekday()).to_string()
+}
+
+/// Formatiert ein Datum als "T. Monatsname", z.B. "30. März" oder "5. April".
+fn format_date_kurz(date: time::Date) -> String {
     let month_name = GERMAN_MONTHS_LONG[(date.month() as u8 - 1) as usize];
-    format!("{}, {}. {}", weekday_name, date.day(), month_name)
+    format!("{}. {}", date.day(), month_name)
 }
 
 /// Berechnet die ISO-Kalenderwoche für ein Datum (ISO 8601).
@@ -116,7 +120,10 @@ pub async fn wochenvorschau_handler(
                 })
                 .collect();
             Wochentag {
-                datum_anzeige: format_day_display(datum),
+                wochentag_name: format_weekday_name(datum),
+                datum_kurz: format_date_kurz(datum),
+                ist_heute: datum == today,
+                ist_vergangen: datum < today,
                 rezepte,
             }
         })
@@ -146,17 +153,55 @@ mod tests {
     }
 
     #[test]
-    fn format_day_display_formats_correctly() {
-        // Montag, 30. März 2026
+    fn format_date_kurz_formats_correctly() {
+        // Montag, 30. März 2026 → "30. März"
         let date = make_date(2026, 3, 30);
-        assert_eq!(format_day_display(date), "Montag, 30. März");
+        assert_eq!(format_date_kurz(date), "30. März");
     }
 
     #[test]
-    fn format_day_display_sunday() {
-        // Sonntag, 5. April 2026
+    fn format_date_kurz_single_digit_day() {
+        // Sonntag, 5. April 2026 → "5. April"
         let date = make_date(2026, 4, 5);
-        assert_eq!(format_day_display(date), "Sonntag, 5. April");
+        assert_eq!(format_date_kurz(date), "5. April");
+    }
+
+    #[test]
+    fn format_date_kurz_january() {
+        // 1. Januar 2026 → "1. Januar"
+        let date = make_date(2026, 1, 1);
+        assert_eq!(format_date_kurz(date), "1. Januar");
+    }
+
+    #[test]
+    fn format_weekday_name_returns_correct_name() {
+        assert_eq!(format_weekday_name(make_date(2026, 3, 30)), "Montag");
+        assert_eq!(format_weekday_name(make_date(2026, 3, 31)), "Dienstag");
+        assert_eq!(format_weekday_name(make_date(2026, 4, 1)), "Mittwoch");
+        assert_eq!(format_weekday_name(make_date(2026, 4, 2)), "Donnerstag");
+        assert_eq!(format_weekday_name(make_date(2026, 4, 3)), "Freitag");
+        assert_eq!(format_weekday_name(make_date(2026, 4, 4)), "Samstag");
+        assert_eq!(format_weekday_name(make_date(2026, 4, 5)), "Sonntag");
+    }
+
+    #[test]
+    fn wochentag_felder_sind_korrekt_befuellt() {
+        use crate::templates::{Wochentag, WochentagesEintragItem};
+        let tag = Wochentag {
+            wochentag_name: "Mittwoch".to_string(),
+            datum_kurz: "1. April".to_string(),
+            ist_heute: true,
+            ist_vergangen: false,
+            rezepte: vec![WochentagesEintragItem {
+                id: 1,
+                title: "Test-Rezept".to_string(),
+            }],
+        };
+        assert_eq!(tag.wochentag_name, "Mittwoch");
+        assert_eq!(tag.datum_kurz, "1. April");
+        assert!(tag.ist_heute);
+        assert!(!tag.ist_vergangen);
+        assert_eq!(tag.rezepte.len(), 1);
     }
 
     #[test]

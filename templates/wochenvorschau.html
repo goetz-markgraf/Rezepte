@@ -15,8 +15,14 @@
 
 <dl class="wochenvorschau-liste">
     {% for tag in tage %}
-    <div class="wochentag-abschnitt{% if tag.rezepte.is_empty() %} wochentag-leer{% endif %}">
-        <dt class="wochentag-titel">{{ tag.datum_anzeige }}</dt>
+    <div class="wochentag-abschnitt{%- if tag.ist_heute %} wochentag-heute{% endif %}{%- if tag.ist_vergangen %} wochentag-vergangen{% endif %}{%- if tag.rezepte.is_empty() %} wochentag-leer{% endif %}">
+        <dt class="wochentag-titel">
+            <strong class="wochentag-name">{{ tag.wochentag_name }}</strong>
+            <span class="wochentag-datum">{{ tag.datum_kurz }}</span>
+            {% if tag.ist_heute %}
+            <span class="heute-badge" aria-label="Heute">Heute</span>
+            {% endif %}
+        </dt>
         <dd class="wochentag-inhalt">
             {% if tag.rezepte.is_empty() %}
             <span class="nichts-geplant">Nichts geplant</span>

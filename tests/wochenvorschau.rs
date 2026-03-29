@@ -290,3 +290,92 @@ async fn wochenvorschau_shows_empty_state_when_recipe_is_next_week() {
         "Leer-Meldung sollte sichtbar sein wenn keine Wochenrezepte"
     );
 }
+
+// Story-19-Tests: Formatierung der Wochentage
+
+#[tokio::test]
+async fn wochenvorschau_hat_css_klasse_wochentag_heute() {
+    // Given: App ohne Rezepte
+    let (app, _temp) = setup_test_app().await;
+
+    // When: GET /wochenvorschau
+    let (_status, body) = get_body(app, "/wochenvorschau").await;
+
+    // Then: Body enthält "wochentag-heute" (CSS-Klasse für heutigen Tag)
+    assert!(
+        body.contains("wochentag-heute"),
+        "Body sollte CSS-Klasse 'wochentag-heute' für den heutigen Tag enthalten"
+    );
+}
+
+#[tokio::test]
+async fn wochenvorschau_hat_css_klasse_wochentag_name() {
+    // Given: App ohne Rezepte
+    let (app, _temp) = setup_test_app().await;
+
+    // When: GET /wochenvorschau
+    let (_status, body) = get_body(app, "/wochenvorschau").await;
+
+    // Then: Body enthält class="wochentag-name"
+    assert!(
+        body.contains("wochentag-name"),
+        "Body sollte CSS-Klasse 'wochentag-name' enthalten"
+    );
+}
+
+#[tokio::test]
+async fn wochenvorschau_hat_css_klasse_wochentag_datum() {
+    // Given: App ohne Rezepte
+    let (app, _temp) = setup_test_app().await;
+
+    // When: GET /wochenvorschau
+    let (_status, body) = get_body(app, "/wochenvorschau").await;
+
+    // Then: Body enthält class="wochentag-datum"
+    assert!(
+        body.contains("wochentag-datum"),
+        "Body sollte CSS-Klasse 'wochentag-datum' enthalten"
+    );
+}
+
+#[tokio::test]
+async fn wochenvorschau_heute_tag_enthaelt_heute_badge() {
+    // Given: App ohne Rezepte
+    let (app, _temp) = setup_test_app().await;
+
+    // When: GET /wochenvorschau
+    let (_status, body) = get_body(app, "/wochenvorschau").await;
+
+    // Then: Body enthält "Heute" (Badge-Text für heutigen Tag)
+    assert!(
+        body.contains("Heute"),
+        "Body sollte 'Heute'-Badge für den heutigen Tag enthalten"
+    );
+}
+
+#[tokio::test]
+async fn wochenvorschau_vergangene_tage_korrekt_wenn_nicht_montag() {
+    // Given: App ohne Rezepte
+    let (app, _temp) = setup_test_app().await;
+
+    // When: GET /wochenvorschau
+    let (_status, body) = get_body(app, "/wochenvorschau").await;
+
+    // Berechne ob heute Montag ist
+    let today = time::OffsetDateTime::now_utc().date();
+    let is_monday = today.weekday() == time::Weekday::Monday;
+
+    if is_monday {
+        // Wenn heute Montag ist, gibt es keine vergangenen Tage in dieser Woche
+        assert!(
+            !body.contains("wochentag-vergangen"),
+            "Montag sollte keine 'wochentag-vergangen'-Klasse erzeugen"
+        );
+    } else {
+        // Wenn heute nicht Montag ist, gibt es mindestens einen vergangenen Tag
+        assert!(
+            body.contains("wochentag-vergangen"),
+            "Body sollte CSS-Klasse 'wochentag-vergangen' für vergangene Tage enthalten"
+        );
+    }
+}

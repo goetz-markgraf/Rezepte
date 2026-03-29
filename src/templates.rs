@@ -8,8 +8,14 @@ pub struct WochentagesEintragItem {
 
 /// Ein Wochentag in der Wochenvorschau mit seinen Rezepten.
 pub struct Wochentag {
-    /// Anzeige-String: "Montag, 30. März"
-    pub datum_anzeige: String,
+    /// Wochentag-Name: "Montag" bis "Sonntag"
+    pub wochentag_name: String,
+    /// Kurzform des Datums: "30. März"
+    pub datum_kurz: String,
+    /// true wenn dieser Tag = heute (serverseitig berechnet)
+    pub ist_heute: bool,
+    /// true wenn dieser Tag vor heute liegt
+    pub ist_vergangen: bool,
     /// Liste der an diesem Tag geplanten Rezepte.
     pub rezepte: Vec<WochentagesEintragItem>,
 }
