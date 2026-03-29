@@ -18,9 +18,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'TEST_DATABASE_URL=./data/test.db cargo run',
+    command: 'rm -f ./data/test.db && TEST_DATABASE_URL=./data/test.db cargo run',
     url: 'http://localhost:8080/health',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     stdout: 'pipe',
     stderr: 'pipe',
   },
