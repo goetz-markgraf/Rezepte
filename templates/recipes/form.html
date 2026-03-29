@@ -134,6 +134,138 @@
             }
         });
     }
+
+    // === Wochentag-Picker Widget ===
+
+    var WOCHENTAGE = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    var ARIA_LABELS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+
+    // Berechnet das Datum des gewählten Wochentags in der nächsten Woche
+    // offset: 0=Mo, 1=Di, 2=Mi, 3=Do, 4=Fr, 5=Sa, 6=So
+    function calculateNextWeekday(offset) {
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        // ISO-Wochenberechnung: getDay() So=0,Mo=1,...,Sa=6 → ISO: Mo=0,...,So=6
+        var dayOfWeek = (today.getDay() + 6) % 7;
+        // Immer nächste ISO-Woche: Mo hat daysToNextMonday=7, Di=6, ..., So=1
+        var daysToNextMonday = 7 - dayOfWeek;
+        var nextMonday = new Date(today);
+        nextMonday.setDate(today.getDate() + daysToNextMonday);
+        var target = new Date(nextMonday);
+        target.setDate(nextMonday.getDate() + offset);
+        return formatAsGerman(target);
+    }
+
+    // Formatiert ein Date-Objekt als T.M.JJJJ (keine führenden Nullen)
+    function formatAsGerman(date) {
+        var day = date.getDate();
+        var month = date.getMonth() + 1;
+        var year = date.getFullYear();
+        return day + '.' + month + '.' + year;
+    }
+
+    // Parst einen deutschen Datumsstring T.M.JJJJ oder TT.MM.JJJJ zu einem Date-Objekt
+    // Gibt null zurück bei ungültigem Format
+    function parseGermanDate(str) {
+        var parts = str.split('.');
+        if (parts.length !== 3) return null;
+        var day = parseInt(parts[0], 10);
+        var month = parseInt(parts[1], 10);
+        var year = parseInt(parts[2], 10);
+        if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+        if (year < 100) year += 2000;
+        var date = new Date(year, month - 1, day);
+        // Validierung: Datum muss konsistent sein (z.B. kein 32.1.2026)
+        if (date.getDate() !== day || date.getMonth() + 1 !== month) return null;
+        return date;
+    }
+
+    // Prüft ob der gegebene Datumsstring einem Wochentag der nächsten Woche entspricht
+    // Gibt den offset (0-6) zurück oder -1 wenn kein Match
+    function detectActiveWeekday(str) {
+        if (!str) return -1;
+        for (var offset = 0; offset <= 6; offset++) {
+            if (calculateNextWeekday(offset) === str) return offset;
+        }
+        return -1;
+    }
+
+    // Erstellt und fügt das Wochentag-Picker-Widget ein
+    function createWeekdayPicker(input) {
+        var dateInputGroup = input.closest('.date-input-group');
+        if (!dateInputGroup) return;
+
+        var container = document.createElement('div');
+        container.className = 'weekday-picker';
+        container.setAttribute('role', 'group');
+        container.setAttribute('aria-label', 'Wochentag nächste Woche');
+
+        var label = document.createElement('span');
+        label.className = 'weekday-picker-label';
+        label.textContent = 'Nächste Woche';
+        container.appendChild(label);
+
+        var buttons = [];
+
+        for (var i = 0; i <= 6; i++) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'weekday-btn';
+            btn.textContent = WOCHENTAGE[i];
+            btn.setAttribute('aria-label', ARIA_LABELS[i] + ' nächste Woche wählen');
+            btn.setAttribute('aria-pressed', 'false');
+
+            // Click-Handler: Datum berechnen und ins Textfeld eintragen (oder Toggle)
+            (function(button, offset) {
+                button.addEventListener('click', function() {
+                    var isActive = button.getAttribute('aria-pressed') === 'true';
+                    // Alle Buttons demarkieren
+                    for (var j = 0; j < buttons.length; j++) {
+                        buttons[j].setAttribute('aria-pressed', 'false');
+                        buttons[j].classList.remove('active');
+                    }
+                    if (isActive) {
+                        // Toggle-Verhalten: Feld leeren
+                        input.value = '';
+                    } else {
+                        // Datum berechnen und eintragen
+                        input.value = calculateNextWeekday(offset);
+                        button.setAttribute('aria-pressed', 'true');
+                        button.classList.add('active');
+                    }
+                });
+            })(btn, i);
+
+            buttons.push(btn);
+            container.appendChild(btn);
+        }
+
+        // Input-Event: Aktiven Button bei manueller Eingabe aktualisieren
+        input.addEventListener('input', function() {
+            var activeOffset = detectActiveWeekday(input.value);
+            for (var j = 0; j < buttons.length; j++) {
+                buttons[j].setAttribute('aria-pressed', 'false');
+                buttons[j].classList.remove('active');
+            }
+            if (activeOffset >= 0) {
+                buttons[activeOffset].setAttribute('aria-pressed', 'true');
+                buttons[activeOffset].classList.add('active');
+            }
+        });
+
+        // Nach dem .date-input-group-Element einfügen
+        dateInputGroup.parentNode.insertBefore(container, dateInputGroup.nextSibling);
+
+        // Initiale Prüfung: Vorhandenes Datum auf nächste Woche prüfen (Edit-Formular)
+        var initialOffset = detectActiveWeekday(input.value);
+        if (initialOffset >= 0) {
+            buttons[initialOffset].setAttribute('aria-pressed', 'true');
+            buttons[initialOffset].classList.add('active');
+        }
+    }
+
+    // Widget initialisieren
+    createWeekdayPicker(textInput);
 })();
 </script>
 {% endblock %}

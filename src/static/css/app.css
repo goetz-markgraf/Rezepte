@@ -590,6 +590,57 @@ input[type="search"]:focus {
     font-weight: 500;
 }
 
+/* Wochentag-Picker Widget */
+.weekday-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.weekday-picker-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    width: 100%;
+    margin-bottom: 0.125rem;
+}
+
+.weekday-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    background: var(--card-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.weekday-btn:hover {
+    background-color: #dbeafe;
+    border-color: var(--primary-color);
+}
+
+.weekday-btn:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.weekday-btn.active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.weekday-btn.active:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
 /* === Tablet: ab 768px === */
 @media (min-width: 768px) {
     header {
