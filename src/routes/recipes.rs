@@ -3,13 +3,15 @@ use crate::models::recipe::validate_rating;
 use crate::models::{
     create_recipe, create_saved_filter, delete_recipe, delete_saved_filter,
     filter_recipes_by_categories, filter_recipes_next_seven_days, filter_recipes_not_made_recently,
-    get_all_saved_filters, get_recipe_by_id, update_recipe, update_recipe_rating, CreateRecipe,
-    CreateSavedFilter, Recipe, UpdateRecipe, VALID_CATEGORIES,
+    find_similar_recipes, get_all_saved_filters, get_recipe_by_id, update_recipe,
+    update_recipe_rating, CreateRecipe, CreateSavedFilter, Recipe, UpdateRecipe, VALID_CATEGORIES,
 };
 use crate::templates::{
-    CategoryFilterItem, ConfirmDeleteTemplate, IndexTemplate, InlineRatingTemplate,
-    NotFoundTemplate, RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem, SavedFilterItem,
+    CategoryFilterItem, ConfirmDeleteTemplate, DuplicateHintTemplate, IndexTemplate,
+    InlineRatingTemplate, NotFoundTemplate, RecipeDetailTemplate, RecipeFormTemplate,
+    RecipeListItem, SavedFilterItem,
 };
+use askama::Template;
 use axum::{
     extract::{Path, Query, RawQuery, State},
     http::{HeaderMap, StatusCode},
@@ -927,4 +929,29 @@ pub async fn delete_saved_filter_handler(
     } else {
         Ok(Redirect::to("/").into_response())
     }
+}
+
+/// Query-Parameter für den Duplikat-Check-Endpunkt.
+#[derive(Deserialize)]
+pub struct CheckDuplicateQuery {
+    pub title: Option<String>,
+    pub exclude_id: Option<i64>,
+}
+
+/// Prüft, ob ähnliche Rezepte mit dem angegebenen Titel existieren.
+/// Antwortet mit einem HTML-Fragment (Askama-Partial) — immer HTTP 200.
+/// Bei DB-Fehler oder kurzem Titel wird ein leeres Fragment zurückgegeben (Graceful Degradation).
+pub async fn check_duplicate(
+    State(pool): State<Arc<SqlitePool>>,
+    Query(params): Query<CheckDuplicateQuery>,
+) -> impl IntoResponse {
+    let title = params.title.unwrap_or_default();
+    let candidates = find_similar_recipes(&pool, &title, params.exclude_id)
+        .await
+        .unwrap_or_default();
+
+    let template = DuplicateHintTemplate { candidates };
+    let html = template.render().unwrap_or_default();
+
+    Html(html)
 }

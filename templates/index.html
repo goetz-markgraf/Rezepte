@@ -29,6 +29,7 @@
                 hx-trigger="input changed delay:300ms"
                 hx-push-url="true"
                 hx-select="#recipe-results"
+                hx-swap="outerHTML"
                 autocomplete="off"
             >
             <a
@@ -59,20 +60,12 @@
         href="{{ reset_categories_url }}"
         class="category-filter-btn{% if active_categories.is_empty() && !not_made_filter_active && !next_seven_days_filter_active && bewertung_filter.is_none() %} active{% endif %}"
         aria-pressed="{{ active_categories.is_empty() && !not_made_filter_active && !next_seven_days_filter_active && bewertung_filter.is_none() }}"
-        hx-get="{{ reset_categories_url }}"
-        hx-target="#recipe-results"
-        hx-push-url="true"
-        hx-select="#recipe-results"
     >Alle</a>
     {% for filter in category_filters %}
     <a
         href="{{ filter.toggle_url }}"
         class="category-filter-btn{% if filter.is_active %} active{% endif %}"
         aria-pressed="{{ filter.is_active }}"
-        hx-get="{{ filter.toggle_url }}"
-        hx-target="#recipe-results"
-        hx-push-url="true"
-        hx-select="#recipe-results"
     >{{ filter.name }}</a>
     {% endfor %}
 </nav>
@@ -82,37 +75,21 @@
         href="{{ not_made_filter_toggle_url }}"
         class="sort-filter-btn{% if not_made_filter_active %} active{% endif %}"
         aria-pressed="{{ not_made_filter_active }}"
-        hx-get="{{ not_made_filter_toggle_url }}"
-        hx-target="#recipe-results"
-        hx-push-url="true"
-        hx-select="#recipe-results"
     >Länger nicht gemacht</a>
     <a
         href="{{ next_seven_days_filter_toggle_url }}"
         class="sort-filter-btn{% if next_seven_days_filter_active %} active{% endif %}"
         aria-pressed="{{ next_seven_days_filter_active }}"
-        hx-get="{{ next_seven_days_filter_toggle_url }}"
-        hx-target="#recipe-results"
-        hx-push-url="true"
-        hx-select="#recipe-results"
     >Nächste 7 Tage</a>
     <a
         href="{{ bewertung_gut_toggle_url }}"
         class="sort-filter-btn{% if bewertung_filter.as_deref() == Some("gut") %} active{% endif %}"
         aria-pressed="{{ bewertung_filter.as_deref() == Some("gut") }}"
-        hx-get="{{ bewertung_gut_toggle_url }}"
-        hx-target="#recipe-results"
-        hx-push-url="true"
-        hx-select="#recipe-results"
     >★★★+ Nur Gute</a>
     <a
         href="{{ bewertung_favoriten_toggle_url }}"
         class="sort-filter-btn{% if bewertung_filter.as_deref() == Some("favoriten") %} active{% endif %}"
         aria-pressed="{{ bewertung_filter.as_deref() == Some("favoriten") }}"
-        hx-get="{{ bewertung_favoriten_toggle_url }}"
-        hx-target="#recipe-results"
-        hx-push-url="true"
-        hx-select="#recipe-results"
     >★★★★★ Favoriten</a>
     {% if any_filter_active %}
     <a href="/" class="btn-link reset-all-filters-btn" aria-label="Alle Filter zurücksetzen">Alle Filter zurücksetzen</a>
@@ -126,10 +103,6 @@
         <a
             href="{{ sf.url }}"
             class="saved-filter-btn"
-            hx-get="{{ sf.url }}"
-            hx-target="#recipe-results"
-            hx-push-url="true"
-            hx-select="#recipe-results"
         >{{ sf.name }}</a>
         <form
             method="POST"

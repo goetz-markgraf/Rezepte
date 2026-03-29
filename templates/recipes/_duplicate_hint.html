@@ -1,0 +1,13 @@
+{% if !candidates.is_empty() %}
+<div class="duplicate-hint-info">
+  <strong>Ähnliche Rezepte gefunden:</strong>
+  <ul class="duplicate-hint-list">
+    {% for c in candidates %}
+    <li>
+      <a href="/recipes/{{ c.id }}">{{ c.title }}</a>
+      {% if let Some(r) = c.rating %}({{ r }}★){% else %}(nicht bewertet){% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}

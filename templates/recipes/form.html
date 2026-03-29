@@ -19,8 +19,22 @@
 <form method="POST" action="{% if let Some(id) = recipe_id %}/recipes/{{ id }}{% else %}/recipes{% endif %}">
     <div class="form-group">
         <label for="title">Titel *</label>
-        <input type="text" id="title" name="title" value="{{ title }}" maxlength="100">
+        <input
+            type="text"
+            id="title"
+            name="title"
+            value="{{ title }}"
+            maxlength="100"
+            hx-get="/recipes/check-duplicate"
+            hx-trigger="input changed delay:400ms"
+            hx-target="#duplicate-hint"
+            hx-include="[name='title']"
+            {% if let Some(id) = recipe_id %}
+            hx-vals='{"exclude_id": {{ id }}}'
+            {% endif %}
+        >
     </div>
+    <div id="duplicate-hint" aria-live="polite"></div>
 
     <div class="form-group">
         <label>Kategorien *</label>

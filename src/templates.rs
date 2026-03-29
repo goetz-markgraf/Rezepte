@@ -1,4 +1,12 @@
+use crate::models::SimilarRecipe;
 use askama::Template;
+
+/// Template für den Duplikat-Hinweis (HTMX-Fragment unterhalb des Titelfelds).
+#[derive(Template)]
+#[template(path = "recipes/_duplicate_hint.html")]
+pub struct DuplicateHintTemplate {
+    pub candidates: Vec<SimilarRecipe>,
+}
 
 /// Ein einzelner Rezepteintrag auf der "Heute gekocht"-Seite.
 pub struct HeuteRezeptItem {

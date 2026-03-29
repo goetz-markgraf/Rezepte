@@ -466,6 +466,66 @@ pub async fn delete_recipe(pool: &SqlitePool, id: i64) -> Result<(), sqlx::Error
     Ok(())
 }
 
+/// Leichtgewichtiger Struct für die Duplikaterkennung.
+/// Enthält nur die für den Hinweis benötigten Felder.
+pub struct SimilarRecipe {
+    pub id: i64,
+    pub title: String,
+    pub rating: Option<i32>,
+}
+
+/// Sucht bis zu 3 Rezepte, deren Titel den eingegebenen Begriff enthält
+/// (case-insensitive LIKE-Suche). Optional kann eine ID ausgeschlossen werden
+/// (für die Bearbeitung eines bestehenden Rezepts).
+///
+/// Gibt eine leere Liste zurück, wenn der Titel kürzer als 3 Zeichen ist.
+pub async fn find_similar_recipes(
+    pool: &SqlitePool,
+    title: &str,
+    exclude_id: Option<i64>,
+) -> Result<Vec<SimilarRecipe>, sqlx::Error> {
+    if title.trim().len() < 3 {
+        return Ok(Vec::new());
+    }
+
+    let pattern = format!("%{}%", title.trim().to_lowercase());
+
+    let rows = if let Some(id) = exclude_id {
+        sqlx::query_as::<_, (i64, String, Option<i32>)>(
+            r#"
+            SELECT id, title, rating
+            FROM recipes
+            WHERE LOWER(title) LIKE ?1
+              AND id != ?2
+            ORDER BY title ASC
+            LIMIT 3
+            "#,
+        )
+        .bind(&pattern)
+        .bind(id)
+        .fetch_all(pool)
+        .await?
+    } else {
+        sqlx::query_as::<_, (i64, String, Option<i32>)>(
+            r#"
+            SELECT id, title, rating
+            FROM recipes
+            WHERE LOWER(title) LIKE ?1
+            ORDER BY title ASC
+            LIMIT 3
+            "#,
+        )
+        .bind(&pattern)
+        .fetch_all(pool)
+        .await?
+    };
+
+    Ok(rows
+        .into_iter()
+        .map(|(id, title, rating)| SimilarRecipe { id, title, rating })
+        .collect())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2467,5 +2527,118 @@ mod tests {
         // Alphabetisch: Salat vor Spaghetti
         assert_eq!(recipes[0].title, "Salat");
         assert_eq!(recipes[1].title, "Spaghetti");
+    }
+
+    // === Tests für find_similar_recipes ===
+
+    #[tokio::test]
+    async fn find_similar_recipes_returns_empty_for_short_title() {
+        // Given: Eine leere Datenbank
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        // When: Suche mit einem 2-Zeichen-Titel
+        let results = find_similar_recipes(&pool, "Di", None).await.unwrap();
+
+        // Then: Leere Liste (keine Suche bei < 3 Zeichen)
+        assert!(results.is_empty());
+    }
+
+    #[tokio::test]
+    async fn find_similar_recipes_finds_substring_match() {
+        // Given: Rezept "Dinkelbrot" existiert
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+        create_recipe(&pool, &make_recipe("Dinkelbrot", "Brot"))
+            .await
+            .unwrap();
+
+        // When: Suche nach Teilstring "Dinkel"
+        let results = find_similar_recipes(&pool, "Dinkel", None).await.unwrap();
+
+        // Then: Treffer gefunden
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "Dinkelbrot");
+    }
+
+    #[tokio::test]
+    async fn find_similar_recipes_is_case_insensitive() {
+        // Given: Rezept "Dinkelbrot" existiert
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+        create_recipe(&pool, &make_recipe("Dinkelbrot", "Brot"))
+            .await
+            .unwrap();
+
+        // When: Suche mit Großbuchstaben "DINKEL"
+        let results = find_similar_recipes(&pool, "DINKEL", None).await.unwrap();
+
+        // Then: Treffer gefunden (case-insensitiv)
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "Dinkelbrot");
+    }
+
+    #[tokio::test]
+    async fn find_similar_recipes_excludes_self() {
+        // Given: Rezept "Dinkelbrot" mit bekannter ID
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+        let id = create_recipe(&pool, &make_recipe("Dinkelbrot", "Brot"))
+            .await
+            .unwrap();
+
+        // When: Suche mit exclude_id = id des Rezepts
+        let results = find_similar_recipes(&pool, "Dinkelbrot", Some(id))
+            .await
+            .unwrap();
+
+        // Then: Kein Treffer (eigenes Rezept ausgeschlossen)
+        assert!(results.is_empty());
+    }
+
+    #[tokio::test]
+    async fn find_similar_recipes_limits_to_three() {
+        // Given: 5 Rezepte mit "Dinkel" im Titel
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+        for title in [
+            "Dinkelbrot",
+            "Dinkelbrötchen",
+            "Dinkelvollkornbrot",
+            "Dinkelkuchen",
+            "Dinkelsuppe",
+        ] {
+            create_recipe(&pool, &make_recipe(title, "Brot"))
+                .await
+                .unwrap();
+        }
+
+        // When: Suche nach "Dinkel"
+        let results = find_similar_recipes(&pool, "Dinkel", None).await.unwrap();
+
+        // Then: Maximal 3 Treffer
+        assert_eq!(results.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn find_similar_recipes_no_match_returns_empty() {
+        // Given: Rezept "Spaghetti" existiert
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+        create_recipe(&pool, &make_recipe("Spaghetti", "Mittagessen"))
+            .await
+            .unwrap();
+
+        // When: Suche nach "Dinkel"
+        let results = find_similar_recipes(&pool, "Dinkel", None).await.unwrap();
+
+        // Then: Leere Liste
+        assert!(results.is_empty());
     }
 }
