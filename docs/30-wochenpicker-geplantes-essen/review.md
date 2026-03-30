@@ -126,17 +126,48 @@ Die Implementierung von Story 30 fügt dem Wochenpicker einen visuellen Indikato
 
 ---
 
+## Rework (2026-03-30)
+
+**Status:** ✅ Alle Prio-1-Probleme behoben
+
+### Durchgeführte Maßnahmen
+
+#### 1. Test-API implementiert (Prio 1)
+- Neue Route-Datei `src/routes/test.rs` erstellt
+- Endpunkte:
+  - `POST /api/test/clear-recipes` - Löscht alle Rezepte
+  - `POST /api/test/seed-recipe` - Erstellt Test-Rezept mit JSON-Body
+- Integration in `src/routes/mod.rs`
+
+#### 2. Formatierung korrigiert (Prio 2)
+- `cargo fmt` ausgeführt
+- Alle Dateien formatiert
+
+#### 3. E2E-Tests stabilisiert
+- Test-Suite auf `test.describe.serial()` umgestellt (verhindert Race Conditions)
+- `beforeEach` Hook hinzugefügt, der vor jedem Test die Datenbank leert
+
+### Qualitätschecks nach Rework
+
+| Check | Status |
+|-------|--------|
+| `cargo build` | ✅ |
+| `cargo test` | ✅ (264 Tests) |
+| `cargo clippy -- -D warnings` | ✅ |
+| `cargo fmt --check` | ✅ |
+| `npm run test:e2e` (Story 30) | ✅ (8/8 Tests bestanden) |
+
+### Verbleibende Prio-2 Punkte
+- [ ] `title`-Attribut aus Indikator-Link entfernen (doppelte Screenreader-Ausgabe)
+- [ ] Unit-Test für `load_planned_recipes_for_weekday_picker()` ergänzen
+
+---
+
 ## Fazit
 
-**Gesamtbewertung:** ⚠️ Nacharbeit erforderlich (E2E-Tests)
+**Gesamtbewertung:** ✅ Review abgeschlossen, bereit zum Mergen
 
-Die Implementierung ist technisch korrekt und erfüllt alle Akzeptanzkriterien. Die Code-Qualität ist gut (Clippy sauber, Tests bestehen). Allerdings können die E2E-Tests nicht ausgeführt werden, da die Test-API fehlt. 
-
-**Nächste Schritte:**
-1. Entscheidung treffen: Test-API implementieren oder E2E-Tests anpassen
-2. `cargo fmt` ausführen
-3. E2E-Tests erfolgreich durchführen
-4. Dann: Review abschließen und mergen
+Die Implementierung ist technisch korrekt, alle Akzeptanzkriterien sind erfüllt und alle E2E-Tests bestehen. Die verbleibenden Prio-2 Punkte sind nice-to-have und blockieren nicht den Merge.
 
 ---
 

@@ -3043,7 +3043,16 @@ mod tests {
         // Rezept für morgen
         create_recipe(
             &pool,
-            &make_recipe_with_date("Morgen-Rezept", "Mittagessen", Some(&format!("{}.{}.{}" , tomorrow.day(), tomorrow.month() as u8, tomorrow.year()))),
+            &make_recipe_with_date(
+                "Morgen-Rezept",
+                "Mittagessen",
+                Some(&format!(
+                    "{}.{}.{}",
+                    tomorrow.day(),
+                    tomorrow.month() as u8,
+                    tomorrow.year()
+                )),
+            ),
         )
         .await
         .unwrap();
@@ -3051,7 +3060,16 @@ mod tests {
         // Rezept für in 3 Tagen
         create_recipe(
             &pool,
-            &make_recipe_with_date("Tag-3-Rezept", "Mittagessen", Some(&format!("{}.{}.{}" , day_three.day(), day_three.month() as u8, day_three.year()))),
+            &make_recipe_with_date(
+                "Tag-3-Rezept",
+                "Mittagessen",
+                Some(&format!(
+                    "{}.{}.{}",
+                    day_three.day(),
+                    day_three.month() as u8,
+                    day_three.year()
+                )),
+            ),
         )
         .await
         .unwrap();
@@ -3059,13 +3077,24 @@ mod tests {
         // Rezept für in 10 Tagen (außerhalb des Bereichs)
         create_recipe(
             &pool,
-            &make_recipe_with_date("Tag-10-Rezept", "Mittagessen", Some(&format!("{}.{}.{}" , day_ten.day(), day_ten.month() as u8, day_ten.year()))),
+            &make_recipe_with_date(
+                "Tag-10-Rezept",
+                "Mittagessen",
+                Some(&format!(
+                    "{}.{}.{}",
+                    day_ten.day(),
+                    day_ten.month() as u8,
+                    day_ten.year()
+                )),
+            ),
         )
         .await
         .unwrap();
 
         // When: Abfrage für [morgen, +3 Tage]
-        let recipes = get_recipes_by_date_range(&pool, tomorrow, day_three).await.unwrap();
+        let recipes = get_recipes_by_date_range(&pool, tomorrow, day_three)
+            .await
+            .unwrap();
 
         // Then: Zwei Rezepte zurückgegeben
         assert_eq!(recipes.len(), 2);
@@ -3089,13 +3118,24 @@ mod tests {
 
         create_recipe(
             &pool,
-            &make_recipe_with_date("Morgen-Rezept", "Mittagessen", Some(&format!("{}.{}.{}" , tomorrow.day(), tomorrow.month() as u8, tomorrow.year()))),
+            &make_recipe_with_date(
+                "Morgen-Rezept",
+                "Mittagessen",
+                Some(&format!(
+                    "{}.{}.{}",
+                    tomorrow.day(),
+                    tomorrow.month() as u8,
+                    tomorrow.year()
+                )),
+            ),
         )
         .await
         .unwrap();
 
         // When: Abfrage für [+5 Tage, +10 Tage]
-        let recipes = get_recipes_by_date_range(&pool, day_five, day_ten).await.unwrap();
+        let recipes = get_recipes_by_date_range(&pool, day_five, day_ten)
+            .await
+            .unwrap();
 
         // Then: Leere Liste
         assert!(recipes.is_empty());
@@ -3110,7 +3150,12 @@ mod tests {
 
         let today = time::OffsetDateTime::now_utc().date();
         let tomorrow = today + time::Duration::days(1);
-        let tomorrow_str = format!("{}.{}.{}" , tomorrow.day(), tomorrow.month() as u8, tomorrow.year());
+        let tomorrow_str = format!(
+            "{}.{}.{}",
+            tomorrow.day(),
+            tomorrow.month() as u8,
+            tomorrow.year()
+        );
 
         create_recipe(
             &pool,
@@ -3126,7 +3171,9 @@ mod tests {
         .unwrap();
 
         // When: Abfrage
-        let recipes = get_recipes_by_date_range(&pool, tomorrow, tomorrow).await.unwrap();
+        let recipes = get_recipes_by_date_range(&pool, tomorrow, tomorrow)
+            .await
+            .unwrap();
 
         // Then: Alphabetisch sortiert
         assert_eq!(recipes.len(), 2);
@@ -3149,13 +3196,24 @@ mod tests {
             .unwrap();
         create_recipe(
             &pool,
-            &make_recipe_with_date("Mit-Datum", "Mittagessen", Some(&format!("{}.{}.{}" , tomorrow.day(), tomorrow.month() as u8, tomorrow.year()))),
+            &make_recipe_with_date(
+                "Mit-Datum",
+                "Mittagessen",
+                Some(&format!(
+                    "{}.{}.{}",
+                    tomorrow.day(),
+                    tomorrow.month() as u8,
+                    tomorrow.year()
+                )),
+            ),
         )
         .await
         .unwrap();
 
         // When: Abfrage
-        let recipes = get_recipes_by_date_range(&pool, tomorrow, tomorrow).await.unwrap();
+        let recipes = get_recipes_by_date_range(&pool, tomorrow, tomorrow)
+            .await
+            .unwrap();
 
         // Then: Nur Rezept mit Datum
         assert_eq!(recipes.len(), 1);

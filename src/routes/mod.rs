@@ -9,6 +9,7 @@ use tower_http::services::ServeDir;
 
 pub mod heute;
 pub mod recipes;
+pub mod test;
 pub mod wochenvorschau;
 
 pub fn create_router(pool: SqlitePool) -> Router {
@@ -50,6 +51,9 @@ pub fn create_router(pool: SqlitePool) -> Router {
             "/saved-filters/:id/delete",
             post(recipes::delete_saved_filter_handler),
         )
+        // Test-API-Endpunkte für E2E-Tests
+        .route("/api/test/clear-recipes", post(test::clear_recipes))
+        .route("/api/test/seed-recipe", post(test::seed_recipe))
         .nest_service("/static", ServeDir::new("src/static"))
         .with_state(pool)
 }

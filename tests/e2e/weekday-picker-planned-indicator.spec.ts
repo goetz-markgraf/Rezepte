@@ -20,10 +20,10 @@ function getSqlDate(daysOffset: number): string {
     return `${year}-${month}-${day}`;
 }
 
-test.describe('Wochenpicker geplantes Essen Indikator', () => {
-    test.beforeEach(async ({ page }) => {
-        // Zur neuen Rezept-Seite navigieren
-        await page.goto('/recipes/new');
+test.describe.serial('Wochenpicker geplantes Essen Indikator', () => {
+    test.beforeEach(async ({ request }) => {
+        // Alle Rezepte vor jedem Test löschen
+        await request.post('/api/test/clear-recipes');
     });
 
     test('Indikator wird für geplante Tage angezeigt', async ({ page, request }) => {

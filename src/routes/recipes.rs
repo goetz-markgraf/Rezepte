@@ -604,8 +604,8 @@ async fn load_planned_recipes_for_weekday_picker(
     for recipe in recipes {
         if let Some(date) = recipe.planned_date {
             // Berechne Offset vom morgigen Tag (0-9)
-            let offset = (i64::from(date.to_julian_day()) - i64::from(tomorrow.to_julian_day()))
-                as usize;
+            let offset =
+                (i64::from(date.to_julian_day()) - i64::from(tomorrow.to_julian_day())) as usize;
             if offset < 10 && planned_recipes[offset].is_none() {
                 // Nur das erste Rezept pro Tag speichern
                 planned_recipes[offset] = Some(WeekdayPickerRecipeInfo {
