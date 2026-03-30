@@ -31,6 +31,8 @@ Das Herzstück der Anwendung - Rezepte erstellen, bearbeiten, anzeigen und lösc
 | 05 | [Rezept-Liste alphabetisch sortiert](./05-rezept-liste/story.md) | Abgeschlossen |
 | 06 | [Responsive Layout für Desktop und Mobile](./06-responsive-layout/story.md) | Abgeschlossen |
 | 26 | [Nutzung von Icons](./26-nutzung-von-icons/story.md) | Abgeschlossen |
+| 31 | [Kompakteres Layout der Hauptansicht](./31-kompakteres-layout/story.md) | In Arbeit |
+| 32 | [Neues-Rezept-Button in der Kopfzeile](./32-neues-rezept-button/story.md) | Offen |
 
 ---
 
@@ -82,6 +84,7 @@ Spezifische Features für die Wochenplanung am Mittwoch/Donnerstag.
 | 20 | ["Heute gekocht" Ansicht mit Highlight](./20-heute-gekocht/story.md) | Abgeschlossen |
 | 29 | [Wochen-Picker erweitern](./29-wochen-picker-erweitern/story.md) | Abgeschlossen |
 | 30 | [Wochenpicker zeigt geplantes Essen](./30-wochenpicker-geplantes-essen/story.md) | Abgeschlossen |
+| 33 | [Wochenübersicht Navigation mit Pfeiltasten](./33-wochenuebersicht-navigation/story.md) | Offen |
 
 ---
 
