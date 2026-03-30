@@ -1,31 +1,34 @@
 # Story 32: Neues-Rezept-Button in der Kopfzeile
 
 **Epic:** Rezept-Übersicht & Navigation
-**Priorität:** [MVP Phase X / Nice-to-have]
-**Status:** Offen
+**Priorität:** MVP Phase 2
+**Status:** Ready
 
 ---
 
 ## 1. Story-Satz
 
-Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
+Als **Benutzer** möchte ich **einen "Neues Rezept"-Button in der Kopfzeile haben**, damit ich **jederzeit schnell und ohne Umweg ein neues Rezept erstellen kann**.
 
 ---
 
 ## 2. Geschäftsbezogene Details
 
 ### Kontext
-[Warum ist diese Funktion wichtig? Was ist der Hintergrund?]
+Aktuell muss der Benutzer erst zur Rezept-Liste navigieren, um ein neues Rezept zu erstellen. Ein prominent platzierten Button in der globalen Kopfzeile ermöglicht den direkten Zugriff von jeder Seite aus, was den Workflow erheblich beschleunigt.
 
 ### Nutzergruppe
-[Wer nutzt diese Funktion?]
+Alle Benutzer der Anwendung, insbesondere beim Erstellen mehrerer Rezepte hintereinander oder beim schnellen Erfassen einer Idee.
 
 ### Business-Value
-[Was ist der konkrete Mehrwert?]
+- Reduzierte Klickzahl für die Hauptaktion "Rezept erstellen"
+- Bessere UX durch direkten Zugriff auf Kernfunktionalität
+- Konsistente Navigation über alle Seiten hinweg
 
 ### Edge Cases
-- **[Fall 1]:** [Beschreibung und erwartetes Verhalten]
-- **[Fall 2]:** [Beschreibung und erwartetes Verhalten]
+- **Mobile Ansicht:** Button muss auf kleinen Bildschirmen gut erreichbar sein (entweder sichtbar oder im Menü)
+- **Aktive Seite:** Wenn der Benutzer bereits auf der "Neues Rezept"-Seite ist, sollte der Button deaktiviert oder nicht klickbar sein (optional)
+- **Keyboard-Navigation:** Button muss mit Tab erreichbar sein und visuell fokussierbar
 
 ---
 
@@ -33,48 +36,77 @@ Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
 
 ### Funktionale Kriterien
 
-- [ ] **K1: [Kriterium-Titel]**
-  - [Detail-Bedingung]
-  - [Detail-Bedingung]
+- [ ] **K1: Button ist in der Kopfzeile sichtbar**
+  - Der Button wird rechts in der globalen Header-Navigation angezeigt
+  - Der Button ist auf allen Seiten der Anwendung sichtbar
 
-- [ ] **K2: [Kriterium-Titel]**
-  - [Detail-Bedingung]
+- [ ] **K2: Button führt zur Rezept-Erstellen-Seite**
+  - Klick auf den Button navigiert zu `/recipes/new`
+  - Die Navigation erfolgt ohne Zwischenseite
+
+- [ ] **K3: Button hat klare Beschriftung**
+  - Text: "+ Neues Rezept" oder ein Plus-Icon mit Text
+  - Alternativ nur Icon auf Mobile mit Tooltip/Title
+
+- [ ] **K4: Button ist barrierefrei**
+  - Button hat semantisches `<button>` oder `<a>` Element
+  - Aria-Label für Screenreader vorhanden
+  - Fokus-Indikator ist sichtbar
 
 ### Nicht-funktionale Kriterien
 
-- [ ] **K[N]: Performance**
-  - [Ladezeit-Ziel]
-  - [Speichervorgang-Ziel]
+- [ ] **K5: Performance**
+  - Button rendert ohne spürbare Verzögerung
+  - Keine zusätzlichen Server-Requests für die Anzeige
 
-- [ ] **K[N+1]: Barrierefreiheit**
-  - Alle Formularfelder haben korrekte Labels (WCAG 2.1 Level A)
-  - Tastatur-Navigation funktioniert vollständig
+- [ ] **K6: Barrierefreiheit**
+  - Button ist mit Tastatur erreichbar (Tab-Reihenfolge)
+  - Kontrast entspricht WCAG 2.1 Level AA
+  - Touch-Target mindestens 44x44px auf Mobile
 
 ---
 
 ## 4. Technische Planung
 
 ### Datenmodell
-[Falls neue Felder/Tabellen notwendig: Beschreibung der Änderungen am Schema]
+Keine Änderungen am Datenmodell erforderlich.
 
 ### UI/UX-Spezifikation
-[Beschreibung des Layouts, der Interaktionen, des Flows]
+
+**Platzierung:**
+- Rechts in der Kopfzeile (nach den Navigationslinks)
+- Visuell hervorgehoben als Primary Action (z.B. mit Akzentfarbe oder als Button statt Link)
+
+**Design-Vorschlag:**
+```
+[Rezepte]  [Heute] [Wochenvorschau] [Dubletten prüfen]    [+ Neues Rezept]
+```
+
+**Mobile:**
+- Entweder: Text wird zu Icon (+) reduziert
+- Oder: Button wandert in ein Hamburger-Menü
+
+**Interaktion:**
+- Hover: Leichte Hervorhebung (z.B. Hintergrundfarbe ändern)
+- Focus: Sichtbarer Fokus-Ring
+- Active: Leichte Skalierung oder Farbänderung beim Klick
 
 ---
 
 ## 5. Nicht-funktionale Anforderungen
 
 ### Performance
-- Seite lädt ohne sichtbare Verzögerung (< 500ms)
-- [Weitere spezifische Ziele]
+- Button ist Teil des Base-Templates, kein zusätzlicher Request
+- Ladezeit der Seite bleibt unter 500ms
 
 ### Browser-Support
 - Aktuelle Chrome, Firefox, Safari, Edge Versionen
 - iOS Safari und Android Chrome (letzte 2 Versionen)
 
 ### Barrierefreiheit
-- WCAG 2.1 Level A konform
+- WCAG 2.1 Level A konform (mindestens)
 - Fokus-Indikatoren sichtbar
+- Tastatur-Navigation funktioniert vollständig
 
 ---
 
@@ -82,18 +114,40 @@ Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
 
 ### E2E-Tests (Playwright)
 
-**Testfall 1: [Bezeichnung]**
+**Testfall 1: Button ist auf allen Seiten sichtbar**
 ```gherkin
-Given [Ausgangszustand]
-When [Aktion des Benutzers]
-Then [Erwartetes Ergebnis]
+Given der Benutzer ist auf der Startseite
+Then ist der "Neues Rezept"-Button in der Kopfzeile sichtbar
+
+Given der Benutzer ist auf der Wochenvorschau-Seite
+Then ist der "Neues Rezept"-Button in der Kopfzeile sichtbar
+
+Given der Benutzer ist auf der Dubletten-Prüf-Seite
+Then ist der "Neues Rezept"-Button in der Kopfzeile sichtbar
 ```
 
-**Testfall 2: [Bezeichnung]**
+**Testfall 2: Button navigiert zur Erstell-Seite**
 ```gherkin
-Given [Ausgangszustand]
-When [Aktion des Benutzers]
-Then [Erwartetes Ergebnis]
+Given der Benutzer ist auf einer beliebigen Seite
+When der Benutzer auf den "Neues Rezept"-Button klickt
+Then wird die Seite "/recipes/new" geladen
+And das Formular zum Erstellen eines Rezepts wird angezeigt
+```
+
+**Testfall 3: Button ist mit Tastatur erreichbar**
+```gherkin
+Given der Benutzer ist auf der Startseite
+When der Benutzer mehrmals Tab drückt
+Then erreicht der Fokus den "Neues Rezept"-Button
+When der Benutzer Enter drückt
+Then wird die Seite "/recipes/new" geladen
+```
+
+**Testfall 4: Mobile Darstellung**
+```gherkin
+Given der Benutzer nutzt ein mobiles Gerät (Viewport < 768px)
+When der Benutzer die Seite öffnet
+Then ist der "Neues Rezept"-Button entweder als Icon oder im Menü sichtbar
 ```
 
 ---
@@ -101,25 +155,21 @@ Then [Erwartetes Ergebnis]
 ## 7. Abhängigkeiten & Rahmenbedingungen
 
 ### Abhängigkeiten
-- [Story X muss implementiert sein / keine Abhängigkeiten]
-- [Blockiert: Story Y]
+- Story 01 (Rezept erstellen) muss implementiert sein - die Zielseite muss existieren
+- Keine weiteren Abhängigkeiten
 
 ### Rahmenbedingungen
-- SQLite-Datenbank muss existieren und erreichbar sein
-- Keine Authentifizierung erforderlich (LAN-only)
+- Änderung am Base-Template (templates/base.html)
+- CSS-Anpassungen für das Header-Styling
+- Keine Datenbank-Änderungen erforderlich
 
 ---
 
 ## Offene Punkte / Fragen
 
-- [ ] [Offene Frage oder Entscheidung]
+- [ ] Soll der Button auf Mobile als Text oder Icon dargestellt werden?
+- [ ] Soll der Button eine spezielle Akzent-Farbe erhalten (Primary Action)?
 
 ---
 
 **Letzte Aktualisierung:** 2026-03-30
-
----
-
-## Zusatzinformationen
-
-Ich möchte in der Kopfzeile einen Neues Rezept -Button ergänzen
