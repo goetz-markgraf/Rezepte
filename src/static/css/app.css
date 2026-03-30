@@ -64,6 +64,48 @@ header .site-title:hover {
     color: var(--primary-color);
 }
 
+/* Header Button für neues Rezept (Story 32) */
+.btn-header-new-recipe {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 0.375rem;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.875rem;
+    min-height: 44px;
+    min-width: 44px;
+    transition: background-color 0.15s ease;
+}
+
+.btn-header-new-recipe:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-header-new-recipe:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.btn-header-new-recipe .icon {
+    stroke: currentColor;
+}
+
+/* Mobile: Text ausblenden, nur Icon anzeigen */
+@media (max-width: 767px) {
+    .btn-header-new-recipe .btn-text {
+        display: none;
+    }
+
+    .btn-header-new-recipe {
+        padding: 0.5rem;
+    }
+}
+
 /* === Wochenvorschau === */
 
 .wochenvorschau-header {

@@ -33,7 +33,7 @@ test.describe('Rezept löschen', () => {
     // Then: Bestätigungsseite mit Rezepttitel, Abbrechen und Löschen-Button erscheint
     await expect(page).toHaveURL(/\/confirm-delete/);
     await expect(page.locator('.confirm-question')).toContainText(uniqueTitle);
-    await expect(page.locator('a.btn-primary')).toContainText('Abbrechen');
+    await expect(page.locator('a.btn-primary:has-text("Abbrechen")')).toContainText('Abbrechen');
     await expect(page.locator('button.btn-danger')).toContainText('Wirklich löschen');
     await expect(page.locator('.tip-box')).toBeVisible();
   });
@@ -44,7 +44,7 @@ test.describe('Rezept löschen', () => {
     await expect(page).toHaveURL(/\/confirm-delete/);
 
     // When: Abbrechen angeklickt wird
-    await page.click('a.btn-primary');
+    await page.click('a.btn-primary:has-text("Abbrechen")');
 
     // Then: Zurück zur Detailseite, Rezept unverändert vorhanden
     await expect(page).toHaveURL(recipeUrl);

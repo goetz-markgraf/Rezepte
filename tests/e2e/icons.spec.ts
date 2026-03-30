@@ -64,7 +64,7 @@ test.describe('Icons in der UI', () => {
     await page.goto(`/recipes/${id}/confirm-delete`);
 
     // Then: Abbrechen- und Löschen-Button sind sichtbar und enthalten jeweils ein SVG
-    const cancelLink = page.locator('a.btn-primary');
+    const cancelLink = page.locator('a.btn-primary:has-text("Abbrechen")');
     await expect(cancelLink).toBeVisible();
     await expect(cancelLink.locator('svg')).toBeVisible();
 
