@@ -111,6 +111,14 @@ pub struct NotFoundTemplate {
     pub message: String,
 }
 
+/// Leichtgewichtige Rezept-Information für den Wochenpicker.
+/// Enthält nur ID und Titel für den Indikator und Tooltip.
+#[derive(Debug, Clone)]
+pub struct WeekdayPickerRecipeInfo {
+    pub id: i64,
+    pub title: String,
+}
+
 #[derive(Template)]
 #[template(path = "recipes/form.html")]
 pub struct RecipeFormTemplate {
@@ -125,6 +133,10 @@ pub struct RecipeFormTemplate {
     pub planned_date: String,
     /// Bewertung 1-5 Sterne. None bedeutet keine Bewertung.
     pub rating: Option<i32>,
+    /// Geplante Rezepte für die nächsten 10 Tage (morgen bis +10 Tage).
+    /// Index 0-9 entspricht den Tagen im Picker.
+    /// None = kein Rezept geplant an diesem Tag.
+    pub planned_recipes: Vec<Option<WeekdayPickerRecipeInfo>>,
 }
 
 #[derive(Template)]
@@ -240,6 +252,7 @@ impl Default for RecipeFormTemplate {
             recipe_id: None,
             planned_date: String::new(),
             rating: None,
+            planned_recipes: vec![None; 10], // 10 Tage initialisieren
         }
     }
 }

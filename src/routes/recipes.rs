@@ -4,13 +4,14 @@ use crate::models::{
     create_recipe, create_saved_filter, delete_recipe, delete_saved_filter, determine_merge_target,
     filter_recipes_by_categories, filter_recipes_next_seven_days, filter_recipes_not_made_recently,
     find_all_duplicate_pairs, find_similar_recipes, get_all_saved_filters, get_recipe_by_id,
-    merge_recipes, update_recipe, update_recipe_rating, CreateRecipe, CreateSavedFilter, Recipe,
-    UpdateRecipe, VALID_CATEGORIES,
+    get_recipes_by_date_range, merge_recipes, update_recipe, update_recipe_rating, CreateRecipe,
+    CreateSavedFilter, Recipe, UpdateRecipe, VALID_CATEGORIES,
 };
 use crate::templates::{
     CategoryFilterItem, ConfirmDeleteTemplate, DublettenPaarItem, DublettenUebersichtTemplate,
     DuplicateHintTemplate, IndexTemplate, InlineRatingTemplate, MergeRezeptInfo, MergeTemplate,
     NotFoundTemplate, RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem, SavedFilterItem,
+    WeekdayPickerRecipeInfo,
 };
 use askama::Template;
 use axum::{
@@ -585,9 +586,48 @@ pub async fn index(
     Ok(Html(render_template(template)?))
 }
 
+/// Hilfsfunktion: Lädt geplante Rezepte für den Wochenpicker (nächste 10 Tage ab morgen).
+/// Gibt einen Vektor mit 10 Optionen zurück (Index 0-9 = morgen bis +10 Tage).
+async fn load_planned_recipes_for_weekday_picker(
+    pool: &sqlx::SqlitePool,
+) -> Result<Vec<Option<WeekdayPickerRecipeInfo>>, AppError> {
+    let today = time::OffsetDateTime::now_utc().date();
+    let tomorrow = today + time::Duration::days(1);
+    let day_ten = today + time::Duration::days(10);
+
+    // Alle Rezepte im Bereich [morgen, +10 Tage] laden
+    let recipes = get_recipes_by_date_range(pool, tomorrow, day_ten).await?;
+
+    // Gruppiere Rezepte nach Datum (nur erstes Rezept pro Tag)
+    let mut planned_recipes: Vec<Option<WeekdayPickerRecipeInfo>> = vec![None; 10];
+
+    for recipe in recipes {
+        if let Some(date) = recipe.planned_date {
+            // Berechne Offset vom morgigen Tag (0-9)
+            let offset = (i64::from(date.to_julian_day()) - i64::from(tomorrow.to_julian_day()))
+                as usize;
+            if offset < 10 && planned_recipes[offset].is_none() {
+                // Nur das erste Rezept pro Tag speichern
+                planned_recipes[offset] = Some(WeekdayPickerRecipeInfo {
+                    id: recipe.id,
+                    title: recipe.title,
+                });
+            }
+        }
+    }
+
+    Ok(planned_recipes)
+}
+
 /// Zeigt das Formular zum Erstellen eines neuen Rezepts.
-pub async fn new_recipe_form() -> Result<impl IntoResponse, AppError> {
-    let template = RecipeFormTemplate::new();
+pub async fn new_recipe_form(
+    State(pool): State<Arc<SqlitePool>>,
+) -> Result<impl IntoResponse, AppError> {
+    let planned_recipes = load_planned_recipes_for_weekday_picker(&pool).await?;
+    let template = RecipeFormTemplate {
+        planned_recipes,
+        ..RecipeFormTemplate::new()
+    };
     Ok(Html(render_template(template)?))
 }
 
@@ -632,6 +672,7 @@ pub async fn create_recipe_handler(
     };
 
     if let Err(errors) = recipe.validate() {
+        let planned_recipes = load_planned_recipes_for_weekday_picker(&pool).await?;
         let template = RecipeFormTemplate {
             categories: VALID_CATEGORIES
                 .iter()
@@ -645,6 +686,7 @@ pub async fn create_recipe_handler(
             recipe_id: None,
             planned_date: planned_date_raw.unwrap_or_default(),
             rating,
+            planned_recipes,
         };
         return Ok((StatusCode::BAD_REQUEST, Html(render_template(template)?)).into_response());
     }
@@ -696,6 +738,7 @@ pub async fn edit_recipe_form(
         .ok_or_else(|| AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", id)))?;
 
     let planned_date = format_planned_date_input(recipe.planned_date);
+    let planned_recipes = load_planned_recipes_for_weekday_picker(&pool).await?;
     let template = RecipeFormTemplate {
         categories: VALID_CATEGORIES.iter().map(|&s| s.to_string()).collect(),
         errors: Vec::new(),
@@ -706,6 +749,7 @@ pub async fn edit_recipe_form(
         recipe_id: Some(id),
         planned_date,
         rating: recipe.rating,
+        planned_recipes,
     };
 
     Ok(Html(render_template(template)?))
@@ -753,6 +797,7 @@ pub async fn update_recipe_handler(
     };
 
     if let Err(errors) = recipe.validate() {
+        let planned_recipes = load_planned_recipes_for_weekday_picker(&pool).await?;
         let template = RecipeFormTemplate {
             categories: VALID_CATEGORIES.iter().map(|&s| s.to_string()).collect(),
             errors,
@@ -763,6 +808,7 @@ pub async fn update_recipe_handler(
             recipe_id: Some(id),
             planned_date: planned_date_raw.unwrap_or_default(),
             rating,
+            planned_recipes,
         };
         return Ok((StatusCode::BAD_REQUEST, Html(render_template(template)?)).into_response());
     }

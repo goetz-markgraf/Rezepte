@@ -466,6 +466,29 @@ pub async fn delete_recipe(pool: &SqlitePool, id: i64) -> Result<(), sqlx::Error
     Ok(())
 }
 
+/// Gibt alle Rezepte im Datumsbereich [start_date, end_date] zurück.
+/// Sortierung: aufsteigend nach Datum, dann alphabetisch nach Titel.
+/// Für den Wochenpicker: Lädt geplante Rezepte für die nächsten 10 Tage.
+pub async fn get_recipes_by_date_range(
+    pool: &SqlitePool,
+    start_date: time::Date,
+    end_date: time::Date,
+) -> Result<Vec<Recipe>, sqlx::Error> {
+    sqlx::query_as::<_, Recipe>(
+        r#"
+        SELECT id, title, categories, ingredients, instructions, planned_date, created_at, updated_at, rating
+        FROM recipes
+        WHERE planned_date >= ?1
+          AND planned_date <= ?2
+        ORDER BY planned_date ASC, title ASC
+        "#,
+    )
+    .bind(start_date)
+    .bind(end_date)
+    .fetch_all(pool)
+    .await
+}
+
 /// Leichtgewichtiger Struct für die Duplikaterkennung.
 /// Enthält nur die für den Hinweis benötigten Felder.
 pub struct SimilarRecipe {
@@ -3001,5 +3024,141 @@ mod tests {
         // And: Quell-Rezept ist noch vorhanden
         let source = get_recipe_by_id(&pool, source_id).await.unwrap();
         assert!(source.is_some());
+    }
+
+    // === Tests für get_recipes_by_date_range (Story 30) ===
+
+    #[tokio::test]
+    async fn get_recipes_by_date_range_returns_recipes_in_range() {
+        // Given: Pool mit zwei Rezepten in verschiedenen Zeiträumen
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let today = time::OffsetDateTime::now_utc().date();
+        let tomorrow = today + time::Duration::days(1);
+        let day_three = today + time::Duration::days(3);
+        let day_ten = today + time::Duration::days(10);
+
+        // Rezept für morgen
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Morgen-Rezept", "Mittagessen", Some(&format!("{}.{}.{}" , tomorrow.day(), tomorrow.month() as u8, tomorrow.year()))),
+        )
+        .await
+        .unwrap();
+
+        // Rezept für in 3 Tagen
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Tag-3-Rezept", "Mittagessen", Some(&format!("{}.{}.{}" , day_three.day(), day_three.month() as u8, day_three.year()))),
+        )
+        .await
+        .unwrap();
+
+        // Rezept für in 10 Tagen (außerhalb des Bereichs)
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Tag-10-Rezept", "Mittagessen", Some(&format!("{}.{}.{}" , day_ten.day(), day_ten.month() as u8, day_ten.year()))),
+        )
+        .await
+        .unwrap();
+
+        // When: Abfrage für [morgen, +3 Tage]
+        let recipes = get_recipes_by_date_range(&pool, tomorrow, day_three).await.unwrap();
+
+        // Then: Zwei Rezepte zurückgegeben
+        assert_eq!(recipes.len(), 2);
+        let titles: Vec<&str> = recipes.iter().map(|r| r.title.as_str()).collect();
+        assert!(titles.contains(&"Morgen-Rezept"));
+        assert!(titles.contains(&"Tag-3-Rezept"));
+        assert!(!titles.contains(&"Tag-10-Rezept"));
+    }
+
+    #[tokio::test]
+    async fn get_recipes_by_date_range_returns_empty_for_empty_range() {
+        // Given: Pool mit einem Rezept
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let today = time::OffsetDateTime::now_utc().date();
+        let tomorrow = today + time::Duration::days(1);
+        let day_five = today + time::Duration::days(5);
+        let day_ten = today + time::Duration::days(10);
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Morgen-Rezept", "Mittagessen", Some(&format!("{}.{}.{}" , tomorrow.day(), tomorrow.month() as u8, tomorrow.year()))),
+        )
+        .await
+        .unwrap();
+
+        // When: Abfrage für [+5 Tage, +10 Tage]
+        let recipes = get_recipes_by_date_range(&pool, day_five, day_ten).await.unwrap();
+
+        // Then: Leere Liste
+        assert!(recipes.is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_recipes_by_date_range_sorts_by_date_then_title() {
+        // Given: Rezepte am gleichen Tag mit verschiedenen Titeln
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let today = time::OffsetDateTime::now_utc().date();
+        let tomorrow = today + time::Duration::days(1);
+        let tomorrow_str = format!("{}.{}.{}" , tomorrow.day(), tomorrow.month() as u8, tomorrow.year());
+
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Zebra-Suppe", "Mittagessen", Some(&tomorrow_str)),
+        )
+        .await
+        .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Apfel-Salat", "Mittagessen", Some(&tomorrow_str)),
+        )
+        .await
+        .unwrap();
+
+        // When: Abfrage
+        let recipes = get_recipes_by_date_range(&pool, tomorrow, tomorrow).await.unwrap();
+
+        // Then: Alphabetisch sortiert
+        assert_eq!(recipes.len(), 2);
+        assert_eq!(recipes[0].title, "Apfel-Salat");
+        assert_eq!(recipes[1].title, "Zebra-Suppe");
+    }
+
+    #[tokio::test]
+    async fn get_recipes_by_date_range_excludes_recipes_without_date() {
+        // Given: Rezept ohne Datum und eins mit Datum
+        let temp_file = NamedTempFile::new().unwrap();
+        let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
+        let pool = create_pool(&db_url).await.unwrap();
+
+        let today = time::OffsetDateTime::now_utc().date();
+        let tomorrow = today + time::Duration::days(1);
+
+        create_recipe(&pool, &make_recipe("Ohne-Datum", "Mittagessen"))
+            .await
+            .unwrap();
+        create_recipe(
+            &pool,
+            &make_recipe_with_date("Mit-Datum", "Mittagessen", Some(&format!("{}.{}.{}" , tomorrow.day(), tomorrow.month() as u8, tomorrow.year()))),
+        )
+        .await
+        .unwrap();
+
+        // When: Abfrage
+        let recipes = get_recipes_by_date_range(&pool, tomorrow, tomorrow).await.unwrap();
+
+        // Then: Nur Rezept mit Datum
+        assert_eq!(recipes.len(), 1);
+        assert_eq!(recipes[0].title, "Mit-Datum");
     }
 }

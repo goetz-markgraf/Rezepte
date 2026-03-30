@@ -150,7 +150,18 @@
         });
     }
 
-    // === Wochen-Picker Widget (Story 29: erweitert auf 10 Tage ab morgen) ===
+    // === Wochen-Picker Widget (Story 29 + 30: erweitert auf 10 Tage mit geplanten Essen) ===
+
+    // Geplante Rezepte aus dem Template (JSON-Serialisierung)
+    var PLANNED_RECIPES = [
+        {% for recipe in planned_recipes %}
+            {% if let Some(r) = recipe %}
+                { id: {{ r.id }}, title: "{{ r.title|escape }}" },
+            {% else %}
+                null,
+            {% endif %}
+        {% endfor %}
+    ];
 
     var WOCHENTAGE_KURZ = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
     var WOCHENTAGE_LANG = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
@@ -238,9 +249,44 @@
             btn.setAttribute('aria-label', wochentagLang + ', ' + tag + '. ' + monat + '. wählen');
             btn.setAttribute('aria-pressed', 'false');
 
+            // Story 30: Indikator für geplantes Essen hinzufügen
+            if (PLANNED_RECIPES[i]) {
+                var plannedRecipe = PLANNED_RECIPES[i];
+                var indicatorLink = document.createElement('a');
+                indicatorLink.href = '/recipes/' + plannedRecipe.id;
+                indicatorLink.className = 'planned-indicator';
+                indicatorLink.setAttribute('title', plannedRecipe.title);
+                indicatorLink.setAttribute('aria-label', 'Geplantes Essen: ' + plannedRecipe.title);
+                indicatorLink.setAttribute('role', 'link');
+
+                var indicatorIcon = document.createElement('span');
+                indicatorIcon.className = 'indicator-icon';
+                indicatorIcon.setAttribute('aria-hidden', 'true');
+                indicatorIcon.innerHTML = '★';
+                indicatorLink.appendChild(indicatorIcon);
+
+                // Tooltip-Text (wird per CSS angezeigt)
+                var tooltipText = document.createElement('span');
+                tooltipText.className = 'indicator-tooltip';
+                tooltipText.textContent = plannedRecipe.title;
+                indicatorLink.appendChild(tooltipText);
+
+                // Verhindere, dass der Button-Click ausgelöst wird
+                indicatorLink.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+
+                btn.appendChild(indicatorLink);
+            }
+
             // Click-Handler: Datum berechnen und ins Textfeld eintragen (oder Toggle)
             (function(button, offset) {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function(e) {
+                    // Nicht ausführen wenn auf den Indikator-Link geklickt wurde
+                    if (e.target.closest('.planned-indicator')) {
+                        return;
+                    }
+
                     var isActive = button.getAttribute('aria-pressed') === 'true';
                     // Alle Buttons demarkieren
                     for (var j = 0; j < buttons.length; j++) {
