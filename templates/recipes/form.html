@@ -150,26 +150,10 @@
         });
     }
 
-    // === Wochentag-Picker Widget ===
+    // === Wochen-Picker Widget (Story 29: erweitert auf 10 Tage ab morgen) ===
 
-    var WOCHENTAGE = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-    var ARIA_LABELS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
-
-    // Berechnet das Datum des gewählten Wochentags in der nächsten Woche
-    // offset: 0=Mo, 1=Di, 2=Mi, 3=Do, 4=Fr, 5=Sa, 6=So
-    function calculateNextWeekday(offset) {
-        var today = new Date();
-        today.setHours(0, 0, 0, 0);
-        // ISO-Wochenberechnung: getDay() So=0,Mo=1,...,Sa=6 → ISO: Mo=0,...,So=6
-        var dayOfWeek = (today.getDay() + 6) % 7;
-        // Immer nächste ISO-Woche: Mo hat daysToNextMonday=7, Di=6, ..., So=1
-        var daysToNextMonday = 7 - dayOfWeek;
-        var nextMonday = new Date(today);
-        nextMonday.setDate(today.getDate() + daysToNextMonday);
-        var target = new Date(nextMonday);
-        target.setDate(nextMonday.getDate() + offset);
-        return formatAsGerman(target);
-    }
+    var WOCHENTAGE_KURZ = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    var WOCHENTAGE_LANG = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 
     // Formatiert ein Date-Objekt als T.M.JJJJ (keine führenden Nullen)
     function formatAsGerman(date) {
@@ -177,6 +161,26 @@
         var month = date.getMonth() + 1;
         var year = date.getFullYear();
         return day + '.' + month + '.' + year;
+    }
+
+    // Berechnet das Datum ab morgen (offset: 0=morgen, 1=übermorgen, ..., 9=in 10 Tagen)
+    function calculateDateFromTomorrow(offset) {
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        var tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        var target = new Date(tomorrow);
+        target.setDate(target.getDate() + offset);
+        return target;
+    }
+
+    // Gibt das Label für einen Button zurück (z.B. "Mo 30.03")
+    function getDayLabel(offset) {
+        var date = calculateDateFromTomorrow(offset);
+        var wochentag = WOCHENTAGE_KURZ[date.getDay()];
+        var tag = date.getDate();
+        var monat = date.getMonth() + 1;
+        return wochentag + ' ' + tag + '.' + monat + '.';
     }
 
     // Parst einen deutschen Datumsstring T.M.JJJJ oder TT.MM.JJJJ zu einem Date-Objekt
@@ -195,17 +199,17 @@
         return date;
     }
 
-    // Prüft ob der gegebene Datumsstring einem Wochentag der nächsten Woche entspricht
-    // Gibt den offset (0-6) zurück oder -1 wenn kein Match
-    function detectActiveWeekday(str) {
+    // Prüft ob der gegebene Datumsstring einem der nächsten 10 Tage entspricht
+    // Gibt den offset (0-9) zurück oder -1 wenn kein Match
+    function detectActiveDate(str) {
         if (!str) return -1;
-        for (var offset = 0; offset <= 6; offset++) {
-            if (calculateNextWeekday(offset) === str) return offset;
+        for (var offset = 0; offset <= 9; offset++) {
+            if (formatAsGerman(calculateDateFromTomorrow(offset)) === str) return offset;
         }
         return -1;
     }
 
-    // Erstellt und fügt das Wochentag-Picker-Widget ein
+    // Erstellt und fügt das Wochen-Picker-Widget ein
     function createWeekdayPicker(input) {
         var dateInputGroup = input.closest('.date-input-group');
         if (!dateInputGroup) return;
@@ -213,21 +217,25 @@
         var container = document.createElement('div');
         container.className = 'weekday-picker';
         container.setAttribute('role', 'group');
-        container.setAttribute('aria-label', 'Wochentag nächste Woche');
+        container.setAttribute('aria-label', 'Tag wählen');
 
         var label = document.createElement('span');
         label.className = 'weekday-picker-label';
-        label.textContent = 'Nächste Woche';
+        label.textContent = 'Nächste 10 Tage';
         container.appendChild(label);
 
         var buttons = [];
 
-        for (var i = 0; i <= 6; i++) {
+        for (var i = 0; i <= 9; i++) {
+            var dateForLabel = calculateDateFromTomorrow(i);
             var btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'weekday-btn';
-            btn.textContent = WOCHENTAGE[i];
-            btn.setAttribute('aria-label', ARIA_LABELS[i] + ' nächste Woche wählen');
+            btn.textContent = getDayLabel(i);
+            var wochentagLang = WOCHENTAGE_LANG[dateForLabel.getDay()];
+            var tag = dateForLabel.getDate();
+            var monat = dateForLabel.getMonth() + 1;
+            btn.setAttribute('aria-label', wochentagLang + ', ' + tag + '. ' + monat + '. wählen');
             btn.setAttribute('aria-pressed', 'false');
 
             // Click-Handler: Datum berechnen und ins Textfeld eintragen (oder Toggle)
@@ -244,7 +252,7 @@
                         input.value = '';
                     } else {
                         // Datum berechnen und eintragen
-                        input.value = calculateNextWeekday(offset);
+                        input.value = formatAsGerman(calculateDateFromTomorrow(offset));
                         button.setAttribute('aria-pressed', 'true');
                         button.classList.add('active');
                     }
@@ -257,7 +265,7 @@
 
         // Input-Event: Aktiven Button bei manueller Eingabe aktualisieren
         input.addEventListener('input', function() {
-            var activeOffset = detectActiveWeekday(input.value);
+            var activeOffset = detectActiveDate(input.value);
             for (var j = 0; j < buttons.length; j++) {
                 buttons[j].setAttribute('aria-pressed', 'false');
                 buttons[j].classList.remove('active');
@@ -271,8 +279,8 @@
         // Nach dem .date-input-group-Element einfügen
         dateInputGroup.parentNode.insertBefore(container, dateInputGroup.nextSibling);
 
-        // Initiale Prüfung: Vorhandenes Datum auf nächste Woche prüfen (Edit-Formular)
-        var initialOffset = detectActiveWeekday(input.value);
+        // Initiale Prüfung: Vorhandenes Datum auf nächste 10 Tage prüfen (Edit-Formular)
+        var initialOffset = detectActiveDate(input.value);
         if (initialOffset >= 0) {
             buttons[initialOffset].setAttribute('aria-pressed', 'true');
             buttons[initialOffset].classList.add('active');

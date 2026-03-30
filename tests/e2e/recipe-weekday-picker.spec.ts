@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Wochentag-Picker', () => {
+test.describe.skip('Wochentag-Picker (Story 16 - ersetzt durch Story 29)', () => {
+
+  // Diese Tests wurden durch Story 29 ersetzt
+  // Das neue System zeigt 10 Tage ab morgen, nicht 7 Tage ab Montag
 
   // K1/K2: Wochentag-Buttons werden angezeigt (mit JS)
   test('sollte sieben Wochentag-Buttons Mo–So anzeigen', async ({ page }) => {
