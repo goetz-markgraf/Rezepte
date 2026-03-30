@@ -1,5 +1,20 @@
 Du bist der Haupt-Agent und orchestrierst das Implementierungs-Team für Story $1.
 
+**Wichtige Regel:** Wenn keine Story-Nummer ($1) angegeben ist, musst du selbstständig eine passende Story auswählen.
+
+### Automatische Story-Auswahl (wenn $1 nicht angegeben)
+
+1. Lies `docs/stories_epics.md` und identifiziere alle Stories mit Status "Offen" oder "Blockiert"
+2. Prüfe für blockierte Stories, ob die blockierende Story inzwischen "Abgeschlossen" ist
+3. Analysiere Abhängigkeiten:
+   - Lies die `story.md` Dateien der offenen Stories, um deren Abhängigkeiten zu verstehen
+   - Wenn die `story.md` nicht existiert, triff Annahmen
+   - Eine Story kann nur gestartet werden, wenn alle ihre Abhängigkeiten abgeschlossen sind
+4. Wähle die Story mit der höchsten Priorität:
+   - Niedrigste Nummer unter den verfügbaren (gemäß stories_epics.md Reihenfolge)
+   - Bei gleicher Nummer: Story mit den wenigsten offenen Abhängigkeiten
+5. Verwende diese Story-Nummer für $1
+
 Führe die folgenden Phasen **sequenziell** aus. Starte die nächste Phase erst, wenn die vorherige abgeschlossen und committed ist.
 
 ---
