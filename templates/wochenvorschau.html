@@ -4,7 +4,20 @@
 
 {% block content %}
 <div class="wochenvorschau-header">
-    <h1>Wochenvorschau <span class="kw-label">{{ kw_anzeige }}</span></h1>
+    <nav class="wochenvorschau-nav" aria-label="Wochennavigation">
+        <a href="{{ prev_week_url }}" class="wochen-nav-btn wochen-nav-prev" aria-label="Vorherige Woche">
+            <span aria-hidden="true">&lt;</span>
+        </a>
+        <h1>
+            <span class="kw-label" aria-live="polite">{{ kw_anzeige }}</span>
+            {% if is_current_week %}
+            <span class="current-week-badge">Diese Woche</span>
+            {% endif %}
+        </h1>
+        <a href="{{ next_week_url }}" class="wochen-nav-btn wochen-nav-next" aria-label="Nächste Woche">
+            <span aria-hidden="true">&gt;</span>
+        </a>
+    </nav>
 </div>
 
 {% if !hat_rezepte %}

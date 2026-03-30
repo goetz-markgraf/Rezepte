@@ -74,7 +74,7 @@ test.describe('Wochenvorschau (Story 18)', () => {
 
     // Then: URL ist /wochenvorschau, HTTP 200, Überschrift sichtbar
     await expect(page).toHaveURL(/\/wochenvorschau/);
-    await expect(page.locator('h1')).toContainText('Wochenvorschau');
+    await expect(page.locator('h1')).toContainText('KW');
   });
 
   test('K2: Alle 7 Wochentage erscheinen auf der Seite', async ({ page }) => {
@@ -164,7 +164,7 @@ test.describe('Wochenvorschau (Story 18)', () => {
 
     // Then: HTTP 200, Wochenvorschau korrekt angezeigt, Rezept sichtbar
     await expect(page).toHaveURL(/\/wochenvorschau/);
-    await expect(page.locator('h1')).toContainText('Wochenvorschau');
+    await expect(page.locator('h1')).toContainText('KW');
     await expect(page.locator('body')).toContainText(title);
   });
 
@@ -270,5 +270,94 @@ test.describe('Wochenvorschau Formatierung (Story 19)', () => {
 
     // And: Link zur Detailansicht vorhanden
     await expect(page.locator(`.wochentag-heute a:has-text("${title}")`)).toBeVisible();
+  });
+});
+
+test.describe('Wochenübersicht Navigation (Story 33)', () => {
+  test('K1: Navigation zur vorherigen Woche per Link', async ({ page }) => {
+    // Given: /wochenvorschau wird aufgerufen (aktuelle Woche)
+    await page.goto('/wochenvorschau');
+
+    // Then: Link zur vorherigen Woche ist sichtbar
+    const prevLink = page.locator('a[href*="week="].wochen-nav-prev, a[aria-label="Vorherige Woche"]');
+    await expect(prevLink).toBeVisible();
+
+    // When: Benutzer klickt auf den Link
+    await prevLink.click();
+
+    // Then: URL enthält week-Parameter für vorherige Woche
+    await expect(page).toHaveURL(/week=\d{4}-W\d{2}/);
+
+    // And: KW-Anzeige ist immer noch sichtbar
+    await expect(page.locator('.kw-label')).toBeVisible();
+  });
+
+  test('K1: Navigation zur nächsten Woche per Link', async ({ page }) => {
+    // Given: /wochenvorschau wird aufgerufen (aktuelle Woche)
+    await page.goto('/wochenvorschau');
+
+    // Then: Link zur nächsten Woche ist sichtbar
+    const nextLink = page.locator('a[href*="week="].wochen-nav-next, a[aria-label="Nächste Woche"]');
+    await expect(nextLink).toBeVisible();
+
+    // When: Benutzer klickt auf den Link
+    await nextLink.click();
+
+    // Then: URL enthält week-Parameter für nächste Woche
+    await expect(page).toHaveURL(/week=\d{4}-W\d{2}/);
+
+    // And: KW-Anzeige ist immer noch sichtbar
+    await expect(page.locator('.kw-label')).toBeVisible();
+  });
+
+  test('K3: DeepLink zu spezifischer Woche funktioniert', async ({ page }) => {
+    // Given: Direktaufruf mit week-Parameter
+    await page.goto('/wochenvorschau?week=2025-W02');
+
+    // Then: Seite lädt erfolgreich
+    await expect(page.locator('h1')).toBeVisible();
+
+    // And: KW-Anzeige zeigt Woche 2 an
+    const kwText = await page.locator('.kw-label').textContent();
+    expect(kwText).toContain('KW 2');
+  });
+
+  test('K2: "Diese Woche"-Badge bei aktueller Woche sichtbar', async ({ page }) => {
+    // Given: /wochenvorschau ohne Parameter (aktuelle Woche)
+    await page.goto('/wochenvorschau');
+
+    // Then: Badge "Diese Woche" ist sichtbar
+    await expect(page.locator('.current-week-badge')).toBeVisible();
+    await expect(page.locator('.current-week-badge')).toContainText('Diese Woche');
+  });
+
+  test('K4: Mehrfache Navigation funktioniert', async ({ page }) => {
+    // Given: /wochenvorschau wird aufgerufen
+    await page.goto('/wochenvorschau');
+
+    // When: Dreimal auf "vorherige Woche" klicken
+    const prevLink = page.locator('a[aria-label="Vorherige Woche"], a.wochen-nav-prev');
+    for (let i = 0; i < 3; i++) {
+      await expect(prevLink).toBeVisible();
+      await prevLink.click();
+      await page.waitForLoadState('networkidle');
+    }
+
+    // Then: Seite ist immer noch funktionsfähig
+    await expect(page.locator('.kw-label')).toBeVisible();
+    await expect(page.locator('h1')).toBeVisible();
+  });
+
+  test('K6: Navigation hat korrekte ARIA-Labels', async ({ page }) => {
+    // Given: /wochenvorschau wird aufgerufen
+    await page.goto('/wochenvorschau');
+
+    // Then: Navigation-Links haben aussagekräftige Labels
+    const prevLink = page.locator('a[aria-label="Vorherige Woche"]');
+    const nextLink = page.locator('a[aria-label="Nächste Woche"]');
+
+    // Mindestens einer der Links sollte die erwarteten ARIA-Labels haben
+    await expect(prevLink.or(page.locator('.wochen-nav-prev'))).toBeVisible();
+    await expect(nextLink.or(page.locator('.wochen-nav-next'))).toBeVisible();
   });
 });

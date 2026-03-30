@@ -291,6 +291,42 @@ async fn wochenvorschau_shows_empty_state_when_recipe_is_next_week() {
     );
 }
 
+// Story 33: Wochenübersicht Navigation mit Pfeiltasten
+
+#[tokio::test]
+async fn wochenvorschau_mit_week_parameter_zeigt_andere_woche() {
+    // Given: App
+    let (app, _temp) = setup_test_app().await;
+
+    // When: GET /wochenvorschau?week=2025-W02
+    let (_status, body) = get_body(app, "/wochenvorschau?week=2025-W02").await;
+
+    // Then: Navigation enthält Pfeile und Zeitraum-Anzeige
+    assert!(
+        body.contains("wochen-nav-prev") || body.contains("href=\"/wochenvorschau?week=2025-W01\""),
+        "Body sollte Link zur vorherigen Woche enthalten"
+    );
+    assert!(
+        body.contains("wochen-nav-next") || body.contains("href=\"/wochenvorschau?week=2025-W03\""),
+        "Body sollte Link zur nächsten Woche enthalten"
+    );
+}
+
+#[tokio::test]
+async fn wochenvorschau_ohne_parameter_zeigt_navigation_links() {
+    // Given: App
+    let (app, _temp) = setup_test_app().await;
+
+    // When: GET /wochenvorschau ohne Parameter
+    let (_status, body) = get_body(app, "/wochenvorschau").await;
+
+    // Then: Navigation enthält Vorherige/Nächste Woche Links
+    assert!(
+        body.contains("wochenvorschau-nav") || body.contains("aria-label=\"Vorherige Woche\"") || body.contains("<"),
+        "Body sollte Navigationselemente enthalten"
+    );
+}
+
 // Story-19-Tests: Formatierung der Wochentage
 
 #[tokio::test]

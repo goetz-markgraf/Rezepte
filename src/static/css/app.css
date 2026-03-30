@@ -114,10 +114,65 @@ header .site-title:hover {
 
 .wochenvorschau-header h1 {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-bottom: 0;
+    font-size: 1.25rem;
+}
+
+/* === Wochenvorschau Navigation (Story 33) === */
+
+.wochenvorschau-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.wochen-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 1.25rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.wochen-nav-btn:hover {
+    background-color: #dbeafe;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.wochen-nav-btn:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.wochen-nav-btn:active {
+    background-color: #bfdbfe;
+}
+
+.current-week-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    background-color: #dbeafe;
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    vertical-align: middle;
 }
 
 .kw-label {

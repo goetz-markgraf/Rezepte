@@ -103,6 +103,12 @@ pub struct WochenvorschauTemplate {
     pub kw_anzeige: String,
     /// true wenn mindestens ein Rezept in der Woche geplant ist.
     pub hat_rezepte: bool,
+    /// URL zur vorherigen Woche: "/wochenvorschau?week=2025-W01"
+    pub prev_week_url: String,
+    /// URL zur nächsten Woche: "/wochenvorschau?week=2025-W03"
+    pub next_week_url: String,
+    /// true wenn die aktuelle Woche angezeigt wird (für "Heute" Badge).
+    pub is_current_week: bool,
 }
 
 #[derive(Template)]
