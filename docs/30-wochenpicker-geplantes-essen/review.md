@@ -1,7 +1,8 @@
 # Review: Story 30 - Wochenpicker zeigt geplantes Essen
 
 **Review-Datum:** 2026-03-30
-**Story-Status:** Implementiert
+**Re-Review-Datum:** 2026-03-30
+**Story-Status:** Review abgeschlossen — Akzeptiert
 
 ---
 
@@ -157,17 +158,42 @@ Die Implementierung von Story 30 fügt dem Wochenpicker einen visuellen Indikato
 | `cargo fmt --check` | ✅ |
 | `npm run test:e2e` (Story 30) | ✅ (8/8 Tests bestanden) |
 
-### Verbleibende Prio-2 Punkte
+## Re-Review (2026-03-30)
+
+**Status:** ✅ Review akzeptiert — Alle Prio-1-Probleme behoben
+
+### Qualitätschecks Ergebnis
+
+| Check | Status |
+|-------|--------|
+| `cargo build` | ✅ fehlerfrei |
+| `cargo test` | ✅ 264 Tests bestanden |
+| `cargo clippy -- -D warnings` | ✅ keine Warnungen |
+| `cargo fmt --check` | ✅ keine Abweichungen |
+| `npm run test:e2e` | ✅ 8/8 Story 30 Tests bestanden |
+
+**Gesamtergebnis E2E-Tests:** 198 passed, 2 failed (nicht Story 30 verwandt), 10 skipped
+
+### Verbleibende Prio-2 Punkte (nicht blockierend)
 - [ ] `title`-Attribut aus Indikator-Link entfernen (doppelte Screenreader-Ausgabe)
 - [ ] Unit-Test für `load_planned_recipes_for_weekday_picker()` ergänzen
+
+**Hinweis:** Diese Punkte sind nice-to-have und blockieren nicht den Abschluss der Story.
 
 ---
 
 ## Fazit
 
-**Gesamtbewertung:** ✅ Review abgeschlossen, bereit zum Mergen
+**Gesamtbewertung:** ✅ Review akzeptiert — Story 30 abgeschlossen
 
-Die Implementierung ist technisch korrekt, alle Akzeptanzkriterien sind erfüllt und alle E2E-Tests bestehen. Die verbleibenden Prio-2 Punkte sind nice-to-have und blockieren nicht den Merge.
+Die Implementierung ist technisch korrekt und vollständig:
+
+- ✅ Alle 6 Akzeptanzkriterien erfüllt
+- ✅ Alle Prio-1-Probleme behoben
+- ✅ Alle Qualitätschecks bestanden (cargo build, test, clippy, fmt)
+- ✅ Alle 8 E2E-Tests für Story 30 bestehen
+
+**Verfügbarkeit:** Die Story ist bereit für den Merge in den Hauptbranch.
 
 ---
 
