@@ -14,11 +14,11 @@ Diese Story fügt einen Button in der Wochenübersicht hinzu, der direkt zur Suc
 
 **Datei:** `templates/wochenvorschau.html`
 
-- [ ] Button "Länger nicht gemacht" oberhalb der Wochenliste hinzufügen
-- [ ] Der Button ist ein Link zur Startseite mit Query-Parameter `?filter=laenger-nicht-gemacht`
-- [ ] Optional: Aktuelle Woche als `return_week` Parameter mitgeben für spätere Rückkehr
-- [ ] Icon (SVG) für den Button hinzufügen (z.B. ein Uhr-Icon aus `templates/components/icons.html` wiederverwenden oder ähnliches)
-- [ ] ARIA-Label für Barrierefreiheit: `"Rezepte anzeigen, die länger nicht gemacht wurden"`
+- [x] Button "Länger nicht gemacht" oberhalb der Wochenliste hinzufügen
+- [x] Der Button ist ein Link zur Startseite mit Query-Parameter `?filter=laenger-nicht-gemacht`
+- [ ] ~~Optional: Aktuelle Woche als `return_week` Parameter mitgeben für spätere Rückkehr~~ (nicht implementiert, Option A gewählt)
+- [x] Icon (SVG) für den Button hinzufügen (Uhr-Icon)
+- [x] ARIA-Label für Barrierefreiheit: `"Rezepte anzeigen, die länger nicht gemacht wurden"`
 
 **Code-Vorlage:**
 ```html
@@ -36,11 +36,11 @@ Diese Story fügt einen Button in der Wochenübersicht hinzu, der direkt zur Suc
 
 **Datei:** `src/static/css/app.css`
 
-- [ ] CSS-Klasse `.wochenvorschau-toolbar` für den Button-Container erstellen
-- [ ] Button-Styling konsistent mit anderen sekundären Buttons (z.B. Filter-Buttons auf der Startseite)
-- [ ] Responsive Design: Button soll auf Mobile gut aussehen
-- [ ] Hover- und Focus-States definieren
-- [ ] Optional: Animation für bessere UX
+- [x] CSS-Klasse `.wochenvorschau-toolbar` für den Button-Container erstellen
+- [x] Button-Styling konsistent mit anderen sekundären Buttons (z.B. Filter-Buttons auf der Startseite)
+- [x] Responsive Design: Button soll auf Mobile gut aussehen
+- [x] Hover- und Focus-States definieren
+- [ ] ~~Optional: Animation für bessere UX~~ (nicht implementiert)
 
 **Vorlage für CSS:**
 ```css
@@ -96,24 +96,24 @@ Diese Story fügt einen Button in der Wochenübersicht hinzu, der direkt zur Suc
 
 **Datei:** `tests/e2e/wochenvorschau-not-made.spec.ts`
 
-- [ ] Test 1: Button ist in der Wochenübersicht sichtbar
+- [x] Test 1: Button ist in der Wochenübersicht sichtbar
   - Navigiere zu `/wochenvorschau`
   - Prüfe ob Button "Länger nicht gemacht" existiert
   - Prüfe ARIA-Label
 
-- [ ] Test 2: Klick öffnet Suche mit vorbelegtem Filter
+- [x] Test 2: Klick öffnet Suche mit vorbelegtem Filter
   - Klicke auf den Button
   - Prüfe URL enthält `filter=laenger-nicht-gemacht`
   - Prüfe ob Suche geladen ist
   - Prüfe ob Filter aktiv ist (z.B. Button als aktiv markiert)
 
-- [ ] Test 3: Rückkehr zur Wochenübersicht (wenn implementiert)
-  - Klicke auf Button in Woche X
-  - Suche wird geöffnet
-  - Klicke "Zurück zur Wochenübersicht"
-  - Prüfe ob Woche X angezeigt wird
+- [ ] ~~Test 3: Rückkehr zur Wochenübersicht~~ (nicht implementiert, Option A gewählt)
+  - ~~Klicke auf Button in Woche X~~
+  - ~~Suche wird geöffnet~~
+  - ~~Klicke "Zurück zur Wochenübersicht"~~
+  - ~~Prüfe ob Woche X angezeigt wird~~
 
-- [ ] Test 4: Barrierefreiheit
+- [x] Test 4: Barrierefreiheit
   - Button ist per Tastatur erreichbar
   - Screenreader-Label korrekt
 
@@ -123,13 +123,13 @@ Diese Story fügt einen Button in der Wochenübersicht hinzu, der direkt zur Suc
 
 **Datei:** `tests/wochenvorschau.rs`
 
-- [ ] Test: Wochenvorschau enthält Link zur Suche
+- [x] Test: Wochenvorschau enthält Link zur Suche
   - GET `/wochenvorschau`
   - Prüfe Response-Body enthält Link zu `/?filter=laenger-nicht-gemacht`
 
 **Datei:** `tests/recipe_not_made_filter.rs` (erweitern)
 
-- [ ] Test: DeepLink mit return_week Parameter wird korrekt verarbeitet (falls implementiert)
+- [ ] ~~Test: DeepLink mit return_week Parameter wird korrekt verarbeitet~~ (nicht implementiert, Option A gewählt)
 
 ---
 
@@ -161,20 +161,20 @@ GET  /?filter=laenger-nicht-gemacht&return_week=YYYY-WNN → Suche mit Rückkehr
 ## Test-Checkliste
 
 ### Unit-Tests (Rust)
-- [ ] `wochenvorschau_enthaltet_link_zur_not_made_suche()` - Link ist im HTML vorhanden
-- [ ] `index_handler_erkennt_return_week_parameter()` - Parameter wird korrekt geparsed (optional)
+- [x] `wochenvorschau_enthaltet_link_zur_not_made_suche()` - Link ist im HTML vorhanden
+- [ ] ~~`index_handler_erkennt_return_week_parameter()`~~ (nicht implementiert)
 
 ### Integrationstests (Rust)
-- [ ] GET `/wochenvorschau` enthält Link zu `/?filter=laenger-nicht-gemacht`
-- [ ] Button hat korrekte CSS-Klasse und ARIA-Attribute
+- [x] GET `/wochenvorschau` enthält Link zu `/?filter=laenger-nicht-gemacht`
+- [x] Button hat korrekte CSS-Klasse und ARIA-Attribute
 
 ### E2E-Tests (Playwright)
-- [ ] **T1:** Button ist auf Wochenübersicht sichtbar und erreichbar
-- [ ] **T2:** Klick navigiert zu `/` mit `filter=laenger-nicht-gemacht`
-- [ ] **T3:** Filter ist in der Suche aktiv
-- [ ] **T4:** Button ist per Tastatur erreichbar
-- [ ] **T5:** Button hat korrektes ARIA-Label (Barrierefreiheit)
-- [ ] **T6:** Responsive Design auf Mobile (optional)
+- [x] **T1:** Button ist auf Wochenübersicht sichtbar und erreichbar
+- [x] **T2:** Klick navigiert zu `/` mit `filter=laenger-nicht-gemacht`
+- [x] **T3:** Filter ist in der Suche aktiv
+- [x] **T4:** Button ist per Tastatur erreichbar
+- [x] **T5:** Button hat korrektes ARIA-Label (Barrierefreiheit)
+- [x] **T6:** Responsive Design auf Mobile (Button verwendet flexible Flexbox-Layout)
 
 ### Manueller Test
 - [ ] Button sieht gut aus und ist intuitiv zu finden

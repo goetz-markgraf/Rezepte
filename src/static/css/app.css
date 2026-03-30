@@ -277,6 +277,46 @@ header .site-title:hover {
     margin-top: 1.5rem;
 }
 
+/* === Story 34: "Länger nicht gemacht" Button in Wochenvorschau === */
+
+.wochenvorschau-toolbar {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.not-made-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    min-height: 44px;
+}
+
+.not-made-button:hover {
+    background-color: #dbeafe;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.not-made-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.not-made-button .icon {
+    flex-shrink: 0;
+}
+
 .btn-link {
     color: var(--primary-color);
     text-decoration: none;

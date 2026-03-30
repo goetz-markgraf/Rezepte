@@ -415,3 +415,44 @@ async fn wochenvorschau_vergangene_tage_korrekt_wenn_nicht_montag() {
         );
     }
 }
+
+// Story 34: "Länger nicht gemacht" Button in Wochenvorschau
+
+#[tokio::test]
+async fn wochenvorschau_enthaelt_link_zur_not_made_suche() {
+    // Given: App ohne Rezepte
+    let (app, _temp) = setup_test_app().await;
+
+    // When: GET /wochenvorschau
+    let (_status, body) = get_body(app, "/wochenvorschau").await;
+
+    // Then: Body enthält Link zur Suche mit Filter "Länger nicht gemacht"
+    assert!(
+        body.contains("filter=laenger-nicht-gemacht"),
+        "Body sollte Link zu '/?filter=laenger-nicht-gemacht' enthalten"
+    );
+
+    // And: Button hat korrekte CSS-Klasse
+    assert!(
+        body.contains("not-made-button"),
+        "Body sollte CSS-Klasse 'not-made-button' enthalten"
+    );
+
+    // And: Button hat korrektes ARIA-Label
+    assert!(
+        body.contains("Rezepte anzeigen, die länger nicht gemacht wurden"),
+        "Body sollte ARIA-Label für Barrierefreiheit enthalten"
+    );
+
+    // And: Toolbar-Container ist vorhanden
+    assert!(
+        body.contains("wochenvorschau-toolbar"),
+        "Body sollte CSS-Klasse 'wochenvorschau-toolbar' enthalten"
+    );
+
+    // And: Button-Text ist vorhanden
+    assert!(
+        body.contains("Länger nicht gemacht"),
+        "Body sollte Button-Text 'Länger nicht gemacht' enthalten"
+    );
+}
