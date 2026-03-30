@@ -27,14 +27,9 @@ Wenn du unsicher bist, frage den User.
 
 Vergib die nächste freie Story-Nummer (fortlaufend nach der aktuell höchsten Nummer, egal in welchem Epic).
 
-Wenn die Story in ein bestehendes Epic eingefügt wird, ist ab dann die Nummerierung nicht mehr fortlaufend. Das ist OK. Ändere nicht die Nummern der bestehenden Stories.
+Die Nummerierung ist nicht fortlaufend. Ändere nicht die Nummern der bestehenden Stories.
 
-## Schritt 4: `docs/stories_epics.md` aktualisieren
-
-- Trage die neue Story in die Tabelle des passenden Epics ein (Status: Offen)
-- Falls ein neues Epic erstellt wurde, füge es an der passenden Stelle ein
-
-## Schritt 5: Story-Verzeichnis und rudimentäre story.md anlegen
+## Schritt 4: Story-Verzeichnis und rudimentäre story.md anlegen
 
 Erstelle das Verzeichnis `docs/XX-story-name/` (XX = vergebene Nummer, story-name = kurzer Slug aus dem Titel in Kleinbuchstaben mit Bindestrichen).
 
@@ -45,15 +40,13 @@ Erstelle darin eine minimale `story.md` mit folgendem Inhalt (nutze `docs/templa
 - Status: Offen
 - Falls der User Zusatzinformationen mitgegeben hat: Füge am **Ende der Datei** einen Abschnitt `## Zusatzinformationen` ein und schreibe den vollständigen Originaltext des Users dort hinein (unverändert, als Fließtext)
 
-## Schritt 6: Commit
+## Schritt 5: `docs/stories_epics.md` aktualisieren
 
-Erstelle einen Commit:
-`git commit -m "story XX: add story placeholder for '<Titel>'"`
+- Trage die neue Story in die Tabelle des passenden Epics ein (Status: Offen)
+- Falls ein neues Epic erstellt wurde, füge es an der passenden Stelle ein
 
 ## Abschluss
 
 Teile dem Nutzer mit:
 - Welche Story-Nummer vergeben wurde
 - In welches Epic die Story eingeordnet wurde
-- Ob eine Re-Nummerierung stattgefunden hat (und welche Stories betroffen waren)
-- Pfad zur neuen story.md
