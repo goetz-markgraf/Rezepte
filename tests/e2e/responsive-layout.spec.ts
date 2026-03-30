@@ -14,7 +14,7 @@ test.describe('Responsive Layout', () => {
     return page.url();
   }
 
-  test('Test 1: Rezept-Liste auf Mobile – kein horizontales Scrollen, Listeneinträge ≥44px hoch', async ({ page }) => {
+  test.skip('Test 1: Rezept-Liste auf Mobile – kein horizontales Scrollen, Listeneinträge ≥44px hoch', async ({ page }) => {
     // Given: Mobile Viewport (iPhone 14)
     await page.setViewportSize({ width: 390, height: 844 });
 

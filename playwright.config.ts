@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:8080',
+    baseURL: 'http://localhost:8081',
     trace: 'on-first-retry',
   },
   projects: [
@@ -18,8 +18,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'rm -f ./data/test.db && TEST_DATABASE_URL=./data/test.db cargo run',
-    url: 'http://localhost:8080/health',
+    command: 'rm -f ./data/test.db && PORT=8081 TEST_DATABASE_URL=./data/test.db cargo run',
+    url: 'http://localhost:8081/health',
     reuseExistingServer: false,
     stdout: 'pipe',
     stderr: 'pipe',
