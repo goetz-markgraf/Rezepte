@@ -31,8 +31,8 @@ Das Herzstück der Anwendung - Rezepte erstellen, bearbeiten, anzeigen und lösc
 | 05 | [Rezept-Liste alphabetisch sortiert](./05-rezept-liste/story.md) | Abgeschlossen |
 | 06 | [Responsive Layout für Desktop und Mobile](./06-responsive-layout/story.md) | Abgeschlossen |
 | 26 | [Nutzung von Icons](./26-nutzung-von-icons/story.md) | Abgeschlossen |
-| 31 | [Kompakteres Layout der Hauptansicht](./31-kompakteres-layout/story.md) | In Arbeit |
-| 32 | [Neues-Rezept-Button in der Kopfzeile](./32-neues-rezept-button/story.md) | Offen |
+| 31 | [Kompakteres Layout der Hauptansicht](./31-kompakteres-layout/story.md) | Abgebrochen |
+| 32 | [Neues-Rezept-Button in der Kopfzeile](./32-neues-rezept-button/story.md) | In Arbeit |
 
 ---
 
@@ -124,4 +124,5 @@ Nicht-funktionale Anforderungen und technische Features.
 - **Abgeschlossen** - Implementiert und getestet
 - **Blockiert** - Wartet auf andere Story/Clarification
 - **Dublette** - Ist durch eine andere Story erledigt und wird daher nicht umgesetzt
+- **Abgebrochen** - Arbeiten wurden begonnen, reverted und werden nicht mehr unternommen
 
