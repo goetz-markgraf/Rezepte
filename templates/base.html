@@ -11,17 +11,12 @@
     <header>
         <a href="/" class="site-title">Rezepte</a>
         <nav class="main-nav" aria-label="Hauptnavigation">
+            {% block header_actions %}
+            <a href="/recipes/new" class="nav-link">Neues Rezept</a>
+            {% endblock %}
             <a href="/heute" class="nav-link">Heute</a>
             <a href="/wochenvorschau" class="nav-link">Wochenvorschau</a>
             <a href="/recipes/duplicates" class="nav-link">Dubletten prüfen</a>
-            {% block header_actions %}
-            <a href="/recipes/new" class="btn-primary btn-header-new-recipe" aria-label="Neues Rezept erstellen">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true" focusable="false">
-                    <path d="M5 12h14"/><path d="M12 5v14"/>
-                </svg>
-                <span class="btn-text">Neues Rezept</span>
-            </a>
-            {% endblock %}
         </nav>
     </header>
     <main>

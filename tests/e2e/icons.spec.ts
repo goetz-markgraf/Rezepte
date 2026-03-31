@@ -28,15 +28,15 @@ test.describe('Icons in der UI', () => {
     await expect(editLink.locator('svg')).toBeVisible();
   });
 
-  test('"Neues Rezept"-Button hat Plus-SVG (K1)', async ({ page }) => {
+  test('"Neues Rezept"-Link ist in der Navigation sichtbar (K1)', async ({ page }) => {
     // Given: Die Startseite ist geöffnet
     // When: Die Startseite aufgerufen wird
     await page.goto('/');
 
-    // Then: Der "Neues Rezept"-Link ist sichtbar und enthält ein SVG-Icon
+    // Then: Der "Neues Rezept"-Link ist in der Navigation sichtbar
     const newRecipeLink = page.locator('a[href="/recipes/new"]').first();
     await expect(newRecipeLink).toBeVisible();
-    await expect(newRecipeLink.locator('svg')).toBeVisible();
+    await expect(newRecipeLink).toContainText('Neues Rezept');
   });
 
   test('Löschen-Button auf Detailseite hat SVG und navigiert zur Bestätigungsseite (K2)', async ({ page }) => {
