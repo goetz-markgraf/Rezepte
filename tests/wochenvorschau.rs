@@ -426,10 +426,16 @@ async fn wochenvorschau_enthaelt_link_zur_not_made_suche() {
     // When: GET /wochenvorschau
     let (_status, body) = get_body(app, "/wochenvorschau").await;
 
-    // Then: Body enthält Link zur Suche mit Filter "Länger nicht gemacht"
+    // Then: Body enthält Link zur Suche mit Filter "Länger nicht gemacht" und Kategorie Mittagessen
     assert!(
         body.contains("filter=laenger-nicht-gemacht"),
         "Body sollte Link zu '/?filter=laenger-nicht-gemacht' enthalten"
+    );
+
+    // And: Link enthält auch Kategorie=Mittagessen (Story 35)
+    assert!(
+        body.contains("kategorie=Mittagessen"),
+        "Body sollte Link mit '&kategorie=Mittagessen' enthalten"
     );
 
     // And: Button hat korrekte CSS-Klasse
@@ -438,9 +444,9 @@ async fn wochenvorschau_enthaelt_link_zur_not_made_suche() {
         "Body sollte CSS-Klasse 'not-made-button' enthalten"
     );
 
-    // And: Button hat korrektes ARIA-Label
+    // And: Button hat korrektes ARIA-Label (Story 35: Mittagessen-spezifisch)
     assert!(
-        body.contains("Rezepte anzeigen, die länger nicht gemacht wurden"),
+        body.contains("Mittagessen-Rezepte anzeigen, die länger nicht gemacht wurden"),
         "Body sollte ARIA-Label für Barrierefreiheit enthalten"
     );
 
