@@ -1,33 +1,64 @@
 import { test, expect } from '@playwright/test';
 
+// Hilfsfunktion: Datum formatieren wie der Picker ("Di 31.3", "Fr 3.4")
+function formatPickerDate(date: Date): string {
+  const weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  const day = weekdays[date.getDay()];
+  const d = date.getDate();
+  const m = date.getMonth() + 1;
+  return `${day} ${d}.${m}`;
+}
+
+// Hilfsfunktion: Datum als Eingabestring ("4.4.2026")
+function formatInputDate(date: Date): string {
+  return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`;
+}
+
+// Morgen berechnen
+function tomorrow(): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d;
+}
+
+// Datum in N Tagen berechnen
+function inDays(n: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
 test.describe('Wochen-Picker erweitert (Story 29)', () => {
 
   // K1: Picker zeigt 10 Tage ab morgen
   test('sollte 10 Tage anzeigen, beginnend mit morgen', async ({ page }) => {
-    // Given: Das Formular ist geöffnet (heute ist Montag, 30.03.2026)
+    // Given: Das Formular ist geöffnet
     await page.goto('/recipes/new');
     
     // Then: Werden 10 Tage angezeigt
     const buttons = page.locator('.weekday-btn');
     await expect(buttons).toHaveCount(10);
     
-    // Erster Button ist morgen (Di 31.3)
-    await expect(buttons.nth(0)).toContainText('Di 31.3');
+    // Erster Button ist morgen
+    const expectedFirst = formatPickerDate(tomorrow());
+    await expect(buttons.nth(0)).toContainText(expectedFirst);
     
-    // Letzter Button ist in 10 Tagen (Do 9.4)
-    await expect(buttons.nth(9)).toContainText('Do 9.4');
+    // Letzter Button ist in 10 Tagen
+    const expectedLast = formatPickerDate(inDays(10));
+    await expect(buttons.nth(9)).toContainText(expectedLast);
   });
 
   // K2: Klick auf Tag setzt korrektes Datum
   test('sollte beim Klick auf den 5. Tag das korrekte Datum setzen', async ({ page }) => {
-    // Given: Heute ist Montag, 30.03.2026
+    // Given: Das Formular ist geöffnet
     await page.goto('/recipes/new');
     
-    // When: Der Nutzer auf den 5. Tag klickt (Offset 4 = Sa 04.04)
+    // When: Der Nutzer auf den 5. Tag klickt (Offset 4 = morgen + 4 Tage)
     await page.locator('.weekday-btn').nth(4).click();
     
-    // Then: Enthält das Datumsfeld "4.4.2026"
-    await expect(page.locator('input[name="planned_date"]')).toHaveValue('4.4.2026');
+    // Then: Enthält das Datumsfeld das korrekte Datum (morgen + 4 Tage)
+    const expectedDate = formatInputDate(inDays(5));
+    await expect(page.locator('input[name="planned_date"]')).toHaveValue(expectedDate);
     
     // And: Der Tag ist als aktiv markiert
     await expect(page.locator('.weekday-btn').nth(4)).toHaveAttribute('aria-pressed', 'true');
@@ -35,17 +66,19 @@ test.describe('Wochen-Picker erweitert (Story 29)', () => {
 
   // K3: Beginn bei morgen (nicht Montag)
   test('sollte mit morgen beginnen, nicht mit dem nächsten Montag', async ({ page }) => {
-    // Given: Heute ist Montag, 30.03.2026
+    // Given: Das Formular ist geöffnet
     await page.goto('/recipes/new');
     
     // When: Der Picker wird angezeigt
-    // Then: Der erste Tag ist morgen (Di 31.3), nicht der nächste Montag
+    // Then: Der erste Tag ist morgen
     const firstButton = page.locator('.weekday-btn').nth(0);
-    await expect(firstButton).toContainText('Di 31.3');
+    const expectedFirst = formatPickerDate(tomorrow());
+    await expect(firstButton).toContainText(expectedFirst);
     
-    // Es gibt KEINEN Montag-Button vor dem ersten Tag
+    // Es gibt KEINEN heutigen Tag als ersten Button
+    const todayText = formatPickerDate(new Date());
     const firstButtonText = await firstButton.innerText();
-    expect(firstButtonText).not.toContain('Mo 30.3');
+    expect(firstButtonText).not.toContain(todayText);
   });
 
   // K4: Monatswechsel wird korrekt angezeigt
@@ -65,13 +98,15 @@ test.describe('Wochen-Picker erweitert (Story 29)', () => {
 
   // K5: Aktiver Tag wird hervorgehoben (Edit-Formular)
   test('sollte vorhandenes planned_date in den nächsten 10 Tagen als aktiv markieren', async ({ page }) => {
-    // Given: Heute ist Montag, 30.03.2026
-    
-    // Erst Rezept anlegen mit Datum übermorgen (Mi 1.4)
+    // Übermorgen als planned_date wählen (Offset 1 im Picker = morgen+1 = übermorgen)
+    const targetDate = inDays(2);
+    const targetDateInput = formatInputDate(targetDate);
+
+    // Erst Rezept anlegen mit Datum übermorgen
     await page.goto('/recipes/new');
     await page.fill('input[name="title"]', 'Test aktiver Tag');
     await page.check('input[name="categories"][value="Mittagessen"]');
-    await page.fill('input[name="planned_date"]', '1.4.2026');
+    await page.fill('input[name="planned_date"]', targetDateInput);
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/\/recipes\/\d+/);
     
@@ -79,7 +114,7 @@ test.describe('Wochen-Picker erweitert (Story 29)', () => {
     await page.locator('a[href*="/edit"]').click();
     await expect(page).toHaveURL(/\/recipes\/\d+\/edit/);
     
-    // Then: Ist der Tag "Mi 1.4" als aktiv markiert (Offset 1 = Mi 1.4)
+    // Then: Ist der Tag übermorgen als aktiv markiert (Offset 1 im Picker = übermorgen)
     await expect(page.locator('.weekday-btn').nth(1)).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.weekday-btn').nth(1)).toHaveClass(/active/);
   });
