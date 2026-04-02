@@ -63,6 +63,8 @@ test.describe('Rezept löschen', () => {
     await expect(page).toHaveURL(/\/\?deleted=/);
     await expect(page.locator('.success')).toContainText(uniqueTitle);
     await expect(page.locator('.success')).toContainText('wurde gelöscht');
+    // Warte auf vollständiges Laden der Liste
+    await expect(page.locator('.recipe-list')).toBeVisible();
     await expect(page.locator('.recipe-list')).not.toContainText(uniqueTitle);
   });
 

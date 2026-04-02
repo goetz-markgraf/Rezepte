@@ -31,6 +31,7 @@
             hx-trigger="input changed delay:400ms"
             hx-target="#duplicate-hint"
             hx-include="[name='title']"
+            hx-sync="this:replace"
             {% if let Some(id) = recipe_id %}
             hx-vals='{"exclude_id": {{ id }}}'
             {% endif %}

@@ -108,12 +108,17 @@ test.describe('Wochen-Picker erweitert (Story 29)', () => {
     await page.check('input[name="categories"][value="Mittagessen"]');
     await page.fill('input[name="planned_date"]', targetDateInput);
     await page.click('button[type="submit"]');
-    await expect(page).toHaveURL(/\/recipes\/\d+/);
-    
-    // When: Der Nutzer die Bearbeiten-Seite öffnet
-    await page.locator('a[href*="/edit"]').click();
+    await page.waitForURL(/\/recipes\/\d+$/);
+
+    // ID aus der URL extrahieren und direkt zur Edit-Seite navigieren
+    const url = page.url();
+    const id = url.match(/\/recipes\/(\d+)$/)?.[1];
+    await page.goto(`/recipes/${id}/edit`);
     await expect(page).toHaveURL(/\/recipes\/\d+\/edit/);
-    
+
+    // Warten bis die Buttons existieren (dynamisch per JS erstellt)
+    await expect(page.locator('.weekday-btn')).toHaveCount(10);
+
     // Then: Ist der Tag übermorgen als aktiv markiert (Offset 1 im Picker = übermorgen)
     await expect(page.locator('.weekday-btn').nth(1)).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.weekday-btn').nth(1)).toHaveClass(/active/);

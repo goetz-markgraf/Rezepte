@@ -1,6 +1,14 @@
 import { test, expect } from '@playwright/test';
 
 /**
+ * Erzeugt einen eindeutigen String aus Timestamp + Zufallszahl,
+ * damit parallele Test-Worker keine Kollisionen erzeugen.
+ */
+function uid(): string {
+  return `${Date.now()}${Math.floor(Math.random() * 100000)}`;
+}
+
+/**
  * Erstellt ein Rezept über das Formular und wartet auf die Detailseite.
  * Gibt die ID des neuen Rezepts zurück.
  */
@@ -9,28 +17,38 @@ async function createRecipe(page: import('@playwright/test').Page, title: string
   await page.fill('input[name="title"]', title);
   await page.check('input[name="categories"][value="Mittagessen"]');
   await page.click('button[type="submit"]');
-  await expect(page).toHaveURL(/\/recipes\/\d+/);
+  await page.waitForURL(/\/recipes\/\d+$/);
   const url = page.url();
-  return url.split('/').pop()!;
+  const id = url.match(/\/recipes\/(\d+)$/)?.[1];
+  return id!;
 }
 
 /**
  * Gibt den Titel-Input ein und wartet auf HTMX-Debounce + Antwort.
  * Verwendet pressSequentially() für echte Tastaturevents, die HTMX triggern.
+ *
+ * Das Template nutzt hx-sync="this:replace", wodurch HTMX ältere laufende
+ * Requests abbricht und nur die letzte Antwort in den DOM injiziert.
+ *
+ * Wartet explizit länger als der HTMX-Debounce (400ms) damit der Request
+ * abgesendet wird und die Antwort im DOM landet.
  */
 async function typeTitle(page: import('@playwright/test').Page, title: string): Promise<void> {
   const input = page.locator('input[name="title"]');
-  await input.clear();
+  // Triple-click markiert den gesamten Text, pressSequentially überschreibt ihn.
+  await input.click({ clickCount: 3 });
   await input.pressSequentially(title);
-  // Warten auf HTMX-Debounce (400ms) + Netzwerkanfrage
-  await page.waitForTimeout(700);
+  // Mindestens Debounce (400ms) + Netzwerk-Puffer warten.
+  // Die nachfolgenden Assertions (toContainText etc.) haben eigene Timeouts
+  // und warten auf den stabilen DOM-Zustand.
+  await page.waitForTimeout(600);
 }
 
 test.describe('Duplikaterkennung bei Titeleingabe', () => {
   test('K1: Duplikat-Hinweis erscheint bei ähnlichem Titel', async ({ page }) => {
     // Given: Ein eindeutiges Rezept existiert
     // Strategie: rezeptTitel = "Dinkel<ts>brot", suchbegriff = "<ts>" (Substring)
-    const ts = Date.now();
+    const ts = uid();
     const rezeptTitel = `Dinkel${ts}brot`;
     const suchbegriff = String(ts);
     await createRecipe(page, rezeptTitel);
@@ -53,7 +71,7 @@ test.describe('Duplikaterkennung bei Titeleingabe', () => {
 
   test('K3: Hinweis verschwindet bei keiner Übereinstimmung', async ({ page }) => {
     // Given: Ein eindeutiges Rezept existiert
-    const ts = Date.now();
+    const ts = uid();
     const rezeptTitel = `Dinkel${ts}brot`;
     const suchbegriff = String(ts);
     await createRecipe(page, rezeptTitel);
@@ -72,7 +90,7 @@ test.describe('Duplikaterkennung bei Titeleingabe', () => {
 
   test('K1 Edge: Kein Hinweis bei kurzem Titel (< 3 Zeichen)', async ({ page }) => {
     // Given: Rezept existiert
-    const ts = Date.now();
+    const ts = uid();
     await createRecipe(page, `Dinkel${ts}brot`);
     await page.goto('/recipes/new');
 
@@ -85,12 +103,13 @@ test.describe('Duplikaterkennung bei Titeleingabe', () => {
 
   test('K4: Aktuelles Rezept nicht als Duplikat beim Bearbeiten', async ({ page }) => {
     // Given: Ein eindeutiges Rezept existiert
-    const ts = Date.now();
+    const ts = uid();
     const rezeptTitel = `Dinkel${ts}brot`;
     const id = await createRecipe(page, rezeptTitel);
 
     // And: Bearbeitungsformular geöffnet
     await page.goto(`/recipes/${id}/edit`);
+    await expect(page).toHaveURL(`/recipes/${id}/edit`);
 
     // When: Benutzer tippt nochmal den gleichen Titel ein + wartet
     await typeTitle(page, rezeptTitel);
@@ -101,7 +120,7 @@ test.describe('Duplikaterkennung bei Titeleingabe', () => {
 
   test('K5: Speichern trotz Hinweis möglich', async ({ page }) => {
     // Given: Ein eindeutiges Rezept existiert
-    const ts = Date.now();
+    const ts = uid();
     const rezeptTitel = `Dinkel${ts}brot`;
     const neuerTitel = `Dinkel${ts}kuchen`;
     const suchbegriff = String(ts);
@@ -128,7 +147,7 @@ test.describe('Duplikaterkennung bei Titeleingabe', () => {
 
   test('K2: Jeder Kandidat enthält Link zur Detailansicht', async ({ page }) => {
     // Given: Ein eindeutiges Rezept existiert
-    const ts = Date.now();
+    const ts = uid();
     const rezeptTitel = `Dinkel${ts}brot`;
     const suchbegriff = String(ts);
     const id = await createRecipe(page, rezeptTitel);
@@ -150,7 +169,7 @@ test.describe('Duplikaterkennung bei Titeleingabe', () => {
 
   test('K6: Ähnlichkeitssuche ist case-insensitiv', async ({ page }) => {
     // Given: Ein Rezept in Kleinbuchstaben existiert
-    const ts = Date.now();
+    const ts = uid();
     const rezeptTitel = `dinkel${ts}brot`;
     const suchbegriffGross = String(ts).toUpperCase();
     // Timestamps bestehen nur aus Ziffern, daher ist toUpperCase() gleichwertig

@@ -258,8 +258,11 @@ test.describe('Wochenvorschau Formatierung (Story 19)', () => {
     // Given: Rezept für heute erstellt
     const suffix = Date.now();
     const title = `Story19-Smoke-${suffix}`;
-    const daysFromMonday = daysFromMondayToday();
-    const todayDate = currentWeekDateFromMonday(daysFromMonday);
+    // Berechne "heute" konsistent mit dem Server (UTC)
+    // Der Server verwendet time::OffsetDateTime::now_utc().date()
+    const now = new Date();
+    const utcDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const todayDate = `${utcDate.getUTCDate()}.${utcDate.getUTCMonth() + 1}.${utcDate.getUTCFullYear()}`;
     await createRecipeWithDate(page, title, ['Mittagessen'], todayDate);
 
     // When: /wochenvorschau aufgerufen

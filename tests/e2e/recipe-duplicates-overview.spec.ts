@@ -121,9 +121,17 @@ test.describe('Dubletten-Übersicht', () => {
     // When: Benutzer öffnet /recipes/duplicates
     await page.goto('/recipes/duplicates');
 
+    // Warte bis die Dubletten-Seite geladen ist
+    await expect(page.locator('h1')).toContainText('Mögliche Dubletten');
+    
+    // Warte kurz auf die Berechnung der Dubletten
+    await page.waitForTimeout(100);
+
     // Then: Beide Titel erscheinen genau einmal auf der Seite (Deduplizierung)
     // Der Timestamp macht die Titel eindeutig → exakt ein Paar
     const titleElements = page.locator('.duplicate-card-title');
+    // Warte bis mindestens ein Element sichtbar ist
+    await expect(titleElements.first()).toBeVisible();
     const allTitles = await titleElements.allTextContents();
     const matchingTitles = allTitles.filter(t => t.includes(String(ts)));
 
