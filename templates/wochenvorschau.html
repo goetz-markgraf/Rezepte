@@ -12,6 +12,13 @@
             <span class="kw-label" aria-live="polite">{{ kw_anzeige }}</span>
             {% if is_current_week %}
             <span class="current-week-badge">Diese Woche</span>
+            {% else %}
+            <a href="/wochenvorschau" class="current-week-badge current-week-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                </svg><span>Heute</span>
+            </a>
             {% endif %}
         </h1>
         <a href="{{ next_week_url }}" class="wochen-nav-btn wochen-nav-next" aria-label="Nächste Woche">

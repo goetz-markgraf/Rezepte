@@ -173,6 +173,18 @@ header .site-title:hover {
     border-radius: 0.25rem;
     padding: 0.125rem 0.5rem;
     vertical-align: middle;
+    text-decoration: none;
+}
+
+.current-week-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    text-decoration: none;
+}
+
+.current-week-link span {
+    text-decoration: none;
 }
 
 .kw-label {
