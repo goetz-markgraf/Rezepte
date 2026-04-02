@@ -86,7 +86,7 @@ Spezifische Features für die Wochenplanung am Mittwoch/Donnerstag.
 | 30 | [Wochenpicker zeigt geplantes Essen](./30-wochenpicker-geplantes-essen/story.md) | Abgeschlossen |
 | 33 | [Wochenübersicht Navigation mit Pfeiltasten](./33-wochenuebersicht-navigation/story.md) | Abgeschlossen |
 | 34 | [Suche "Länger nicht gemacht" per Klick in der Wochenübersicht](./34-suche-lange-nicht-gemacht-wochenuebersicht/story.md) | Abgeschlossen |
-| 35 | [Suche "Länger nicht gemacht" mit vorselektiertem Mittagessen-Filter](./35-suche-lange-nicht-gemacht-mit-mittagessen/story.md) | In Arbeit |
+| 35 | [Suche "Länger nicht gemacht" mit vorselektiertem Mittagessen-Filter](./35-suche-lange-nicht-gemacht-mit-mittagessen/story.md) | Abgeschlossen |
 
 ---
 
