@@ -21,7 +21,7 @@ Story 37 ist vollständig und korrekt implementiert. Der Toggle-Button zum Ein-/
 | 4. CSS-Styles | ✅ | `.filter-toggle-btn`, `.filter-panel--collapsed`, `.filter-active-indicator` vorhanden, Fokus-Indikator gesetzt. |
 | 5. Toggle-URL in bestehenden URL-Builder-Funktionen | ✅ | `filter_collapsed` wird bewusst **nicht** in `build_category_toggle_url`, `build_not_made_toggle_url`, `build_next_seven_days_toggle_url`, `build_bewertung_toggle_url` und `build_current_query_string` weitergereicht. |
 | 6. Integrations-Tests (`tests/recipe_filter_collapse.rs`) | ✅ | 6 Tests: collapsed-Klasse, kein collapsed ohne Parameter, Aktiv-Indikator, Toggle-URL-Prüfungen — alle grün. |
-| 7. E2E-Tests (`tests/e2e/filter-collapse.spec.ts`) | ✅ | 8 Tests (K1-K9): alle grün, einschließlich JS-disabled-Test. |
+| 7. E2E-Tests (`tests/e2e/filter-collapse.spec.ts`) | ✅ | 10 Tests (K1-K10): alle grün, einschließlich JS-disabled-Test und K10-Tests für Wochenübersicht-Links. |
 | 8. Barrierefreiheit & Qualitätssicherung | ✅ | `aria-expanded`, `aria-controls`, `aria-hidden` korrekt. Clippy ohne Warnungen. |
 
 ---
@@ -39,6 +39,7 @@ Story 37 ist vollständig und korrekt implementiert. Der Toggle-Button zum Ein-/
 | **K7: Filter-Links aus gespeicherten Filtern** | ✅ | `build_current_query_string` enthält bewusst kein `filter_collapsed`. Gespeicherte Filter öffnen immer ausgeklappt. E2E-Test vorhanden. |
 | **K8: Funktioniert ohne JavaScript** | ✅ | Toggle ist ein einfacher `<a>`-Link, kein JS nötig. E2E-Test mit `javaScriptEnabled: false` besteht. |
 | **K9: Barrierefreiheit** | ✅ | `aria-expanded="true/false"` am Toggle, `aria-controls="filter-panel"`, `aria-hidden="true"` am Panel wenn eingeklappt, `aria-label="Filterbereich"` am Panel. E2E-Test verifiziert ARIA-Attribute. |
+| **K10: Links aus Wochenübersicht klappen Filter ein** | ✅ | „Länger nicht gemacht"-Button und „Zur Rezeptliste"-Link enthalten `filter_collapsed=1`. E2E-Tests vorhanden und grün. |
 
 ---
 
@@ -59,7 +60,7 @@ Story 37 ist vollständig und korrekt implementiert. Der Toggle-Button zum Ein-/
 ### Testing
 - [x] Unit Tests geschrieben und bestanden: 7 Unit-Tests für `build_filter_collapsed_toggle_url` in `routes::recipes::tests`
 - [x] Integrationstests geschrieben und bestanden: 6 Tests in `tests/recipe_filter_collapse.rs`
-- [x] E2E Tests geschrieben und bestanden: 8 Tests in `tests/e2e/filter-collapse.spec.ts` (K1–K9 abgedeckt)
+- [x] E2E Tests geschrieben und bestanden: 10 Tests in `tests/e2e/filter-collapse.spec.ts` (K1–K10 abgedeckt)
 
 ### Funktionale Anforderungen
 - [x] Alle Akzeptanzkriterien erfüllt
@@ -106,7 +107,9 @@ Story 37 ist vollständig und korrekt implementiert. Der Toggle-Button zum Ein-/
 | K8: Funktioniert ohne JavaScript | ✅ |
 | K1: Toggle-Button immer sichtbar | ✅ |
 | K9: Barrierefreiheit — aria-expanded korrekt | ✅ |
-| **Gesamt: 240 Tests bestanden, 1 skipped (unrelated)** | ✅ |
+| K10: „Länger nicht gemacht"-Button von Wochenübersicht klappt Filter ein | ✅ |
+| K10: „Zur Rezeptliste"-Link von Wochenübersicht klappt Filter ein | ✅ |
+| **Gesamt: 242 Tests bestanden, 1 skipped (unrelated)** | ✅ |
 
 ### Code-Quality Checks
 
@@ -114,7 +117,7 @@ Story 37 ist vollständig und korrekt implementiert. Der Toggle-Button zum Ein-/
 |-------|----------|
 | `cargo clippy -- -D warnings` | ✅ Keine Warnungen |
 | `cargo test` | ✅ 160 Tests, 0 Fehler |
-| `npm run test:e2e` | ✅ 240 bestanden, 1 skipped |
+| `npm run test:e2e` | ✅ 242 bestanden, 1 skipped |
 
 ---
 
@@ -140,8 +143,9 @@ Story 37 ist vollständig und korrekt implementiert. Der Toggle-Button zum Ein-/
 
 **Gesamtbewertung:** ✅ Abgenommen
 
-Die Implementierung ist vollständig, technisch korrekt und gut getestet. Alle 9 Akzeptanzkriterien sind erfüllt, einschließlich der nicht-funktionalen Anforderungen (Barrierefreiheit, Funktion ohne JS, DeepLink-Fähigkeit). Der Code ist sauber, folgt den bestehenden Mustern und enthält aussagekräftige Kommentare. Die Teststrategie deckt Unit-, Integrations- und E2E-Ebene lückenlos ab.
+Die Implementierung ist vollständig, technisch korrekt und gut getestet. Alle 10 Akzeptanzkriterien sind erfüllt, einschließlich der nicht-funktionalen Anforderungen (Barrierefreiheit, Funktion ohne JS, DeepLink-Fähigkeit) sowie K10 (Links aus der Wochenübersicht klappen Filter ein). Der Code ist sauber, folgt den bestehenden Mustern und enthält aussagekräftige Kommentare. Die Teststrategie deckt Unit-, Integrations- und E2E-Ebene lückenlos ab.
 
 **Nächste Schritte:**
 1. Story 37 als "Abgeschlossen" markieren
 2. Optional: Kleines `aria-label` am Toggle-Button ergänzen (Prio 2)
+3. K10 ist implementiert und getestet.
