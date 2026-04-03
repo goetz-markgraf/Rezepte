@@ -69,6 +69,10 @@ Beide Partner, die die App hauptsächlich auf dem Smartphone oder Tablet nutzen.
 - [ ] **K7: Filter-Links aus gespeicherten Filtern**
   - Gespeicherte Filter-Links zeigen nach Klick die Filter standardmäßig ausgeklappt (da kein `filter_collapsed`-Parameter im gespeicherten Link)
 
+- [ ] **K10: Links aus der Wochenübersicht klappen Filter ein**
+  - Alle Links aus der Wochenübersicht, die zur Rezeptliste führen (z.B. Klick auf ein geplantes Rezept oder den "Länger nicht gemacht"-Link), enthalten den Parameter `filter_collapsed=1`
+  - Beim Ankommen in der Rezeptliste sind die Filter damit direkt eingeklappt, sodass sofort mehr Platz für die Rezepte sichtbar ist
+
 ### Nicht-funktionale Kriterien
 
 - [ ] **K8: Funktioniert ohne JavaScript**
