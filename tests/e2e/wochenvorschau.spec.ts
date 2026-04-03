@@ -172,15 +172,15 @@ test.describe('Wochenvorschau (Story 18)', () => {
     // Given: /wochenvorschau wird aufgerufen
     await page.goto('/wochenvorschau');
 
-    // Then: Link "Zur Rezeptliste" vorhanden
-    const backLink = page.locator('a[href="/"]', { hasText: 'Zur Rezeptliste' });
+    // Then: Link "Zur Rezeptliste" vorhanden (mit filter_collapsed=1)
+    const backLink = page.locator('a[href="/?filter_collapsed=1"]', { hasText: 'Zur Rezeptliste' });
     await expect(backLink).toBeVisible();
 
     // When: Link geklickt
     await backLink.click();
 
-    // Then: Benutzer ist auf der Rezeptliste "/"
-    await expect(page).toHaveURL(/\/$/);
+    // Then: Benutzer ist auf der Rezeptliste mit eingeklappten Filtern
+    await expect(page).toHaveURL(/filter_collapsed=1/);
   });
 
   test('K9: Semantisches HTML — Wochentage als dt-Elemente', async ({ page }) => {

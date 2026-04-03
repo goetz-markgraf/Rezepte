@@ -163,4 +163,47 @@ test.describe('Filter-Einklappen (Story 37)', () => {
     await expect(filterPanel).toHaveAttribute('aria-hidden', 'true');
   });
 
+  test('K10: "Länger nicht gemacht"-Button von Wochenübersicht klappt Filter ein', async ({ page }) => {
+    // Gegeben: Wochenübersicht ist geöffnet
+    await page.goto('/wochenvorschau');
+
+    // Wenn: Nutzer klickt auf "Länger nicht gemacht"-Button
+    const notMadeBtn = page.locator('.not-made-button');
+    await expect(notMadeBtn).toBeVisible();
+    await notMadeBtn.click();
+
+    // Dann: Landet auf der Rezeptliste (nicht mehr auf /wochenvorschau)
+    await expect(page).not.toHaveURL(/wochenvorschau/);
+
+    // Und: URL enthält filter_collapsed=1
+    await expect(page).toHaveURL(/filter_collapsed=1/);
+
+    // Und: URL enthält filter=laenger-nicht-gemacht
+    await expect(page).toHaveURL(/filter=laenger-nicht-gemacht/);
+
+    // Und: Filter sind eingeklappt (filter-panel nicht sichtbar)
+    const filterPanel = page.locator('#filter-panel');
+    await expect(filterPanel).not.toBeVisible();
+  });
+
+  test('K10: "Zur Rezeptliste"-Link von Wochenübersicht klappt Filter ein', async ({ page }) => {
+    // Gegeben: Wochenübersicht ist geöffnet
+    await page.goto('/wochenvorschau');
+
+    // Wenn: Nutzer klickt auf "Zur Rezeptliste"-Link
+    const rezeptlisteLink = page.locator('a', { hasText: 'Zur Rezeptliste' });
+    await expect(rezeptlisteLink).toBeVisible();
+    await rezeptlisteLink.click();
+
+    // Dann: Landet auf der Rezeptliste (nicht mehr auf /wochenvorschau)
+    await expect(page).not.toHaveURL(/wochenvorschau/);
+
+    // Und: URL enthält filter_collapsed=1
+    await expect(page).toHaveURL(/filter_collapsed=1/);
+
+    // Und: Filter sind eingeklappt (filter-panel nicht sichtbar)
+    const filterPanel = page.locator('#filter-panel');
+    await expect(filterPanel).not.toBeVisible();
+  });
+
 });
