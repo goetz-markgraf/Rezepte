@@ -3,6 +3,7 @@ use anyhow::Result;
 mod config;
 mod db;
 mod error;
+mod markdown;
 mod models;
 mod routes;
 mod templates;

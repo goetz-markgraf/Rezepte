@@ -25,14 +25,14 @@
     {% if let Some(ingredients) = ingredients %}
     <section class="ingredients">
         <h2>Zutaten</h2>
-        <pre>{{ ingredients }}</pre>
+        <div class="markdown-content">{{ ingredients|safe }}</div>
     </section>
     {% endif %}
 
     {% if let Some(instructions) = instructions %}
     <section class="instructions">
         <h2>Anleitung</h2>
-        <pre>{{ instructions }}</pre>
+        <div class="markdown-content">{{ instructions|safe }}</div>
     </section>
     {% endif %}
 
@@ -49,4 +49,5 @@
         </div>
     </footer>
 </article>
+<script src="/static/js/checkboxes.js"></script>
 {% endblock %}

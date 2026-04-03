@@ -2,7 +2,10 @@ use crate::error::AppError;
 use crate::models::get_recipes_current_week;
 use crate::templates::{Wochentag, WochentagesEintragItem, WochenvorschauTemplate};
 use askama::Template;
-use axum::{extract::{Query, State}, response::Html};
+use axum::{
+    extract::{Query, State},
+    response::Html,
+};
 use serde::Deserialize;
 use sqlx::SqlitePool;
 use std::sync::Arc;
@@ -386,8 +389,11 @@ mod tests {
         for date in test_dates {
             let formatted = format_iso_week(date);
             let parsed = parse_iso_week(&formatted).unwrap();
-            assert_eq!(parsed, date,
-                "parse_iso_week(format_iso_week({:?})) sollte {:?} zurückgeben", date, date);
+            assert_eq!(
+                parsed, date,
+                "parse_iso_week(format_iso_week({:?})) sollte {:?} zurückgeben",
+                date, date
+            );
         }
     }
 

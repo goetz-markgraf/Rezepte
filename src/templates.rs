@@ -151,7 +151,9 @@ pub struct RecipeDetailTemplate {
     pub id: i64,
     pub title: String,
     pub categories: Vec<String>,
+    /// Gerendetes Markdown-HTML (sanitiert). Wird im Template per `|safe` ausgegeben.
     pub ingredients: Option<String>,
+    /// Gerendetes Markdown-HTML (sanitiert). Wird im Template per `|safe` ausgegeben.
     pub instructions: Option<String>,
     pub created_at: String,
     pub updated_at: String,

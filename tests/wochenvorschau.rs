@@ -322,7 +322,9 @@ async fn wochenvorschau_ohne_parameter_zeigt_navigation_links() {
 
     // Then: Navigation enthält Vorherige/Nächste Woche Links
     assert!(
-        body.contains("wochenvorschau-nav") || body.contains("aria-label=\"Vorherige Woche\"") || body.contains("<"),
+        body.contains("wochenvorschau-nav")
+            || body.contains("aria-label=\"Vorherige Woche\"")
+            || body.contains("<"),
         "Body sollte Navigationselemente enthalten"
     );
 }

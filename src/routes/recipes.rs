@@ -1,4 +1,5 @@
 use crate::error::AppError;
+use crate::markdown::render_and_sanitize;
 use crate::models::recipe::validate_rating;
 use crate::models::{
     create_recipe, create_saved_filter, delete_recipe, delete_saved_filter, determine_merge_target,
@@ -712,12 +713,14 @@ pub async fn show_recipe(
     };
 
     let planned_date = format_planned_date_long(recipe.planned_date);
+    let ingredients = render_and_sanitize(recipe.ingredients.as_deref());
+    let instructions = render_and_sanitize(recipe.instructions.as_deref());
     let template = RecipeDetailTemplate {
         id: recipe.id,
         title: recipe.title.clone(),
         categories: recipe.categories_vec(),
-        ingredients: recipe.ingredients,
-        instructions: recipe.instructions,
+        ingredients,
+        instructions,
         created_at: format_date(&recipe.created_at),
         updated_at: format_date(&recipe.updated_at),
         success: query.success.as_deref() == Some("1"),

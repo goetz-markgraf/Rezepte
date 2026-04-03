@@ -249,3 +249,118 @@ async fn show_recipe_displays_formatted_date() {
         "Datum sollte im deutschen Format (TT.MM.JJJJ) angezeigt werden"
     );
 }
+
+// === Story 36: Markdown-Rendering ===
+
+#[tokio::test]
+async fn show_recipe_renders_ingredient_list_as_ul() {
+    // Given: Ein Rezept mit Zutaten als Aufzählungsliste wurde erstellt
+    let (app, _temp) = setup_test_app().await;
+    let id = create_test_recipe(
+        &app,
+        "title=Markdown-Test&categories=Mittagessen&ingredients=-%20500g%20Mehl%0A-%201%20Ei%0A-%20250ml%20Milch",
+    )
+    .await;
+
+    // When: GET /recipes/{id} aufgerufen wird
+    let (status, body) = get_body(app, &format!("/recipes/{}", id)).await;
+
+    // Then: HTTP 200, HTML enthält <ul> statt rohem "- " Text
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        body.contains("<ul>"),
+        "Zutaten-Liste sollte als <ul> gerendert werden"
+    );
+    assert!(
+        body.contains("<li>"),
+        "Zutaten-Punkte sollten als <li> gerendert werden"
+    );
+    assert!(
+        !body.contains("- 500g Mehl"),
+        "Markdown-Syntax '- ' sollte nicht als Rohtext sichtbar sein"
+    );
+}
+
+#[tokio::test]
+async fn show_recipe_renders_numbered_instructions_as_ol() {
+    // Given: Ein Rezept mit nummerierter Zubereitungsliste
+    let (app, _temp) = setup_test_app().await;
+    let id = create_test_recipe(
+        &app,
+        "title=Nummeriert&categories=Mittagessen&instructions=1.%20Ofen%20vorheizen%0A2.%20Teig%20kneten",
+    )
+    .await;
+
+    // When: GET /recipes/{id} aufgerufen wird
+    let (status, body) = get_body(app, &format!("/recipes/{}", id)).await;
+
+    // Then: HTTP 200, HTML enthält <ol>
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        body.contains("<ol>"),
+        "Nummerierte Liste sollte als <ol> gerendert werden"
+    );
+}
+
+#[tokio::test]
+async fn show_recipe_renders_bold_text_as_strong() {
+    // Given: Ein Rezept mit Fettschrift in der Zubereitung
+    let (app, _temp) = setup_test_app().await;
+    let id = create_test_recipe(
+        &app,
+        "title=Fettschrift-Test&categories=Mittagessen&instructions=**Wichtig%3A**%20Ofen%20vorheizen",
+    )
+    .await;
+
+    // When: GET /recipes/{id} aufgerufen wird
+    let (status, body) = get_body(app, &format!("/recipes/{}", id)).await;
+
+    // Then: HTTP 200, HTML enthält <strong>
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        body.contains("<strong>"),
+        "Fettschrift sollte als <strong> gerendert werden"
+    );
+    assert!(
+        !body.contains("**Wichtig"),
+        "Markdown-Syntax '**' sollte nicht als Rohtext sichtbar sein"
+    );
+}
+
+#[tokio::test]
+async fn show_recipe_xss_script_tag_in_ingredients_is_sanitized() {
+    // Given: Ein Rezept mit Script-Tag in den Zutaten (XSS-Versuch)
+    let (app, _temp) = setup_test_app().await;
+    let id = create_test_recipe(
+        &app,
+        "title=XSS-Test&categories=Mittagessen&ingredients=%3Cscript%3Ealert(1)%3C%2Fscript%3E",
+    )
+    .await;
+
+    // When: GET /recipes/{id} aufgerufen wird
+    let (status, body) = get_body(app, &format!("/recipes/{}", id)).await;
+
+    // Then: HTTP 200, <script>-Tag ist nicht im HTML-Output
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        !body.contains("<script>"),
+        "XSS: <script>-Tag darf nicht im gerenderten HTML sein"
+    );
+}
+
+#[tokio::test]
+async fn show_recipe_whitespace_only_ingredients_hides_section() {
+    // Given: Ein Rezept mit nur Leerzeichen in den Zutaten
+    let (app, _temp) = setup_test_app().await;
+    let id = create_test_recipe(&app, "title=Leertest&categories=Brot&ingredients=%20%20%20").await;
+
+    // When: GET /recipes/{id} aufgerufen wird
+    let (status, body) = get_body(app, &format!("/recipes/{}", id)).await;
+
+    // Then: HTTP 200, Zutaten-Sektion wird nicht angezeigt (da nur Whitespace)
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        !body.contains(r#"class="ingredients""#),
+        "Zutaten-Sektion sollte bei reinem Whitespace ausgeblendet werden"
+    );
+}
