@@ -7,6 +7,8 @@
       nodejs_24
       bun
       opencode
+      zig
+      cargo-zigbuild
     ];
   };
 }
