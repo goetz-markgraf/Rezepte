@@ -17,7 +17,7 @@ Das Herzstück der Anwendung - Rezepte erstellen, bearbeiten, anzeigen und lösc
 | 02 | [Rezept bearbeiten](./02-rezept-bearbeiten/story.md) | Abgeschlossen |
 | 03 | [Rezept löschen mit Sicherheitsabfrage](./03-rezept-loeschen/story.md) | Abgeschlossen |
 | 04 | [Rezept-Detailansicht](./04-rezept-detailansicht/story.md) | Abgeschlossen |
-| 36 | [Markdown-Rendering in der Rezept-Detailansicht](./36-markdown-in-rezeptdetails/story.md) | In Arbeit |
+| 36 | [Markdown-Rendering in der Rezept-Detailansicht](./36-markdown-in-rezeptdetails/story.md) | Abgeschlossen |
 
 ---
 
