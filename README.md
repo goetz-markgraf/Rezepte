@@ -111,6 +111,14 @@ docker run -p 8080:8080 -v ./data:/data rezepte
 
 Dieses Projekt nutzt [OpenCode](https://opencode.ai) mit einem strukturierten Multi-Agenten-System für die Entwicklung. Stories werden in Phasen abgearbeitet: Refining → Plan → Implementierung (TDD) → Review.
 
+### Commands
+
+Commands sind direkt in OpenCode per `/`-Prefix aufrufbar.
+
+| Command | Aufruf | Aufgabe |
+|---------|--------|---------|
+| `add-story` | `/add-story <Beschreibung>` | Fügt eine neue Story zum Backlog hinzu: vergibt Story-Nummer, ordnet einem Epic zu, erstellt das Story-Verzeichnis mit rudimentärer `story.md` und trägt die Story in `stories_epics.md` ein |
+
 ### Agents
 
 Agents sind Primary-Agenten, die direkt aufgerufen oder per `@`-Mention angesprochen werden können. Sie orchestrieren den gesamten Story-Workflow.
@@ -146,14 +154,6 @@ Skills sind wiederverwendbare Instruktionsmodule, die von Agents per `skill`-Too
 | `tdd` | Zusammen mit `implement` und `rework` | BDD Dual-Loop TDD: Outer Loop (Integration Test rot → grün), Inner Loop (Unit Test rot → grün → refactor) |
 | `frag-den-user` | Bei Blockern in `complete-backlog` | Sendet eine Frage per iMessage an den User und wartet auf die Antwort (für autonome Läufe ohne aktive Benutzerinteraktion) |
 | `informiere-den-user` | Nach jeder Story in `complete-backlog` | Sendet eine Statusmeldung per iMessage, ohne auf eine Antwort zu warten |
-
-### Commands
-
-Commands sind direkt in OpenCode per `/`-Prefix aufrufbar.
-
-| Command | Aufruf | Aufgabe |
-|---------|--------|---------|
-| `add-story` | `/add-story <Beschreibung>` | Fügt eine neue Story zum Backlog hinzu: vergibt Story-Nummer, ordnet einem Epic zu, erstellt das Story-Verzeichnis mit rudimentärer `story.md` und trägt die Story in `stories_epics.md` ein |
 
 ### Story-Verzeichnisstruktur
 
