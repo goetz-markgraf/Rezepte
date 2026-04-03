@@ -137,7 +137,7 @@ Warte auf Abschluss und lies `review.md`.
 ## Abschlussbericht
 
 1. Setze den Status in `docs/stories_epics.md` auf "Abgeschlossen" und committe.
-2. Teile dem Nutzer mit:
+2. Teile dem Nutzer den Zustand mit. Nutze dafür zusätzlich den `informiere-den-user` skill
    - Welche Phasen durchlaufen wurden
    - Ergebnis der Qualitätschecks
    - Offene Prio-2-Punkte aus dem Review (zur Information)

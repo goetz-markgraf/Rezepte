@@ -29,9 +29,7 @@ Für jede Story im Plan:
 
 1. **Subagenten starten:** Rufe den `run-story` Agent mit der Story-Nummer auf
 2. **Autonomie:** Bei Unklarheiten triff Entscheidungen basierend auf Architektur und Produkt-Vision
-3. **Fortschritts-Meldung:** Nach jeder abgeschlossenen Story den Skill `informiere-den-user` laden und Nachricht senden:
-   - Inhalt: "✅ Story [Nummer] [Titel] abgeschlossen. ➡️ Nächste Story: [Nummer] [Titel]."
-4. **Blocker:** Nur bei kritischen, nicht lösbaren Blockern den Skill `frag-den-user` laden
+3. **Blocker:** Nur bei kritischen, nicht lösbaren Blockern den Skill `frag-den-user` laden
 
 ### 3. Abschluss
 
@@ -40,7 +38,6 @@ Finale Zusammenfassung via `informiere-den-user` nach Abschluss des gesamten Bac
 ## Interaktions-Richtlinien
 
 - **`frag-den-user` Skill:** Nur für grundlegende architektonische Richtungsentscheidungen
-- **`informiere-den-user` Skill:** Nach jeder abgeschlossenen Story zwingend
 - Halte nicht zwischen Stories an, außer bei echten Blockern
 - Stelle sicher, dass der Code jeder Story integriert ist, bevor die nächste beginnt
 
