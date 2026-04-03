@@ -53,7 +53,7 @@ Intelligente Filter und Suche für schnelle Rezeptfindung.
 | 11 | [Filter nach Bewertung (Beliebtheit)](./11-filter-bewertung/story.md) | Abgeschlossen |
 | 12 | [Kombinierte Filter (mehrere Filter gleichzeitig)](./12-kombinierte-filter/story.md) | Abgeschlossen |
 | 13 | [Gespeicherte Filter für Schnellzugriff](./13-gespeicherte-filter/story.md) | Abgeschlossen |
-| 37 | [Einklappen der Filter](./37-filter-einklappen/story.md) | In Arbeit |
+| 37 | [Einklappen der Filter](./37-filter-einklappen/story.md) | Abgeschlossen |
 
 ---
 
