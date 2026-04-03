@@ -229,6 +229,10 @@ pub struct IndexTemplate {
     pub save_error: Option<String>,
     /// Der Name, der beim Speichern verwendet wurde (für Fehlermeldung im Template).
     pub save_name: Option<String>,
+    /// Ob der Filterbereich eingeklappt ist (via `?filter_collapsed=1`).
+    pub filter_collapsed: bool,
+    /// URL für den Toggle-Button (ein-/ausklappen).
+    pub filter_collapsed_toggle_url: String,
 }
 
 #[derive(Debug)]

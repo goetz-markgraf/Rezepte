@@ -1060,6 +1060,52 @@ input[type="search"]:focus {
 }
 
 /* Sortier-Filter "Länger nicht gemacht" und "Nächste 7 Tage" */
+/* === Filter Toggle Button (Story 37) === */
+
+.filter-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.875rem;
+    border: 1px solid var(--border-color);
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--text-color);
+    background-color: var(--card-bg);
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+    min-height: 44px;
+    margin-bottom: 0.75rem;
+}
+
+.filter-toggle-btn:hover {
+    background-color: var(--bg-color);
+    border-color: #9ca3af;
+}
+
+.filter-toggle-btn:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.filter-active-indicator {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Filterbereich-Container */
+.filter-panel {
+    /* Keine zusätzlichen Styles nötig — Inhalt ist bereits strukturiert */
+}
+
+.filter-panel--collapsed {
+    display: none;
+}
+
+/* === Ende Filter Toggle Button === */
+
 .sort-filter {
     margin-bottom: 1.5rem;
     display: flex;

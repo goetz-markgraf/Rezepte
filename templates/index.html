@@ -55,6 +55,26 @@
     {% endif %}
 </form>
 
+<a
+    href="{{ filter_collapsed_toggle_url }}"
+    class="filter-toggle-btn"
+    aria-expanded="{{ !filter_collapsed }}"
+    aria-controls="filter-panel"
+>
+    {% if filter_collapsed %}
+        Filter ▶{% if any_filter_active %} <span class="filter-active-indicator">(aktiv)</span>{% endif %}
+    {% else %}
+        Filter ▼
+    {% endif %}
+</a>
+
+<div
+    id="filter-panel"
+    class="filter-panel{% if filter_collapsed %} filter-panel--collapsed{% endif %}"
+    aria-label="Filterbereich"
+    {% if filter_collapsed %}aria-hidden="true"{% endif %}
+>
+
 <nav class="category-filter" aria-label="Nach Kategorie filtern">
     <a
         href="{{ reset_categories_url }}"
@@ -160,6 +180,8 @@
     </form>
 </div>
 {% endif %}
+
+</div>
 
 <script>
 (function() {

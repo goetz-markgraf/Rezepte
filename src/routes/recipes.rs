@@ -87,6 +87,52 @@ pub struct IndexQuery {
     pub bewertung: Option<String>,
     pub save_error: Option<String>,
     pub save_name: Option<String>,
+    pub filter_collapsed: Option<String>,
+}
+
+/// Baut die Toggle-URL für das Ein-/Ausklappen des Filterbereichs.
+/// Eingeklappt (`true`) → gibt URL ohne `filter_collapsed`-Parameter zurück (Aufklappen).
+/// Ausgeklappt (`false`) → gibt URL mit `filter_collapsed=1` zurück (Einklappen).
+/// Alle anderen aktiven Parameter (q, kategorie, filter, bewertung) bleiben erhalten.
+pub fn build_filter_collapsed_toggle_url(
+    is_collapsed: bool,
+    active_categories: &[String],
+    search_query: &str,
+    not_made_filter_active: bool,
+    next_seven_days_filter_active: bool,
+    bewertung: Option<&str>,
+) -> String {
+    let mut params: Vec<String> = Vec::new();
+
+    if !search_query.is_empty() {
+        params.push(format!("q={}", urlencoding::encode(search_query)));
+    }
+
+    for cat in active_categories {
+        params.push(format!("kategorie={}", urlencoding::encode(cat)));
+    }
+
+    if not_made_filter_active {
+        params.push("filter=laenger-nicht-gemacht".to_string());
+    } else if next_seven_days_filter_active {
+        params.push("filter=naechste-7-tage".to_string());
+    }
+
+    if let Some(b) = bewertung {
+        params.push(format!("bewertung={}", urlencoding::encode(b)));
+    }
+
+    // Zustand umkehren: war eingeklappt → jetzt ausklappen (kein Parameter)
+    // war ausgeklappt → jetzt einklappen (filter_collapsed=1 hinzufügen)
+    if !is_collapsed {
+        params.push("filter_collapsed=1".to_string());
+    }
+
+    if params.is_empty() {
+        "/".to_string()
+    } else {
+        format!("/?{}", params.join("&"))
+    }
 }
 
 /// Extrahiert alle `kategorie`-Parameter aus dem Raw-Query-String.
@@ -446,6 +492,9 @@ pub async fn index(
     let not_made_filter_active = filter_param.as_deref() == Some("laenger-nicht-gemacht");
     let next_seven_days_filter_active = filter_param.as_deref() == Some("naechste-7-tage");
 
+    // filter_collapsed: "1" → eingeklappt, alles andere → ausgeklappt
+    let filter_collapsed = query.filter_collapsed.as_deref() == Some("1");
+
     // Bewertungsfilter: nur "gut" und "favoriten" akzeptieren, Rest ignorieren
     let bewertung: Option<String> = query.bewertung.and_then(|b| {
         if b == "gut" || b == "favoriten" {
@@ -564,6 +613,15 @@ pub async fn index(
         })
         .collect();
 
+    let filter_collapsed_toggle_url = build_filter_collapsed_toggle_url(
+        filter_collapsed,
+        &active_categories,
+        &search_query,
+        not_made_filter_active,
+        next_seven_days_filter_active,
+        bewertung.as_deref(),
+    );
+
     let template = IndexTemplate {
         recipes: recipe_items,
         deleted_title: query.deleted,
@@ -583,6 +641,8 @@ pub async fn index(
         current_query_string,
         save_error: query.save_error,
         save_name: query.save_name,
+        filter_collapsed,
+        filter_collapsed_toggle_url,
     };
     Ok(Html(render_template(template)?))
 }
@@ -1217,4 +1277,104 @@ pub async fn merge_handler(
         })?;
 
     Ok(Redirect::to(&format!("/recipes/{}?success=1", target_id)).into_response())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn toggle_url_ausgeklappt_zu_eingeklappt() {
+        // Gegeben: Filter ausgeklappt, kein aktiver Filter
+        let url = build_filter_collapsed_toggle_url(false, &[], "", false, false, None);
+        // Dann: URL enthält filter_collapsed=1
+        assert_eq!(url, "/?filter_collapsed=1");
+    }
+
+    #[test]
+    fn toggle_url_eingeklappt_zu_ausgeklappt() {
+        // Gegeben: Filter eingeklappt, kein aktiver Filter
+        let url = build_filter_collapsed_toggle_url(true, &[], "", false, false, None);
+        // Dann: URL ist "/" ohne filter_collapsed-Parameter
+        assert_eq!(url, "/");
+    }
+
+    #[test]
+    fn toggle_url_behaelt_suchbegriff() {
+        // Gegeben: Suchbegriff "pasta" aktiv, Filter ausgeklappt
+        let url = build_filter_collapsed_toggle_url(false, &[], "pasta", false, false, None);
+        // Dann: URL enthält q=pasta und filter_collapsed=1
+        assert!(url.contains("q=pasta"), "URL sollte q=pasta enthalten");
+        assert!(
+            url.contains("filter_collapsed=1"),
+            "URL sollte filter_collapsed=1 enthalten"
+        );
+    }
+
+    #[test]
+    fn toggle_url_behaelt_kategorie() {
+        // Gegeben: Kategorie "Brot" aktiv, Filter ausgeklappt
+        let url =
+            build_filter_collapsed_toggle_url(false, &["Brot".to_string()], "", false, false, None);
+        // Dann: URL enthält kategorie=Brot und filter_collapsed=1
+        assert!(
+            url.contains("kategorie=Brot"),
+            "URL sollte kategorie=Brot enthalten"
+        );
+        assert!(
+            url.contains("filter_collapsed=1"),
+            "URL sollte filter_collapsed=1 enthalten"
+        );
+    }
+
+    #[test]
+    fn toggle_url_behaelt_nicht_gemacht_filter() {
+        // Gegeben: "Länger nicht gemacht"-Filter aktiv, Filter ausgeklappt
+        let url = build_filter_collapsed_toggle_url(false, &[], "", true, false, None);
+        // Dann: URL enthält filter=laenger-nicht-gemacht und filter_collapsed=1
+        assert!(
+            url.contains("filter=laenger-nicht-gemacht"),
+            "URL sollte filter=laenger-nicht-gemacht enthalten"
+        );
+        assert!(
+            url.contains("filter_collapsed=1"),
+            "URL sollte filter_collapsed=1 enthalten"
+        );
+    }
+
+    #[test]
+    fn toggle_url_behaelt_bewertung() {
+        // Gegeben: Bewertungsfilter "gut" aktiv, Filter ausgeklappt
+        let url = build_filter_collapsed_toggle_url(false, &[], "", false, false, Some("gut"));
+        // Dann: URL enthält bewertung=gut und filter_collapsed=1
+        assert!(
+            url.contains("bewertung=gut"),
+            "URL sollte bewertung=gut enthalten"
+        );
+        assert!(
+            url.contains("filter_collapsed=1"),
+            "URL sollte filter_collapsed=1 enthalten"
+        );
+    }
+
+    #[test]
+    fn toggle_url_eingeklappt_behaelt_alle_parameter() {
+        // Gegeben: Filter eingeklappt + Kategorie + Suche aktiv
+        let url = build_filter_collapsed_toggle_url(
+            true,
+            &["Brot".to_string()],
+            "pasta",
+            false,
+            false,
+            Some("gut"),
+        );
+        // Dann: URL enthält alle Parameter AUSSER filter_collapsed
+        assert!(url.contains("kategorie=Brot"), "kategorie=Brot fehlt");
+        assert!(url.contains("q=pasta"), "q=pasta fehlt");
+        assert!(url.contains("bewertung=gut"), "bewertung=gut fehlt");
+        assert!(
+            !url.contains("filter_collapsed"),
+            "filter_collapsed sollte fehlen wenn aufgeklappt"
+        );
+    }
 }
