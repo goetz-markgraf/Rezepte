@@ -1,2 +1,5 @@
 [target.armv7-unknown-linux-gnueabihf]
-rustflags = []
+rustflags = [
+    "-C", "target-cpu=cortex-a9",
+    "-C", "target-feature=-neon,+vfp3,+vfp3d16",
+]
