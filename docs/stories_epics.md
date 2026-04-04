@@ -34,7 +34,7 @@ Das Herzstück der Anwendung - Rezepte erstellen, bearbeiten, anzeigen und lösc
 | 26 | [Nutzung von Icons](./26-nutzung-von-icons/story.md) | Abgeschlossen |
 | 31 | [Kompakteres Layout der Hauptansicht](./31-kompakteres-layout/story.md) | Abgebrochen |
 | 32 | [Neues-Rezept-Button in der Kopfzeile](./32-neues-rezept-button/story.md) | Abgeschlossen |
-| 39 | [Button "Heute" und "Dubletten Prüfen" ins Hamburger-Menü verschieben](./39-hamburger-menu-fuer-top-bar-buttons/story.md) | In Arbeit |
+| 39 | [Button "Heute" und "Dubletten Prüfen" ins Hamburger-Menü verschieben](./39-hamburger-menu-fuer-top-bar-buttons/story.md) | Abgeschlossen |
 
 ---
 
