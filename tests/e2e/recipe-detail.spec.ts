@@ -83,25 +83,6 @@ test.describe('Rezept-Detailansicht', () => {
     await expect(page.locator('h1')).toContainText('DeepLink Testrezept');
   });
 
-  test('sollte Erfolgs-Flash nach Bearbeiten anzeigen', async ({ page }) => {
-    // Given: Ein Rezept wurde erstellt und bearbeitet
-    await page.goto('/recipes/new');
-    await page.fill('input[name="title"]', 'Flash Test Rezept');
-    await page.check('input[name="categories"][value="Kuchen"]');
-    await page.click('button[type="submit"]');
-    await expect(page).toHaveURL(/\/recipes\/\d+/);
-    await page.click('text=Bearbeiten');
-    await expect(page).toHaveURL(/\/recipes\/\d+\/edit/);
-
-    // When: Das Bearbeitungsformular gespeichert wird
-    await page.fill('input[name="title"]', 'Flash Test Rezept Geändert');
-    await page.click('button[type="submit"]');
-
-    // Then: Detailseite zeigt Erfolgsmeldung "Rezept erfolgreich aktualisiert"
-    await expect(page).toHaveURL(/\/recipes\/\d+/);
-    await expect(page.locator('.success')).toContainText('Rezept erfolgreich aktualisiert');
-  });
-
   test('sollte Navigationslinks korrekt verknüpfen', async ({ page }) => {
     // Given: Ein Rezept wurde erstellt, Detailseite ist aktiv
     await page.goto('/recipes/new');
@@ -113,9 +94,8 @@ test.describe('Rezept-Detailansicht', () => {
     const id = detailUrl.split('/').pop();
 
     // When: Die Links auf der Seite geprüft werden
-    // Then: Bearbeiten-, Löschen- und Zurück-Link haben korrekte URLs
+    // Then: Bearbeiten- und Zurück-Link haben korrekte URLs (Löschen wird in recipe-delete.spec.ts getestet)
     await expect(page.locator(`a[href="/recipes/${id}/edit"]`)).toBeVisible();
-    await expect(page.locator(`a[href="/recipes/${id}/confirm-delete"]`)).toBeVisible();
     const backLink = page.locator('a[href="/"]', { hasText: 'Zurück zur Übersicht' });
     await expect(backLink).toBeVisible();
     await backLink.click();

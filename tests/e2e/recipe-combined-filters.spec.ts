@@ -206,6 +206,25 @@ test.describe('Kombinierte Filter (Story 12)', () => {
     await expect(page.locator('a.sort-filter-btn', { hasText: '★★★★★ Favoriten' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  test('K13: Kombination Bewertung + Volltextsuche', async ({ page }) => {
+    // Gegeben: "Dinkelbrot" (4 Sterne), "Dinkelpfannkuchen" (1 Stern) — beide enthalten "Dinkel"
+    const suffix = `k13-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    await createRecipeWithOptions(page, `Dinkelbrot-${suffix}`, ['Brot'], 4);
+    await createRecipeWithOptions(page, `Dinkelpfannkuchen-${suffix}`, ['Snacks'], 1);
+
+    // Wenn: Suche nach "Dinkelbrot-{suffix}" + Filter "gut" — direkte URL
+    await page.goto(`/?q=Dinkelbrot-${suffix}&bewertung=gut`);
+
+    // Dann: "Dinkelbrot" sichtbar (4 Sterne, enthält Suchbegriff)
+    await expect(page.locator('.recipe-item h2', { hasText: `Dinkelbrot-${suffix}` })).toBeVisible();
+
+    // Und: "Dinkelpfannkuchen" nicht sichtbar (1 Stern, nicht im Suchbegriff enthalten)
+    await expect(page.locator('.recipe-item h2', { hasText: `Dinkelpfannkuchen-${suffix}` })).not.toBeVisible();
+
+    // Und: URL enthält bewertung=gut
+    await expect(page).toHaveURL(/bewertung=gut/);
+  });
+
   test('K10: "Alle Filter zurücksetzen"-Button erscheint nur bei aktiven Filtern', async ({ page }) => {
     // Gegeben: Keine Filter aktiv
     await page.goto('/');

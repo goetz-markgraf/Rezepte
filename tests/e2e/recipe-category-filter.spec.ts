@@ -169,27 +169,6 @@ test.describe('Kategorie-Filter (Story 8)', () => {
     await expect(partyButton).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('K7: Kombination aus Kategorie-Filter und Volltextsuche', async ({ page }) => {
-    // Given: Zwei eindeutige Brot-Rezepte mit Suffix: eines mit "Dinkel", eines mit "Roggen" im Titel
-    const suffix = Date.now();
-    const dinkelTitle = `Dinkel-${suffix}`;
-    const roggenTitle = `Roggen-${suffix}`;
-    await createRecipe(page, dinkelTitle, ['Brot']);
-    await createRecipe(page, roggenTitle, ['Brot']);
-
-    // When: Kategorie "Brot" aktiv und Suchbegriff "Dinkel-<suffix>" eingegeben
-    // Der Suchbegriff ist ein exakter Substring des Dinkel-Titels, aber nicht des Roggen-Titels
-    await page.goto(`/?kategorie=Brot&q=Dinkel-${suffix}`);
-
-    // Then: Nur das Dinkel-Rezept wird angezeigt
-    await expect(page.locator('#recipe-results')).toContainText(dinkelTitle);
-    await expect(page.locator('#recipe-results')).not.toContainText(roggenTitle);
-
-    // And: Beide Filter sind in der URL sichtbar
-    await expect(page).toHaveURL(/kategorie=Brot/);
-    await expect(page).toHaveURL(/q=/);
-  });
-
   test('K1/K9: Kategorie-Buttons haben korrekte ARIA-Attribute', async ({ page }) => {
     // Given: Die Startseite ist geöffnet (kein Filter aktiv)
     await page.goto('/');

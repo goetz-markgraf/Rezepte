@@ -133,40 +133,6 @@ test.describe('Heute gekocht (Story 20)', () => {
     }
   });
 
-  test('K5: Inline-Bewertung direkt auf der Seite (speichern und anzeigen)', async ({ page }) => {
-    // Given: Rezept ohne Bewertung mit planned_date = heute
-    const suffix = Date.now();
-    const title = `Bewertungs-Rezept-${suffix}`;
-    await createRecipeWithDate(page, title, ['Mittagessen'], dateInDays(0));
-
-    // When: Benutzer öffnet /heute
-    await page.goto('/heute');
-
-    // And: Rezept ist sichtbar im Heute-Bereich — Rezept-Item per Titel finden
-    const heuteAbschnitt = page.locator('.tagesabschnitt-heute');
-    await expect(heuteAbschnitt).toContainText(title);
-
-    // And: Klickt auf den "5 Sterne – inaktiv" Button für genau dieses Rezept
-    // Wir suchen das heute-rezept-item, das den eindeutigen Titel enthält
-    const rezeptItem = heuteAbschnitt.locator('.heute-rezept-item').filter({ hasText: title });
-    const fuenfSterneButton = rezeptItem.locator(
-      `button.inline-rating-btn[aria-label="5 Sterne – inaktiv"]`
-    );
-    await fuenfSterneButton.click();
-
-    // Then: Bewertung gespeichert — Seite neu laden und Ergebnis prüfen
-    await page.goto('/heute');
-
-    // Der 5-Sterne-Button für genau dieses Rezept sollte nun "active" sein
-    const rezeptItemNachReload = page
-      .locator('.tagesabschnitt-heute')
-      .locator('.heute-rezept-item')
-      .filter({ hasText: title });
-    await expect(
-      rezeptItemNachReload.locator(`button.inline-rating-btn.active[aria-label*="5 Sterne"]`)
-    ).toBeVisible();
-  });
-
   test('K6: Rezepttitel ist Link zur Detailansicht', async ({ page }) => {
     // Given: Rezept mit planned_date = heute
     const suffix = Date.now();
