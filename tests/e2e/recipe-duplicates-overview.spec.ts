@@ -139,14 +139,17 @@ test.describe('Dubletten-Übersicht', () => {
     expect(matchingTitles.length).toBe(2);
   });
 
-  test('Navigation: Link "Dubletten prüfen" in der Nav-Leiste', async ({ page }) => {
+  test('Navigation: Link "Dubletten prüfen" im Hamburger-Menü', async ({ page }) => {
     // Given: Startseite ist geöffnet
     await page.goto('/');
 
-    // When: Benutzer schaut auf die Navigation
-    const navLink = page.locator('nav a[href="/recipes/duplicates"]');
+    // When: Benutzer öffnet das Hamburger-Menü
+    const hamburgerBtn = page.locator('#hamburger-btn');
+    await expect(hamburgerBtn).toBeVisible();
+    await hamburgerBtn.click();
 
-    // Then: Link "Dubletten prüfen" ist sichtbar
+    // Then: Link "Dubletten prüfen" im Dropdown-Menü sichtbar
+    const navLink = page.locator('#hamburger-dropdown a[href="/recipes/duplicates"]');
     await expect(navLink).toBeVisible();
     await expect(navLink).toContainText('Dubletten prüfen');
 

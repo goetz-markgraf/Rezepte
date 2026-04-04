@@ -36,12 +36,17 @@ function dateInDays(n: number): string {
 }
 
 test.describe('Heute gekocht (Story 20)', () => {
-  test('K1: /heute ist aufrufbar und in Navigation verlinkt', async ({ page }) => {
+  test('K1: /heute ist aufrufbar und im Hamburger-Menü verlinkt', async ({ page }) => {
     // Given: Die App ist gestartet
     await page.goto('/');
 
-    // Then: Link "Heute" in der Navigation sichtbar
-    const navLink = page.locator('a[href="/heute"]');
+    // When: Benutzer öffnet das Hamburger-Menü
+    const hamburgerBtn = page.locator('#hamburger-btn');
+    await expect(hamburgerBtn).toBeVisible();
+    await hamburgerBtn.click();
+
+    // Then: Link "Heute" im Dropdown-Menü sichtbar
+    const navLink = page.locator('#hamburger-dropdown a[href="/heute"]');
     await expect(navLink).toBeVisible();
     await expect(navLink).toContainText('Heute');
 

@@ -1,3 +1,4 @@
+{% import "components/icons.html" as icons %}
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -14,13 +15,96 @@
             {% block header_actions %}
             <a href="/recipes/new" class="nav-link">Neues Rezept</a>
             {% endblock %}
-            <a href="/heute" class="nav-link">Heute</a>
             <a href="/wochenvorschau" class="nav-link">Wochenvorschau</a>
-            <a href="/recipes/duplicates" class="nav-link">Dubletten prüfen</a>
+            <div class="hamburger-menu-container">
+                <button 
+                    type="button"
+                    class="hamburger-btn" 
+                    id="hamburger-btn"
+                    aria-label="Menü öffnen" 
+                    aria-expanded="false" 
+                    aria-controls="hamburger-dropdown"
+                >
+                    {% call icons::icon_menu() %}
+                </button>
+                <div 
+                    id="hamburger-dropdown" 
+                    class="hamburger-menu" 
+                    role="menu" 
+                    aria-hidden="true"
+                >
+                    <a href="/heute" class="hamburger-menu-item" role="menuitem">Heute</a>
+                    <a href="/recipes/duplicates" class="hamburger-menu-item" role="menuitem">Dubletten prüfen</a>
+                </div>
+            </div>
         </nav>
     </header>
     <main>
         {% block content %}{% endblock %}
     </main>
+    <script>
+    (function() {
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const hamburgerMenu = document.getElementById('hamburger-dropdown');
+        
+        if (!hamburgerBtn || !hamburgerMenu) return;
+        
+        function toggleMenu() {
+            const isOpen = hamburgerMenu.classList.contains('open');
+            if (isOpen) {
+                closeMenu();
+            } else {
+                openMenu();
+            }
+        }
+        
+        function openMenu() {
+            hamburgerMenu.classList.add('open');
+            hamburgerMenu.setAttribute('aria-hidden', 'false');
+            hamburgerBtn.setAttribute('aria-expanded', 'true');
+            hamburgerBtn.setAttribute('aria-label', 'Menü schließen');
+            // Fokus auf erstes Menü-Element setzen
+            const firstItem = hamburgerMenu.querySelector('[role="menuitem"]');
+            if (firstItem) {
+                firstItem.focus();
+            }
+        }
+        
+        function closeMenu() {
+            hamburgerMenu.classList.remove('open');
+            hamburgerMenu.setAttribute('aria-hidden', 'true');
+            hamburgerBtn.setAttribute('aria-expanded', 'false');
+            hamburgerBtn.setAttribute('aria-label', 'Menü öffnen');
+            // Fokus zurück auf den Button
+            hamburgerBtn.focus();
+        }
+        
+        hamburgerBtn.addEventListener('click', toggleMenu);
+        
+        // Schließen bei Klick außerhalb
+        document.addEventListener('click', function(event) {
+            if (!hamburgerBtn.contains(event.target) && !hamburgerMenu.contains(event.target)) {
+                if (hamburgerMenu.classList.contains('open')) {
+                    closeMenu();
+                }
+            }
+        });
+        
+        // Schließen bei Escape-Taste
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && hamburgerMenu.classList.contains('open')) {
+                closeMenu();
+            }
+        });
+        
+        // Menü schließen wenn ein Link geklickt wird
+        const menuItems = hamburgerMenu.querySelectorAll('[role="menuitem"]');
+        menuItems.forEach(function(item) {
+            item.addEventListener('click', function() {
+                closeMenu();
+            });
+        });
+    })();
+    </script>
 </body>
 </html>
