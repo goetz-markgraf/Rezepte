@@ -91,8 +91,8 @@ pub struct IndexQuery {
 }
 
 /// Baut die Toggle-URL für das Ein-/Ausklappen des Filterbereichs.
-/// Eingeklappt (`true`) → gibt URL ohne `filter_collapsed`-Parameter zurück (Aufklappen).
-/// Ausgeklappt (`false`) → gibt URL mit `filter_collapsed=1` zurück (Einklappen).
+/// Eingeklappt (`true`) → gibt URL mit `filter_collapsed=0` zurück (Aufklappen).
+/// Ausgeklappt (`false`) → gibt URL ohne `filter_collapsed`-Parameter zurück (Einklappen).
 /// Alle anderen aktiven Parameter (q, kategorie, filter, bewertung) bleiben erhalten.
 pub fn build_filter_collapsed_toggle_url(
     is_collapsed: bool,
@@ -122,10 +122,10 @@ pub fn build_filter_collapsed_toggle_url(
         params.push(format!("bewertung={}", urlencoding::encode(b)));
     }
 
-    // Zustand umkehren: war eingeklappt → jetzt ausklappen (kein Parameter)
-    // war ausgeklappt → jetzt einklappen (filter_collapsed=1 hinzufügen)
-    if !is_collapsed {
-        params.push("filter_collapsed=1".to_string());
+    // Zustand umkehren: war eingeklappt → jetzt ausklappen (filter_collapsed=0 hinzufügen)
+    // war ausgeklappt → jetzt einklappen (kein Parameter = Default eingeklappt, Story 40)
+    if is_collapsed {
+        params.push("filter_collapsed=0".to_string());
     }
 
     if params.is_empty() {
@@ -492,8 +492,8 @@ pub async fn index(
     let not_made_filter_active = filter_param.as_deref() == Some("laenger-nicht-gemacht");
     let next_seven_days_filter_active = filter_param.as_deref() == Some("naechste-7-tage");
 
-    // filter_collapsed: "1" → eingeklappt, alles andere → ausgeklappt
-    let filter_collapsed = query.filter_collapsed.as_deref() == Some("1");
+    // filter_collapsed: "0" → ausgeklappt, alles andere → eingeklappt (Story 40)
+    let filter_collapsed = query.filter_collapsed.as_deref() != Some("0");
 
     // Bewertungsfilter: nur "gut" und "favoriten" akzeptieren, Rest ignorieren
     let bewertung: Option<String> = query.bewertung.and_then(|b| {
@@ -1287,79 +1287,79 @@ mod tests {
     fn toggle_url_ausgeklappt_zu_eingeklappt() {
         // Gegeben: Filter ausgeklappt, kein aktiver Filter
         let url = build_filter_collapsed_toggle_url(false, &[], "", false, false, None);
-        // Dann: URL enthält filter_collapsed=1
-        assert_eq!(url, "/?filter_collapsed=1");
+        // Dann: URL enthält keinen filter_collapsed Parameter (Story 40: Default eingeklappt)
+        assert_eq!(url, "/");
     }
 
     #[test]
     fn toggle_url_eingeklappt_zu_ausgeklappt() {
         // Gegeben: Filter eingeklappt, kein aktiver Filter
         let url = build_filter_collapsed_toggle_url(true, &[], "", false, false, None);
-        // Dann: URL ist "/" ohne filter_collapsed-Parameter
-        assert_eq!(url, "/");
+        // Dann: URL enthält filter_collapsed=0 (Story 40: explizit ausklappen)
+        assert_eq!(url, "/?filter_collapsed=0");
     }
 
     #[test]
     fn toggle_url_behaelt_suchbegriff() {
-        // Gegeben: Suchbegriff "pasta" aktiv, Filter ausgeklappt
+        // Gegeben: Suchbegriff "pasta" aktiv, Filter ausgeklappt (Story 40: kein Parameter = eingeklappt)
         let url = build_filter_collapsed_toggle_url(false, &[], "pasta", false, false, None);
-        // Dann: URL enthält q=pasta und filter_collapsed=1
+        // Dann: URL enthält q=pasta und keinen filter_collapsed Parameter
         assert!(url.contains("q=pasta"), "URL sollte q=pasta enthalten");
         assert!(
-            url.contains("filter_collapsed=1"),
-            "URL sollte filter_collapsed=1 enthalten"
+            !url.contains("filter_collapsed"),
+            "URL sollte keinen filter_collapsed Parameter enthalten"
         );
     }
 
     #[test]
     fn toggle_url_behaelt_kategorie() {
-        // Gegeben: Kategorie "Brot" aktiv, Filter ausgeklappt
+        // Gegeben: Kategorie "Brot" aktiv, Filter ausgeklappt (Story 40: kein Parameter = eingeklappt)
         let url =
             build_filter_collapsed_toggle_url(false, &["Brot".to_string()], "", false, false, None);
-        // Dann: URL enthält kategorie=Brot und filter_collapsed=1
+        // Dann: URL enthält kategorie=Brot und keinen filter_collapsed Parameter
         assert!(
             url.contains("kategorie=Brot"),
             "URL sollte kategorie=Brot enthalten"
         );
         assert!(
-            url.contains("filter_collapsed=1"),
-            "URL sollte filter_collapsed=1 enthalten"
+            !url.contains("filter_collapsed"),
+            "URL sollte keinen filter_collapsed Parameter enthalten"
         );
     }
 
     #[test]
     fn toggle_url_behaelt_nicht_gemacht_filter() {
-        // Gegeben: "Länger nicht gemacht"-Filter aktiv, Filter ausgeklappt
+        // Gegeben: "Länger nicht gemacht"-Filter aktiv, Filter ausgeklappt (Story 40: kein Parameter = eingeklappt)
         let url = build_filter_collapsed_toggle_url(false, &[], "", true, false, None);
-        // Dann: URL enthält filter=laenger-nicht-gemacht und filter_collapsed=1
+        // Dann: URL enthält filter=laenger-nicht-gemacht und keinen filter_collapsed Parameter
         assert!(
             url.contains("filter=laenger-nicht-gemacht"),
             "URL sollte filter=laenger-nicht-gemacht enthalten"
         );
         assert!(
-            url.contains("filter_collapsed=1"),
-            "URL sollte filter_collapsed=1 enthalten"
+            !url.contains("filter_collapsed"),
+            "URL sollte keinen filter_collapsed Parameter enthalten"
         );
     }
 
     #[test]
     fn toggle_url_behaelt_bewertung() {
-        // Gegeben: Bewertungsfilter "gut" aktiv, Filter ausgeklappt
+        // Gegeben: Bewertungsfilter "gut" aktiv, Filter ausgeklappt (Story 40: kein Parameter = eingeklappt)
         let url = build_filter_collapsed_toggle_url(false, &[], "", false, false, Some("gut"));
-        // Dann: URL enthält bewertung=gut und filter_collapsed=1
+        // Dann: URL enthält bewertung=gut und keinen filter_collapsed Parameter
         assert!(
             url.contains("bewertung=gut"),
             "URL sollte bewertung=gut enthalten"
         );
         assert!(
-            url.contains("filter_collapsed=1"),
-            "URL sollte filter_collapsed=1 enthalten"
+            !url.contains("filter_collapsed"),
+            "URL sollte keinen filter_collapsed Parameter enthalten"
         );
     }
 
     #[test]
     fn toggle_url_eingeklappt_behaelt_alle_parameter() {
-        // Gegeben: Filter eingeklappt + Kategorie + Suche aktiv
+        // Gegeben: Filter eingeklappt + Kategorie + Suche aktiv (Story 40)
         let url = build_filter_collapsed_toggle_url(
             true,
             &["Brot".to_string()],
@@ -1368,13 +1368,34 @@ mod tests {
             false,
             Some("gut"),
         );
-        // Dann: URL enthält alle Parameter AUSSER filter_collapsed
+        // Dann: URL enthält alle Parameter INKLUSIVE filter_collapsed=0 (ausklappen)
+        assert!(url.contains("kategorie=Brot"), "kategorie=Brot fehlt");
+        assert!(url.contains("q=pasta"), "q=pasta fehlt");
+        assert!(url.contains("bewertung=gut"), "bewertung=gut fehlt");
+        assert!(
+            url.contains("filter_collapsed=0"),
+            "filter_collapsed=0 sollte enthalten sein wenn eingeklappt (um auszuklappen)"
+        );
+    }
+
+    #[test]
+    fn toggle_url_ausgeklappt_mit_parameter_behaelt_alle_parameter() {
+        // Gegeben: Filter ausgeklappt (filter_collapsed=0) + Kategorie + Suche aktiv (Story 40)
+        let url = build_filter_collapsed_toggle_url(
+            false,
+            &["Brot".to_string()],
+            "pasta",
+            false,
+            false,
+            Some("gut"),
+        );
+        // Dann: URL enthält alle Parameter AUSSER filter_collapsed (einklappen = Default)
         assert!(url.contains("kategorie=Brot"), "kategorie=Brot fehlt");
         assert!(url.contains("q=pasta"), "q=pasta fehlt");
         assert!(url.contains("bewertung=gut"), "bewertung=gut fehlt");
         assert!(
             !url.contains("filter_collapsed"),
-            "filter_collapsed sollte fehlen wenn aufgeklappt"
+            "filter_collapsed sollte fehlen wenn ausgeklappt (einklappen = Default)"
         );
     }
 }

@@ -137,19 +137,24 @@ test.describe('Wochenvorschau (Story 18)', () => {
     await expect(page.locator('body')).toContainText(title);
   });
 
-  test('K7: Link zurück zur Rezeptliste vorhanden', async ({ page }) => {
+  test('K7: Link zurück zur Rezeptliste vorhanden (Story 40: Default eingeklappt)', async ({ page }) => {
     // Given: /wochenvorschau wird aufgerufen
     await page.goto('/wochenvorschau');
 
-    // Then: Link "Zur Rezeptliste" vorhanden (mit filter_collapsed=1)
-    const backLink = page.locator('a[href="/?filter_collapsed=1"]', { hasText: 'Zur Rezeptliste' });
+    // Then: Link "Zur Rezeptliste" vorhanden (ohne filter_collapsed Parameter, da Default jetzt eingeklappt)
+    const backLink = page.locator('a[href="/"]', { hasText: 'Zur Rezeptliste' });
     await expect(backLink).toBeVisible();
 
     // When: Link geklickt
     await backLink.click();
 
-    // Then: Benutzer ist auf der Rezeptliste mit eingeklappten Filtern
-    await expect(page).toHaveURL(/filter_collapsed=1/);
+    // Then: Benutzer ist auf der Rezeptliste (ohne filter_collapsed Parameter, da Default eingeklappt)
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page).not.toHaveURL(/filter_collapsed/);
+
+    // Und: Filter sind eingeklappt (filter-panel nicht sichtbar)
+    const filterPanel = page.locator('#filter-panel');
+    await expect(filterPanel).not.toBeVisible();
   });
 
   test('K9: Semantisches HTML — Tage als dt-Elemente', async ({ page }) => {
