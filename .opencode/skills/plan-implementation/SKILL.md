@@ -28,6 +28,7 @@ Das Story-Verzeichnis wird als Kontext übergeben (z.B. `docs/03-story-name/`).
 - Betroffene Dateien explizit aufgelistet
 - Unit-Tests, Integrationstests und E2E-Tests eingeplant
 - Tech Stack beachten: Rust + Axum + Askama + sqlx + SQLite + HTMX
+- Wenn es verschiedene, gleichwertige Möglichkeiten der Implementierung gibt, frage stets den User und triff keine Annahmen. Nutze dazu den Skill `frag-den-user`.
 
 ## Abschluss
 

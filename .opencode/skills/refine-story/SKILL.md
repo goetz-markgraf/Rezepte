@@ -35,6 +35,7 @@ Bevor du mit dem Refining beginnst:
 - Nur fachliche Aspekte — keine technischen Details
 - Klare, testbare Akzeptanzkriterien
 - Definition of Ready muss erfüllt sein
+- Bei fachlichen Unklarheiten, frage stets den User und triff keine Annahmen
 
 ## Abschluss
 
