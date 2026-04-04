@@ -90,7 +90,7 @@ Spezifische Features für die Wochenplanung am Mittwoch/Donnerstag.
 | 33 | [Wochenübersicht Navigation mit Pfeiltasten](./33-wochenuebersicht-navigation/story.md) | Abgeschlossen |
 | 34 | [Suche "Länger nicht gemacht" per Klick in der Wochenübersicht](./34-suche-lange-nicht-gemacht-wochenuebersicht/story.md) | Abgeschlossen |
 | 35 | [Suche "Länger nicht gemacht" mit vorselektiertem Mittagessen-Filter](./35-suche-lange-nicht-gemacht-mit-mittagessen/story.md) | Abgeschlossen |
-| 38 | [Wochenplanung auf 15-Tage-Liste umbauen](./38-wochenplanung-15-tage/story.md) | Offen |
+| 38 | [Wochenplanung auf 15-Tage-Liste umbauen](./38-wochenplanung-15-tage/story.md) | In Arbeit |
 
 ---
 

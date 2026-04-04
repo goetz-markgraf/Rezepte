@@ -193,6 +193,12 @@ header .site-title:hover {
     color: #6b7280;
 }
 
+.zeitraum-label {
+    font-size: 1rem;
+    font-weight: 400;
+    color: #6b7280;
+}
+
 .wochenvorschau-liste {
     display: flex;
     flex-direction: column;

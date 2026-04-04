@@ -93,22 +93,16 @@ pub struct Wochentag {
     pub rezepte: Vec<WochentagesEintragItem>,
 }
 
-/// Template für die Wochenvorschau-Seite.
+/// Template für die Wochenvorschau-Seite (jetzt 15-Tage-Liste).
 #[derive(Template)]
 #[template(path = "wochenvorschau.html")]
 pub struct WochenvorschauTemplate {
-    /// Alle 7 Wochentage (Montag bis Sonntag) mit ihren Rezepten.
+    /// Alle 15 Tage (ab heute) mit ihren Rezepten.
     pub tage: Vec<Wochentag>,
-    /// KW-Anzeige: "KW 14 · 30. März – 5. April 2026"
-    pub kw_anzeige: String,
-    /// true wenn mindestens ein Rezept in der Woche geplant ist.
+    /// Zeitraum-Anzeige: "04.04.2026 – 18.04.2026"
+    pub zeitraum_anzeige: String,
+    /// true wenn mindestens ein Rezept in den 15 Tagen geplant ist.
     pub hat_rezepte: bool,
-    /// URL zur vorherigen Woche: "/wochenvorschau?week=2025-W01"
-    pub prev_week_url: String,
-    /// URL zur nächsten Woche: "/wochenvorschau?week=2025-W03"
-    pub next_week_url: String,
-    /// true wenn die aktuelle Woche angezeigt wird (für "Heute" Badge).
-    pub is_current_week: bool,
 }
 
 #[derive(Template)]

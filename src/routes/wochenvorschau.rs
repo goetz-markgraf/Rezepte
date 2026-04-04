@@ -10,10 +10,11 @@ use serde::Deserialize;
 use sqlx::SqlitePool;
 use std::sync::Arc;
 
-/// Query-Parameter für die Wochenvorschau
+/// Query-Parameter für die Wochenvorschau (jetzt ohne week-Parameter)
 #[derive(Deserialize)]
 pub struct WeekQuery {
-    pub week: Option<String>,
+    #[allow(dead_code)]
+    pub week: Option<String>, // Für Rückwärtskompatibilität, wird ignoriert
 }
 
 const GERMAN_MONTHS_LONG: &[&str] = &[
@@ -31,6 +32,7 @@ const GERMAN_MONTHS_LONG: &[&str] = &[
     "Dezember",
 ];
 
+#[allow(dead_code)]
 const GERMAN_WEEKDAYS_LONG: &[&str] = &[
     "Montag",
     "Dienstag",
@@ -41,22 +43,19 @@ const GERMAN_WEEKDAYS_LONG: &[&str] = &[
     "Sonntag",
 ];
 
+#[allow(dead_code)]
 /// Gibt den langen deutschen Wochentag-Namen zurück: "Montag" bis "Sonntag".
 fn german_weekday_long(weekday: time::Weekday) -> &'static str {
     GERMAN_WEEKDAYS_LONG[weekday.number_days_from_monday() as usize]
 }
 
+#[allow(dead_code)]
 /// Gibt den deutschen Wochentag-Namen als owned String zurück: "Montag" bis "Sonntag".
 fn format_weekday_name(date: time::Date) -> String {
     german_weekday_long(date.weekday()).to_string()
 }
 
-/// Formatiert ein Datum als "T. Monatsname", z.B. "30. März" oder "5. April".
-fn format_date_kurz(date: time::Date) -> String {
-    let month_name = GERMAN_MONTHS_LONG[(date.month() as u8 - 1) as usize];
-    format!("{}. {}", date.day(), month_name)
-}
-
+#[allow(dead_code)]
 /// Berechnet die ISO-Kalenderwoche für ein Datum (ISO 8601).
 /// Woche beginnt am Montag. KW 1 ist die Woche mit dem ersten Donnerstag.
 fn iso_week_number(date: time::Date) -> u8 {
@@ -75,6 +74,7 @@ fn iso_week_number(date: time::Date) -> u8 {
     (diff_days / 7 + 1) as u8
 }
 
+#[allow(dead_code)]
 /// Berechnet die KW-Anzeige: "KW 14 · 30. März – 5. April 2026".
 fn format_kw_header(monday: time::Date, sunday: time::Date) -> String {
     let kw = iso_week_number(monday);
@@ -105,12 +105,14 @@ fn format_kw_header(monday: time::Date, sunday: time::Date) -> String {
     }
 }
 
+#[allow(dead_code)]
 /// Formatiert ein Datum als ISO-Woche: "YYYY-WNN".
 fn format_iso_week(date: time::Date) -> String {
     let iso_week = date.iso_week();
     format!("{}-W{:02}", date.year(), iso_week)
 }
 
+#[allow(dead_code)]
 /// Parsed einen ISO-Wochen-String "YYYY-WNN" und gibt den Montag dieser Woche zurück.
 fn parse_iso_week(week_str: &str) -> Option<time::Date> {
     // Format: "YYYY-WNN" (z.B. "2025-W02")
@@ -148,6 +150,7 @@ fn parse_iso_week(week_str: &str) -> Option<time::Date> {
     Some(target_monday)
 }
 
+#[allow(dead_code)]
 /// Berechnet den Montag der aktuellen Woche.
 fn get_current_week_monday() -> time::Date {
     let today = time::OffsetDateTime::now_utc().date();
@@ -155,35 +158,25 @@ fn get_current_week_monday() -> time::Date {
     today - time::Duration::days(days_from_monday)
 }
 
-/// Handler für GET /wochenvorschau — zeigt alle Rezepte einer Woche.
-/// Optionaler Query-Parameter "week" im Format "YYYY-WNN" (z.B. "2025-W02").
+/// Handler für GET /wochenvorschau — zeigt alle Rezepte der nächsten 15 Tage.
+/// Die Navigation mit week-Parameter wurde entfernt (Story 38).
 pub async fn wochenvorschau_handler(
-    Query(query): Query<WeekQuery>,
+    Query(_query): Query<WeekQuery>,
     State(pool): State<Arc<SqlitePool>>,
 ) -> Result<Html<String>, AppError> {
     let today = time::OffsetDateTime::now_utc().date();
 
-    // Ermittle den Montag der anzuzeigenden Woche
-    let monday = if let Some(week_str) = query.week {
-        // Parse ISO-Woche, fallback auf aktuelle Woche bei Fehler
-        parse_iso_week(&week_str).unwrap_or_else(get_current_week_monday)
-    } else {
-        // Kein Parameter: aktuelle Woche
-        get_current_week_monday()
-    };
+    // Zeige immer die nächsten 15 Tage ab heute
+    let start_datum = today;
+    let end_datum = today + time::Duration::days(14); // +14 = insgesamt 15 Tage
 
-    let sunday = monday + time::Duration::days(6);
+    let recipes = get_recipes_current_week(&pool, start_datum, end_datum).await?;
 
-    // Berechne vorherige und nächste Woche für Navigation
-    let prev_week_monday = monday - time::Duration::days(7);
-    let next_week_monday = monday + time::Duration::days(7);
+    // Zeitraum-Anzeige: "04.04.2026 – 18.04.2026"
+    let zeitraum_anzeige = format_zeitraum_header(start_datum, end_datum);
 
-    let recipes = get_recipes_current_week(&pool, monday, sunday).await?;
-
-    let kw_anzeige = format_kw_header(monday, sunday);
-
-    let tage: Vec<Wochentag> = (0..7)
-        .map(|i| monday + time::Duration::days(i))
+    let tage: Vec<Wochentag> = (0..15)
+        .map(|i| start_datum + time::Duration::days(i))
         .map(|datum| {
             let rezepte = recipes
                 .iter()
@@ -194,7 +187,7 @@ pub async fn wochenvorschau_handler(
                 })
                 .collect();
             Wochentag {
-                wochentag_name: format_weekday_name(datum),
+                wochentag_name: format_date_with_short_weekday(datum),
                 datum_kurz: format_date_kurz(datum),
                 ist_heute: datum == today,
                 ist_vergangen: datum < today,
@@ -205,26 +198,29 @@ pub async fn wochenvorschau_handler(
 
     let hat_rezepte = tage.iter().any(|t| !t.rezepte.is_empty());
 
-    // Prüfe ob die aktuelle Woche angezeigt wird
-    let is_current_week = monday == get_current_week_monday();
-
-    // Generiere Navigation-URLs
-    let prev_week_url = format!("/wochenvorschau?week={}", format_iso_week(prev_week_monday));
-    let next_week_url = format!("/wochenvorschau?week={}", format_iso_week(next_week_monday));
-
     let template = WochenvorschauTemplate {
         tage,
-        kw_anzeige,
+        zeitraum_anzeige,
         hat_rezepte,
-        prev_week_url,
-        next_week_url,
-        is_current_week,
     };
 
     let html = template
         .render()
         .map_err(|e| AppError::BadRequest(format!("Template-Fehler: {}", e)))?;
     Ok(Html(html))
+}
+
+/// Formatiert den Zeitraum-Header: "04.04.2026 – 18.04.2026".
+fn format_zeitraum_header(start: time::Date, end: time::Date) -> String {
+    format!(
+        "{:02}.{:02}.{} – {:02}.{:02}.{}",
+        start.day(),
+        start.month() as u8,
+        start.year(),
+        end.day(),
+        end.month() as u8,
+        end.year()
+    )
 }
 
 #[cfg(test)]
@@ -403,5 +399,54 @@ mod tests {
         let result = parse_iso_week("2026-W01").unwrap();
         // Der Montag der KW 1 2026
         assert!(result.year() == 2025 || result.year() == 2026);
+    }
+
+    // Tests für Story 38: 15-Tage-Liste
+
+    #[test]
+    fn german_weekday_short_returns_correct_names() {
+        assert_eq!(german_weekday_short(time::Weekday::Monday), "Mo");
+        assert_eq!(german_weekday_short(time::Weekday::Tuesday), "Di");
+        assert_eq!(german_weekday_short(time::Weekday::Wednesday), "Mi");
+        assert_eq!(german_weekday_short(time::Weekday::Thursday), "Do");
+        assert_eq!(german_weekday_short(time::Weekday::Friday), "Fr");
+        assert_eq!(german_weekday_short(time::Weekday::Saturday), "Sa");
+        assert_eq!(german_weekday_short(time::Weekday::Sunday), "So");
+    }
+
+    #[test]
+    fn format_date_with_short_weekday_formats_correctly() {
+        // Freitag, 4. April 2026 → "Fr, 04.04.2026"
+        let date = make_date(2026, 4, 4);
+        assert_eq!(format_date_with_short_weekday(date), "Fr, 04.04.2026");
+    }
+
+    #[test]
+    fn format_date_with_short_weekday_single_digit_month() {
+        // Montag, 5. Januar 2026 → "Mo, 05.01.2026"
+        let date = make_date(2026, 1, 5);
+        assert_eq!(format_date_with_short_weekday(date), "Mo, 05.01.2026");
+    }
+
+    #[test]
+    fn format_zeitraum_header_formats_correctly() {
+        // 4. April 2026 bis 18. April 2026
+        let start = make_date(2026, 4, 4);
+        let end = make_date(2026, 4, 18);
+        assert_eq!(
+            format_zeitraum_header(start, end),
+            "04.04.2026 – 18.04.2026"
+        );
+    }
+
+    #[test]
+    fn format_zeitraum_header_months_transition() {
+        // 30. März 2026 bis 13. April 2026
+        let start = make_date(2026, 3, 30);
+        let end = make_date(2026, 4, 13);
+        assert_eq!(
+            format_zeitraum_header(start, end),
+            "30.03.2026 – 13.04.2026"
+        );
     }
 }
