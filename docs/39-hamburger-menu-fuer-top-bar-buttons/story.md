@@ -8,25 +8,28 @@
 
 ## 1. Story-Satz
 
-Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
+Als **Benutzer** möchte ich die Buttons "Heute" und "Dubletten prüfen" in einem Hamburger-Menü haben, damit die Top-Bar übersichtlicher bleibt und mehr Platz für die wichtigsten Navigationselemente zur Verfügung steht.
 
 ---
 
 ## 2. Geschäftsbezogene Details
 
 ### Kontext
-[Warum ist diese Funktion wichtig? Was ist der Hintergrund?]
+Die Top-Bar der Anwendung enthält aktuell die Links "Heute" und "Dubletten prüfen". Diese nehmen wertvollen Platz weg, besonders auf mobilen Geräten. Durch das Verschieben in ein Hamburger-Menü (☰) wird die Oberfläche aufgeräumter und der Fokus bleibt auf den wichtigsten Navigationselementen.
 
 ### Nutzergruppe
-[Wer nutzt diese Funktion?]
+- Beide Partner (Single-User-System)
+- Nutzer, die die Anwendung auf verschiedenen Geräten (Desktop und Mobile) verwenden
 
 ### Business-Value
-[Was ist der konkrete Mehrwert?]
+- Bessere Nutzung des begrenzten Platzes in der Top-Bar
+- Sauberere, fokussiertere Benutzeroberfläche
+- Bessere mobile Nutzererfahrung
 
 ### Edge Cases
-- **[Fall 1]:** [Beschreibung und erwartetes Verhalten]
-- **[Fall 2]:** [Beschreibung und erwartetes Verhalten]
-...
+- **Mobile Ansicht:** Das Hamburger-Menü muss auf kleinen Bildschirmen gut bedienbar sein
+- **Tastatur-Navigation:** Das Menü muss vollständig per Tastatur erreichbar sein (WCAG 2.1 Level A)
+- **Screenreader:** Aria-Attribute müssen korrekt gesetzt sein, damit Screenreader den Menü-Zustand verstehen
 
 ---
 
@@ -34,40 +37,54 @@ Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
 
 ### Funktionale Kriterien
 
-- [ ] **K1: [Kriterium-Titel]**
-  - [Detail-Bedingung]
-  - [Detail-Bedingung]
+- [ ] **K1: Hamburger-Menü existiert**
+  - In der Top-Bar wird ein Hamburger-Menü-Button (☰) angezeigt
+  - Der Button ist rechts in der Top-Bar positioniert
+  - Bei Klick auf den Button öffnet sich ein Dropdown-Menü
 
-- [ ] **K2: [Kriterium-Titel]**
-  - [Detail-Bedingung]
+- [ ] **K2: Menü-Items verschoben**
+  - Die Links "Heute" und "Dubletten prüfen" sind aus der Hauptnavigation entfernt
+  - Beide Links erscheinen im Hamburger-Menü
+  - Die Links funktionieren wie bisher (korrekte URLs: `/heute` und `/recipes/duplicates`)
+
+- [ ] **K3: Menü-Verhalten**
+  - Klick außerhalb des Menüs schließt es
+  - Klick auf einen Menüpunkt schließt das Menü und navigiert zur Seite
+  - Das Menü kann per Escape-Taste geschlossen werden
+
+- [ ] **K4: Mobile Kompatibilität**
+  - Das Hamburger-Menü ist auf mobilen Geräten gut bedienbar
+  - Touch-Targets sind mindestens 44x44px groß
 
 ### Nicht-funktionale Kriterien
 
-- [ ] **K[N]: Performance**
-  - [Ladezeit-Ziel]
-  - [Speichervorgang-Ziel]
-
-- [ ] **K[N+1]: Barrierefreiheit**
-  - Alle Formularfelder haben korrekte Labels (WCAG 2.1 Level A)
-  - Tastatur-Navigation funktioniert vollständig
+- [ ] **K5: Barrierefreiheit**
+  - Der Hamburger-Button hat ein aria-label (z.B. "Menü öffnen")
+  - Das Menü hat korrekte aria-expanded Attribute
+  - Tastatur-Navigation funktioniert vollständig (Tab, Enter, Escape)
+  - Fokus wird beim Öffnen des Menüs auf das erste Element gesetzt
+  - Fokus-Trap im geöffneten Menü (optional aber empfohlen)
 
 ---
 
 ## 4. Technische Planung
 
 ### Datenmodell
-[Falls neue Felder/Tabellen notwendig: Beschreibung der Änderungen am Schema]
+Keine Änderungen am Datenmodell notwendig.
 
 ### UI/UX-Spezifikation
-[Beschreibung des Layouts, der Interaktionen, des Flows]
+- Hamburger-Menü-Button mit Icon (☰ oder SVG-Icon) rechts in der Top-Bar
+- Dropdown-Menü unter dem Button mit den Links "Heute" und "Dubletten prüfen"
+- CSS-Transition für sanftes Öffnen/Schließen
+- Mobile-first Ansatz: Menü passt sich der Bildschirmbreite an
 
 ---
 
 ## 5. Nicht-funktionale Anforderungen
 
 ### Performance
-- Seite lädt ohne sichtbare Verzögerung (< 500ms)
-- [Weitere spezifische Ziele]
+- Keine zusätzliche Ladezeit durch das Hamburger-Menü
+- CSS-Animationen unter 300ms
 
 ### Browser-Support
 - Aktuelle Chrome, Firefox, Safari, Edge Versionen
@@ -76,6 +93,7 @@ Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
 ### Barrierefreiheit
 - WCAG 2.1 Level A konform
 - Fokus-Indikatoren sichtbar
+- Ausreichender Kontrast für Icons und Menü-Items
 
 ---
 
@@ -83,18 +101,31 @@ Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
 
 ### E2E-Tests (Playwright)
 
-**Testfall 1: [Bezeichnung]**
+**Testfall 1: Hamburger-Menü öffnen und schließen**
 ```gherkin
-Given [Ausgangszustand]
-When [Aktion des Benutzers]
-Then [Erwartetes Ergebnis]
+Given Der Benutzer ist auf der Startseite
+When Der Benutzer auf den Hamburger-Menü-Button klickt
+Then Das Menü öffnet sich und zeigt "Heute" und "Dubletten prüfen"
+When Der Benutzer außerhalb des Menüs klickt
+Then Das Menü schließt sich
 ```
 
-**Testfall 2: [Bezeichnung]**
+**Testfall 2: Navigation über Hamburger-Menü**
 ```gherkin
-Given [Ausgangszustand]
-When [Aktion des Benutzers]
-Then [Erwartetes Ergebnis]
+Given Der Benutzer ist auf der Startseite
+When Der Benutzer auf den Hamburger-Menü-Button klickt
+And Der Benutzer auf "Heute" klickt
+Then Der Benutzer wird zur Seite "/heute" weitergeleitet
+```
+
+**Testfall 3: Tastatur-Navigation**
+```gherkin
+Given Der Benutzer ist auf der Startseite
+When Der Benutzer den Hamburger-Button mit Tab fokussiert
+And Der Benutzer Enter drückt
+Then Das Menü öffnet sich
+When Der Benutzer Escape drückt
+Then Das Menü schließt sich
 ```
 
 ---
@@ -102,18 +133,18 @@ Then [Erwartetes Ergebnis]
 ## 7. Abhängigkeiten & Rahmenbedingungen
 
 ### Abhängigkeiten
-- [Story X muss implementiert sein / keine Abhängigkeiten]
-- [Blockiert: Story Y]
+- Story 32: Neues-Rezept-Button in der Kopfzeile (bereits abgeschlossen)
+- Keine weiteren Abhängigkeiten
 
 ### Rahmenbedingungen
-- SQLite-Datenbank muss existieren und erreichbar sein
-- Keine Authentifizierung erforderlich (LAN-only)
+- Keine Änderungen am Backend notwendig
+- Reine UI-Änderung in den Templates
 
 ---
 
 ## Offene Punkte / Fragen
 
-- [ ] [Offene Frage oder Entscheidung]
+- [x] Keine offenen Punkte
 
 ---
 
@@ -123,4 +154,4 @@ Schiebe die Button Heute und Dubletten Prüfen aus der Top-Bar in ein Hamburger-
 
 ---
 
-**Letzte Aktualisierung:** YYYY-MM-DD
+**Letzte Aktualisierung:** 2026-04-04
