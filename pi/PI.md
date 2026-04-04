@@ -38,7 +38,7 @@ sudo apt install -y nginx
 Konfiguration anlegen:
 
 ```bash
-sudo nano /etc/nginx/sites-available/rezepte
+sudo vi /etc/nginx/sites-available/rezepte
 ```
 
 Inhalt:
@@ -69,7 +69,7 @@ sudo nginx -t && sudo systemctl enable nginx && sudo systemctl start nginx
 Zurück auf dem Mac, im Projektverzeichnis:
 
 ```bash
-./deploy_to_pi.sh --init
+pi/deploy_to_pi.sh --init
 ```
 
 Dies kopiert den Quellcode und die Datenbank (`data/recipes.db`) auf den Pi.
@@ -77,7 +77,7 @@ Dies kopiert den Quellcode und die Datenbank (`data/recipes.db`) auf den Pi.
 ## 5. Ersten Build und Service-Start
 
 ```bash
-./update_pi.sh
+pi/update_pi.sh
 ```
 
 Dieses Script kompiliert die Anwendung auf dem Pi, richtet den systemd Service ein und startet ihn. Ab jetzt startet die App automatisch beim Booten.
@@ -87,7 +87,7 @@ Dieses Script kompiliert die Anwendung auf dem Pi, richtet den systemd Service e
 Für jedes spätere Update genügt:
 
 ```bash
-./update_pi.sh
+pi/update_pi.sh
 ```
 
 Die Datenbank auf dem Pi wird dabei nie überschrieben.

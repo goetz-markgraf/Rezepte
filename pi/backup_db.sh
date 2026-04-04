@@ -4,7 +4,7 @@ set -e
 # Sichert die Datenbank vom Raspberry Pi auf den lokalen Rechner
 #
 # Verwendung:
-#   ./backup_db.sh
+#   pi/backup_db.sh
 
 PI_HOST="markgrafen-pi"
 PI_USER="${USER}"

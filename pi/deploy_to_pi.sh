@@ -4,8 +4,8 @@ set -e
 # Deploy Script: Kopiert das Projekt auf den Raspberry Pi
 #
 # Verwendung:
-#   ./deploy_to_pi.sh          # Kopiert Quellcode (ohne Datenbank)
-#   ./deploy_to_pi.sh --init   # Erstmaliges Setup: kopiert auch die Datenbank
+#   pi/deploy_to_pi.sh          # Kopiert Quellcode (ohne Datenbank)
+#   pi/deploy_to_pi.sh --init   # Erstmaliges Setup: kopiert auch die Datenbank
 
 PI_HOST="markgrafen-pi"
 PI_USER="${USER}"

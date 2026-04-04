@@ -4,7 +4,7 @@ set -e
 # Update Script: Deployed und startet die App auf dem Raspberry Pi neu
 #
 # Verwendung:
-#   ./update_pi.sh
+#   pi/update_pi.sh
 
 PI_HOST="markgrafen-pi"
 PI_USER="${USER}"
@@ -20,12 +20,12 @@ echo ""
 
 # 1. Quellcode kopieren
 echo -e "${BLUE}[1/3] Kopiere Quellcode...${NC}"
-./deploy_to_pi.sh
+pi/deploy_to_pi.sh
 
 # 2. Auf dem Pi: kompilieren und neustarten
 echo ""
 echo -e "${BLUE}[2/3] Kompiliere auf dem Pi...${NC}"
-ssh "${PI_USER}@${PI_HOST}" "bash ${PI_TARGET_DIR}/pi_build.sh"
+ssh "${PI_USER}@${PI_HOST}" "bash ${PI_TARGET_DIR}/pi/build.sh"
 
 echo ""
 echo -e "${GREEN}=== Update abgeschlossen ===${NC}"
