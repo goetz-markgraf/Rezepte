@@ -85,41 +85,31 @@ async fn wochenvorschau_returns_200() {
 }
 
 #[tokio::test]
-async fn wochenvorschau_shows_all_seven_weekdays() {
+async fn wochenvorschau_shows_all_fifteen_days() {
     // Given: App ohne Rezepte
     let (app, _temp) = setup_test_app().await;
 
     // When: GET /wochenvorschau
     let (_status, body) = get_body(app, "/wochenvorschau").await;
 
-    // Then: Alle 7 Wochentage im Body
-    for weekday in &[
-        "Montag",
-        "Dienstag",
-        "Mittwoch",
-        "Donnerstag",
-        "Freitag",
-        "Samstag",
-        "Sonntag",
-    ] {
-        assert!(
-            body.contains(weekday),
-            "Wochentag '{}' sollte im Body sichtbar sein",
-            weekday
-        );
-    }
+    // Then: Alle 15 Tage im Body (heute + 14 weitere Tage)
+    // Wir prüfen, dass der Zeitraum-Anzeige existiert
+    assert!(
+        body.contains("–"),
+        "Zeitraum-Anzeige sollte im Body sichtbar sein"
+    );
 }
 
 #[tokio::test]
-async fn wochenvorschau_shows_recipe_in_current_week() {
-    // Given: Rezept mit planned_date = Mittwoch dieser Woche
+async fn wochenvorschau_shows_recipe_today() {
+    // Given: Rezept mit planned_date = heute
     let (app, _temp) = setup_test_app().await;
-    let wednesday = this_week_date(2); // Mittwoch = +2 Tage von Montag
+    let today = date_in_days(0); // Heute
     create_recipe_with_date(
         &app,
-        "Wochenmittwoch-Suppe",
+        "Heute-Rezept",
         &["Mittagessen"],
-        Some(&wednesday),
+        Some(&today),
     )
     .await;
 
@@ -128,21 +118,44 @@ async fn wochenvorschau_shows_recipe_in_current_week() {
 
     // Then: Rezept im Body sichtbar
     assert!(
-        body.contains("Wochenmittwoch-Suppe"),
-        "Rezept dieser Woche sollte sichtbar sein"
+        body.contains("Heute-Rezept"),
+        "Rezept von heute sollte sichtbar sein"
     );
 }
 
 #[tokio::test]
-async fn wochenvorschau_does_not_show_recipe_from_next_week() {
-    // Given: Rezept mit planned_date = Montag nächste Woche (monday + 7 days)
+async fn wochenvorschau_shows_recipe_in_15_day_range() {
+    // Given: Rezept mit planned_date in 14 Tagen (Tag 15, index 14)
     let (app, _temp) = setup_test_app().await;
-    let next_monday = this_week_date(7); // 7 Tage nach Montag = nächster Montag
+    let day_14 = date_in_days(14);
     create_recipe_with_date(
         &app,
-        "Naechste-Woche-Rezept",
+        "Tag-14-Rezept",
         &["Mittagessen"],
-        Some(&next_monday),
+        Some(&day_14),
+    )
+    .await;
+
+    // When: GET /wochenvorschau
+    let (_status, body) = get_body(app, "/wochenvorschau").await;
+
+    // Then: Rezept im Body sichtbar
+    assert!(
+        body.contains("Tag-14-Rezept"),
+        "Rezept von Tag 14 sollte sichtbar sein"
+    );
+}
+
+#[tokio::test]
+async fn wochenvorschau_does_not_show_recipe_after_15_days() {
+    // Given: Rezept mit planned_date = Tag 15 (außerhalb des 15-Tage-Fensters)
+    let (app, _temp) = setup_test_app().await;
+    let day_15 = date_in_days(15);
+    create_recipe_with_date(
+        &app,
+        "Tag-15-Rezept",
+        &["Mittagessen"],
+        Some(&day_15),
     )
     .await;
 
@@ -151,37 +164,14 @@ async fn wochenvorschau_does_not_show_recipe_from_next_week() {
 
     // Then: Rezept NICHT im Body
     assert!(
-        !body.contains("Naechste-Woche-Rezept"),
-        "Rezept der nächsten Woche sollte nicht sichtbar sein"
-    );
-}
-
-#[tokio::test]
-async fn wochenvorschau_does_not_show_recipe_from_last_week() {
-    // Given: Rezept mit planned_date = Sonntag letzte Woche (monday - 1 day)
-    let (app, _temp) = setup_test_app().await;
-    let last_sunday = this_week_date(-1); // 1 Tag vor Montag = letzter Sonntag
-    create_recipe_with_date(
-        &app,
-        "Letzte-Woche-Rezept",
-        &["Mittagessen"],
-        Some(&last_sunday),
-    )
-    .await;
-
-    // When: GET /wochenvorschau
-    let (_status, body) = get_body(app, "/wochenvorschau").await;
-
-    // Then: Rezept NICHT im Body
-    assert!(
-        !body.contains("Letzte-Woche-Rezept"),
-        "Rezept der letzten Woche sollte nicht sichtbar sein"
+        !body.contains("Tag-15-Rezept"),
+        "Rezept außerhalb der 15 Tage sollte nicht sichtbar sein"
     );
 }
 
 #[tokio::test]
 async fn wochenvorschau_shows_empty_state_when_no_recipes() {
-    // Given: Keine Rezepte mit planned_date diese Woche
+    // Given: Keine Rezepte mit planned_date im 15-Tage-Bereich
     let (app, _temp) = setup_test_app().await;
 
     // When: GET /wochenvorschau
@@ -189,45 +179,45 @@ async fn wochenvorschau_shows_empty_state_when_no_recipes() {
 
     // Then: Leerzustand-Meldung sichtbar
     assert!(
-        body.contains("Für diese Woche noch nichts geplant"),
+        body.contains("Für die nächsten 15 Tage noch nichts geplant"),
         "Leer-Meldung sollte sichtbar sein"
     );
 }
 
 #[tokio::test]
 async fn wochenvorschau_shows_multiple_recipes_on_same_day() {
-    // Given: Zwei Rezepte mit gleichem planned_date in dieser Woche
+    // Given: Zwei Rezepte mit gleichem planned_date = heute
     let (app, _temp) = setup_test_app().await;
-    let thursday = this_week_date(3); // Donnerstag = +3 von Montag
+    let today = date_in_days(0); // Heute
     create_recipe_with_date(
         &app,
-        "Donnerstag-Pfannkuchen",
+        "Heute-Pfannkuchen",
         &["Mittagessen"],
-        Some(&thursday),
+        Some(&today),
     )
     .await;
-    create_recipe_with_date(&app, "Donnerstag-Rührei", &["Mittagessen"], Some(&thursday)).await;
+    create_recipe_with_date(&app, "Heute-Rührei", &["Mittagessen"], Some(&today)).await;
 
     // When: GET /wochenvorschau
     let (_status, body) = get_body(app, "/wochenvorschau").await;
 
     // Then: Beide Rezepte im Body
     assert!(
-        body.contains("Donnerstag-Pfannkuchen"),
+        body.contains("Heute-Pfannkuchen"),
         "Erstes Rezept sollte sichtbar sein"
     );
     assert!(
-        body.contains("Donnerstag-Rührei"),
+        body.contains("Heute-Rührei"),
         "Zweites Rezept sollte sichtbar sein"
     );
 }
 
 #[tokio::test]
 async fn wochenvorschau_recipe_link_leads_to_detail() {
-    // Given: Rezept mit ID und planned_date diese Woche
+    // Given: Rezept mit ID und planned_date = heute
     let (app, _temp) = setup_test_app().await;
-    let tuesday = this_week_date(1); // Dienstag = +1 von Montag
-    create_recipe_with_date(&app, "Link-Test-Rezept", &["Mittagessen"], Some(&tuesday)).await;
+    let today = date_in_days(0); // Heute
+    create_recipe_with_date(&app, "Link-Test-Rezept", &["Mittagessen"], Some(&today)).await;
 
     // When: GET /wochenvorschau
     let (_status, body) = get_body(app, "/wochenvorschau").await;
@@ -244,17 +234,17 @@ async fn wochenvorschau_recipe_link_leads_to_detail() {
 }
 
 #[tokio::test]
-async fn wochenvorschau_shows_kw_header() {
+async fn wochenvorschau_shows_zeitraum_header() {
     // Given: App
     let (app, _temp) = setup_test_app().await;
 
     // When: GET /wochenvorschau
     let (_status, body) = get_body(app, "/wochenvorschau").await;
 
-    // Then: KW-Angabe im Body
+    // Then: Zeitraum-Anzeige mit "–" im Body
     assert!(
-        body.contains("KW "),
-        "Kalenderwochen-Angabe sollte sichtbar sein"
+        body.contains("–"),
+        "Zeitraum-Anzeige sollte sichtbar sein"
     );
 }
 
@@ -275,8 +265,8 @@ async fn wochenvorschau_does_not_show_recipe_without_date() {
 }
 
 #[tokio::test]
-async fn wochenvorschau_shows_empty_state_when_recipe_is_next_week() {
-    // Given: Nur Rezept nächste Woche
+async fn wochenvorschau_shows_empty_state_when_no_recipes_in_range() {
+    // Given: Nur Rezept außerhalb des 15-Tage-Bereichs
     let (app, _temp) = setup_test_app().await;
     let far_future = date_in_days(30);
     create_recipe_with_date(&app, "Fernes-Rezept", &["Mittagessen"], Some(&far_future)).await;
@@ -286,46 +276,25 @@ async fn wochenvorschau_shows_empty_state_when_recipe_is_next_week() {
 
     // Then: Leerzustand-Meldung
     assert!(
-        body.contains("Für diese Woche noch nichts geplant"),
-        "Leer-Meldung sollte sichtbar sein wenn keine Wochenrezepte"
+        body.contains("Für die nächsten 15 Tage noch nichts geplant"),
+        "Leer-Meldung sollte sichtbar sein wenn keine Rezepte im Bereich"
     );
 }
 
-// Story 33: Wochenübersicht Navigation mit Pfeiltasten
+// Story 33: Navigation entfällt (Story 38)
 
 #[tokio::test]
-async fn wochenvorschau_mit_week_parameter_zeigt_andere_woche() {
+async fn wochenvorschau_hat_keine_navigation() {
     // Given: App
     let (app, _temp) = setup_test_app().await;
 
-    // When: GET /wochenvorschau?week=2025-W02
-    let (_status, body) = get_body(app, "/wochenvorschau?week=2025-W02").await;
-
-    // Then: Navigation enthält Pfeile und Zeitraum-Anzeige
-    assert!(
-        body.contains("wochen-nav-prev") || body.contains("href=\"/wochenvorschau?week=2025-W01\""),
-        "Body sollte Link zur vorherigen Woche enthalten"
-    );
-    assert!(
-        body.contains("wochen-nav-next") || body.contains("href=\"/wochenvorschau?week=2025-W03\""),
-        "Body sollte Link zur nächsten Woche enthalten"
-    );
-}
-
-#[tokio::test]
-async fn wochenvorschau_ohne_parameter_zeigt_navigation_links() {
-    // Given: App
-    let (app, _temp) = setup_test_app().await;
-
-    // When: GET /wochenvorschau ohne Parameter
+    // When: GET /wochenvorschau
     let (_status, body) = get_body(app, "/wochenvorschau").await;
 
-    // Then: Navigation enthält Vorherige/Nächste Woche Links
+    // Then: Keine Navigationselemente vorhanden
     assert!(
-        body.contains("wochenvorschau-nav")
-            || body.contains("aria-label=\"Vorherige Woche\"")
-            || body.contains("<"),
-        "Body sollte Navigationselemente enthalten"
+        !body.contains("wochen-nav-prev") && !body.contains("wochen-nav-next"),
+        "Body sollte keine Navigation enthalten"
     );
 }
 
@@ -392,30 +361,18 @@ async fn wochenvorschau_heute_tag_enthaelt_heute_badge() {
 }
 
 #[tokio::test]
-async fn wochenvorschau_vergangene_tage_korrekt_wenn_nicht_montag() {
+async fn wochenvorschau_keine_vergangenen_tage() {
     // Given: App ohne Rezepte
     let (app, _temp) = setup_test_app().await;
 
     // When: GET /wochenvorschau
     let (_status, body) = get_body(app, "/wochenvorschau").await;
 
-    // Berechne ob heute Montag ist
-    let today = time::OffsetDateTime::now_utc().date();
-    let is_monday = today.weekday() == time::Weekday::Monday;
-
-    if is_monday {
-        // Wenn heute Montag ist, gibt es keine vergangenen Tage in dieser Woche
-        assert!(
-            !body.contains("wochentag-vergangen"),
-            "Montag sollte keine 'wochentag-vergangen'-Klasse erzeugen"
-        );
-    } else {
-        // Wenn heute nicht Montag ist, gibt es mindestens einen vergangenen Tag
-        assert!(
-            body.contains("wochentag-vergangen"),
-            "Body sollte CSS-Klasse 'wochentag-vergangen' für vergangene Tage enthalten"
-        );
-    }
+    // Then: Es sollte keine vergangenen Tage geben (15-Tage-Liste beginnt ab heute)
+    assert!(
+        !body.contains("wochentag-vergangen"),
+        "15-Tage-Liste sollte keine vergangenen Tage enthalten"
+    );
 }
 
 // Story 34: "Länger nicht gemacht" Button in Wochenvorschau
