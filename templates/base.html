@@ -7,10 +7,11 @@
     <title>{% block title %}Rezepte{% endblock %}</title>
     <link rel="stylesheet" href="/static/css/app.css">
     <script src="/static/htmx.js"></script>
+    <link rel="icon" type="image/png" href="/static/img/logo.png">
 </head>
 <body>
     <header>
-        <a href="/" class="site-title">Rezepte</a>
+        <a href="/" class="site-title"><img src="/static/img/logo.png" alt="Rezepte" height="32" style="border-radius: 6px;"></a>
         <nav class="main-nav" aria-label="Hauptnavigation">
             {% block header_actions %}
             <a href="/recipes/new" class="nav-link">Neues Rezept</a>
