@@ -51,21 +51,6 @@ async fn create_recipe_with_date(
     app.clone().oneshot(request).await.unwrap();
 }
 
-/// Berechnet das Datum des Montags dieser Woche (ISO: Woche beginnt Montag).
-/// Gibt den Offset-Wochentag zurück als deutschen Datumsstring (T.M.JJJJ).
-fn this_week_date(day_offset_from_monday: i64) -> String {
-    let today = time::OffsetDateTime::now_utc().date();
-    let days_from_monday = today.weekday().number_days_from_monday() as i64;
-    let monday = today - time::Duration::days(days_from_monday);
-    let target = monday + time::Duration::days(day_offset_from_monday);
-    format!(
-        "{}.{}.{}",
-        target.day(),
-        target.month() as u8,
-        target.year()
-    )
-}
-
 /// Berechnet ein relatives Datum als deutschen Datumsstring (T.M.JJJJ).
 fn date_in_days(n: i64) -> String {
     let d = time::OffsetDateTime::now_utc().date() + time::Duration::days(n);
