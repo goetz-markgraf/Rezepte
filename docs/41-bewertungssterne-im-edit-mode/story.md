@@ -8,7 +8,7 @@
 
 ## 1. Story-Satz
 
-Als **Benutzer** möchte ich, dass beim Setzen der Stern-Bewertung im Bearbeitungsmodus alle Sterne bis zum ausgewählten Stern korrekt markiert werden, damit ich visuell klar erkenne, welche Bewertung ich auswähle.
+Als **Benutzer** möchte ich, dass im Bearbeiten-Modus eines Rezeptes der Stern-Bewertung alle Sterne bis zum ausgewählten Stern korrekt markiert werden, damit ich visuell klar erkenne, welche Bewertung ausgewählt ist.
 
 ---
 
@@ -26,6 +26,7 @@ Vermeidung von Verwirrung bei der Bewertungsauswahl und konsistente UX zwischen 
 ### Edge Cases
 - **Leere Bewertung:** Wenn keine Bewertung ausgewählt ist, sollten alle Sterne unmarkiert sein.
 - **Bewertung auf 1 setzen:** Nur der erste Stern sollte markiert sein.
+- **Bewertung auf 4 gesetzt:** Die ersten 4 Sterne sollten markiert sein.
 - **Vollständige Bewertung (5 Sterne):** Alle Sterne sollten markiert sein.
 - **Wechsel zwischen Edit- und View-Modus:** Die Darstellung muss in beiden Modi korrekt funktionieren.
 
