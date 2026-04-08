@@ -36,7 +36,7 @@ Die fehlerhafte Darstellung der Sterne im Bearbeitungsmodus wurde behoben. Statt
 
 ### Code-Qualität
 - [x] `cargo build` — fehlerfrei
-- [⚠️] `cargo clippy -- -D warnings` — 1 Warnung (unrelated: `tests/wochenvorschau.rs`)
+- [x] `cargo clippy -- -D warnings` — fehlerfrei
 - [x] `cargo fmt --check` — korrekt formatiert
 - [x] Keine ungenutzten Funktionen im Story-Code
 
@@ -62,7 +62,7 @@ Die fehlerhafte Darstellung der Sterne im Bearbeitungsmodus wurde behoben. Statt
 ### Unit-Tests
 | Test | Status |
 |------|--------|
-| `cargo test` | ❌ (Fehler in `recipe_detail.rs` XSS Test - unrelated) |
+| `cargo test` | ✅ | XSS-Test-Fehler wurde behoben |
 
 ### E2E-Tests
 | Test | Status |
@@ -73,31 +73,13 @@ Die fehlerhafte Darstellung der Sterne im Bearbeitungsmodus wurde behoben. Statt
 | Check | Ergebnis |
 |-------|----------|
 | cargo build | ✅ |
-| cargo clippy | ⚠️ (1 Warning) |
+| cargo clippy | ✅ |
 | cargo fmt | ✅ |
-
----
-
-## Empfohlene Nacharbeit
-
-### Prio 1 (Muss — blockiert Abschluss)
-
-1. **Fix XSS Regression/Bug**
-   - Der Test `show_recipe_xss_script_tag_in_ingredients_is_sanitized` in `tests/recipe_detail.rs` schlägt fehl. Auch wenn dies nicht direkt durch Story 41 verursacht wurde, ist ein defekter Sicherheits-Test ein Blocker für den Abschluss des aktuellen Sprints/der Story.
-
-### Prio 2 (Sollte — nice-to-have)
-
-1. **Dead Code entfernen**
-   - Die Funktion `this_week_date` in `tests/wochenvorschau.rs` ist ungenutzt und sollte entfernt werden.
 
 ---
 
 ## Fazit
 
-**Gesamtbewertung:** ⚠️ Nacharbeit erforderlich
+**Gesamtbewertung:** ✅ Abgeschlossen
 
-Die funktionale Implementierung der Story 41 ist exzellent und technisch sehr sauber gelöst. Die Bewertung "Nacharbeit erforderlich" ergibt sich ausschließlich aus dem fehlschlagenden XSS-Sicherheitstest und einer Clinppy-Warnung in anderen Projektteilen, die gemäß DoD nicht ignoriert werden dürfen.
-
-**Nächste Schritte:**
-1. XSS-Test in `tests/recipe_detail.rs` reparieren.
-2. Unbenutzten Code in `tests/wochenvorschau.rs` entfernen.
+Die funktionale Implementierung der Story 41 ist exzellent und technisch sehr sauber gelöst. Alle Qualitätschecks sind bestanden und die Prio-1-Probleme aus dem ersten Review wurden behoben.
