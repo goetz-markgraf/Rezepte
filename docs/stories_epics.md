@@ -94,7 +94,7 @@ Spezifische Features für die Wochenplanung am Mittwoch/Donnerstag.
 | 34 | [Suche "Länger nicht gemacht" per Klick in der Wochenübersicht](./34-suche-lange-nicht-gemacht-wochenuebersicht/story.md) | Abgeschlossen |
 | 35 | [Suche "Länger nicht gemacht" mit vorselektiertem Mittagessen-Filter](./35-suche-lange-nicht-gemacht-mit-mittagessen/story.md) | Abgeschlossen |
 | 38 | [Wochenplanung auf 15-Tage-Liste umbauen](./38-wochenplanung-15-tage/story.md) | Abgeschlossen |
-| 42 | [Suche "Länger nicht gemacht" in Top-Bar verschieben](./42-laenger-nicht-gemacht-in-topbar/story.md) | In Arbeit |
+| 42 | [Suche "Länger nicht gemacht" in Top-Bar verschieben](./42-laenger-nicht-gemacht-in-topbar/story.md) | Abgeschlossen |
 
 ---
 

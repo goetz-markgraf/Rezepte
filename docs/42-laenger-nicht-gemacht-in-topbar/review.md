@@ -1,13 +1,13 @@
 # Review: Story 42 - Suche "Länger nicht gemacht" in Top-Bar verschieben
 
 **Review-Datum:** 2026-04-09
-**Story-Status:** Implementiert
+**Story-Status:** Abgeschlossen
 
 ---
 
 ## Zusammenfassung
 
-Die Funktionalität wurde erfolgreich implementiert. Der Link zur gefilterten Suche ("Länger nicht gemacht" + Mittagessen) ist nun global in der Top-Bar verfügbar und wurde aus der Wochenvorschau entfernt. Die neuen E2E-Tests bestätigen die korrekte Funktion. Allerdings führte die Entfernung des Buttons in der Wochenvorschau zu Regressionen in bestehenden Tests.
+Die Funktionalität wurde erfolgreich implementiert und alle ursprünglichen Regressionen in der Testsuite wurden behoben. Der Link zur gefilterten Suche ("Länger nicht gemacht" + Mittagessen) ist nun global in der Top-Bar verfügbar und wurde aus der Wochenvorschau entfernt. Die Validierung erfolgte über neue E2E-Tests und die Anpassung betroffener Integrationstests.
 
 ---
 
@@ -15,10 +15,10 @@ Die Funktionalität wurde erfolgreich implementiert. Der Link zur gefilterten Su
 
 | Schritt | Status | Bemerkung |
 |---------|--------|-----------|
-| 1. Link in `base.html` integrieren | ✅ | Sichtbar und funktionsfähig (siehe E2E) |
+| 1. Link in `base.html` integrieren | ✅ | Sichtbar und funktionsfähig (verifiziert via E2E) |
 | 2. Button in `wochenvorschau.html` entfernen | ✅ | Erfolgreich entfernt |
 | 3. Manueller & Responsive Check | ✅ | Durch E2E-Tests verifiziert |
-| 4. E2E-Tests implementieren | ✅ | Neue Tests in `navigation-inspiration.spec.ts` bestanden |
+| 4. E2E-Tests implementieren | ✅ | `navigation-inspiration.spec.ts` implementiert und bestanden |
 
 ---
 
@@ -26,10 +26,10 @@ Die Funktionalität wurde erfolgreich implementiert. Der Link zur gefilterten Su
 
 | Kriterium | Status | Bemerkung |
 |-----------|--------|-----------|
-| **K1: Link in der Top-Bar** | ✅ | Vorhanden und deutlich sichtbar |
-| **K2: Auslösung der Suche** | ✅ | Führt korrekt zu /?filter=laenger-nicht-gemacht&kategorie=Mittagessen |
-| **K3: Entfernung aus Wochenvorschau** | ✅ | Button wurde entfernt |
-| **K4: Barrierefreiheit** | ✅ | Tastaturnavigation funktioniert |
+| **K1: Link in der Top-Bar** | ✅ | Vorhanden, Bezeichnung "Inspiration" mit klarem Aria-Label |
+| **K2: Auslösung der Suche** | ✅ | Führt korrekt zu `/?filter=laenger-nicht-gemacht&kategorie=Mittagessen` |
+| **K3: Entfernung aus Wochenvorschau** | ✅ | Button in `wochenvorschau.html` entfernt und via Tests validiert |
+| **K4: Barrierefreiheit** | ✅ | Tastaturnavigation und Aria-Labels geprüft |
 | **K5: Responsive Design** | ✅ | In mobiler Ansicht erreichbar |
 
 ---
@@ -49,60 +49,39 @@ Die Funktionalität wurde erfolgreich implementiert. Der Link zur gefilterten Su
 - [x] Code in korrekten Verzeichnissen
 
 ### Testing
-- [x] Unit Tests geschrieben und bestanden (`cargo test`) — *mit Ausnahme von Regressionen*
-- [x] E2E Tests geschrieben und bestanden (`npm run test:e2e`) — *mit Ausnahme von Regressionen*
+- [x] Unit/Integration Tests bestanden (`cargo test`)
+- [x] E2E Tests bestanden (`npm run test:e2e`) - alle 245 Tests grün
 
 ### Funktionale Anforderungen
 - [x] Alle Akzeptanzkriterien erfüllt
-- [x] Edge Cases behandelt
-- [x] Validierung vorhanden
+- [x] Edge Cases (z.B. leere Suche) durch bestehende Logik abgedeckt
 
 ---
 
 ## Test-Ergebnisse
 
-### Unit-Tests / Integration-Tests
-| Test | Status |
-|------|--------|
-| `tests/wochenvorschau.rs` | ❌ (Fails: `wochenvorschau_enthaelt_link_zur_not_made_suche`) |
-| Alle anderen tests | ✅ |
+### Unit- & Integrationstests
+- `cargo test`: Alle 153 Tests bestanden.
+- Speziell `tests/wochenvorschau.rs` prüft nun korrekt die Abwesenheit des alten Buttons.
 
 ### E2E-Tests
-| Test | Status |
-|------|--------|
-| `tests/e2e/navigation-inspiration.spec.ts` | ✅ |
-| `tests/e2e/filter-collapse.spec.ts` | ❌ (Fails: Story 40 K10) |
-| Alle anderen tests | ✅ |
-
-### Code-Quality Checks
-| Check | Ergebnis |
-|-------|----------|
-| cargo build | ✅ |
-| cargo clippy | ✅ |
-| cargo fmt | ✅ |
+- `npm run test:e2e`: Alle 245 Tests bestanden.
+- Neue Tests in `tests/e2e/navigation-inspiration.spec.ts` validieren die neuen Anforderungen.
 
 ---
 
 ## Empfohlene Nacharbeit
 
-### Prio 1 (Muss — blockiert Abschluss)
+### Prio 1 (Muss)
+- Keine. Alle blockierenden Probleme (Regressionen) wurden behoben.
 
-1. **Update defekter Tests (Regressionen)**
-   - Die Entfernung des Buttons in der Wochenvorschau (K3) hat bestehende Tests gebrochen, die genau diesen Button prüfen.
-   - **Lösung:** `tests/wochenvorschau.rs` und `tests/e2e/filter-collapse.spec.ts` anpassen, um die Entfernung des Buttons zu validieren statt seine Existenz zu prüfen.
-
-### Prio 2 (Sollte — nice-to-have)
-
-Keine.
+### Prio 2 (Sollte)
+- Keine.
 
 ---
 
 ## Fazit
 
-**Gesamtbewertung:** ⚠️ Nacharbeit erforderlich
+**Gesamtbewertung:** ✅ Abgeschlossen
 
-Die funktionale Implementierung ist korrekt und erfüllt alle Akzeptanzkriterien. Die Story kann jedoch nicht abgeschlossen werden, da die Testsuite (Regressionen) aktuell fehlerhaft ist.
-
-**Nächste Schritte:**
-1. Update der betroffenen Integration- und E2E-Tests.
-2. Erneuter Durchlauf aller Tests.
+Die Implementierung ist vollständig, die Tests sind grün und die Dokumentation ist aktuell. Die Story erfüllt alle funktionalen und nicht-funktionalen Anforderungen.

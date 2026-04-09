@@ -363,46 +363,23 @@ async fn wochenvorschau_keine_vergangenen_tage() {
 // Story 34: "Länger nicht gemacht" Button in Wochenvorschau
 
 #[tokio::test]
-async fn wochenvorschau_enthaelt_link_zur_not_made_suche() {
+async fn wochenvorschau_enthaelt_keinen_button_zur_not_made_suche() {
     // Given: App ohne Rezepte
     let (app, _temp) = setup_test_app().await;
 
     // When: GET /wochenvorschau
     let (_status, body) = get_body(app, "/wochenvorschau").await;
 
-    // Then: Body enthält Link zur Suche mit Filter "Länger nicht gemacht" und Kategorie Mittagessen
+    // Then: Der spezifische Button aus der Wochenvorschau sollte nicht mehr existieren
+    // (Wir prüfen auf CSS-Klasse und Button-Text, nicht auf den Link an sich, 
+    // da dieser nun global in der Top-Bar vorhanden ist)
     assert!(
-        body.contains("filter=laenger-nicht-gemacht"),
-        "Body sollte Link zu '/?filter=laenger-nicht-gemacht' enthalten"
+        !body.contains("not-made-button"),
+        "Body sollte die CSS-Klasse 'not-made-button' nicht mehr enthalten"
     );
 
-    // And: Link enthält auch Kategorie=Mittagessen (Story 35)
     assert!(
-        body.contains("kategorie=Mittagessen"),
-        "Body sollte Link mit '&kategorie=Mittagessen' enthalten"
-    );
-
-    // And: Button hat korrekte CSS-Klasse
-    assert!(
-        body.contains("not-made-button"),
-        "Body sollte CSS-Klasse 'not-made-button' enthalten"
-    );
-
-    // And: Button hat korrektes ARIA-Label (Story 35: Mittagessen-spezifisch)
-    assert!(
-        body.contains("Mittagessen-Rezepte anzeigen, die länger nicht gemacht wurden"),
-        "Body sollte ARIA-Label für Barrierefreiheit enthalten"
-    );
-
-    // And: Toolbar-Container ist vorhanden
-    assert!(
-        body.contains("wochenvorschau-toolbar"),
-        "Body sollte CSS-Klasse 'wochenvorschau-toolbar' enthalten"
-    );
-
-    // And: Button-Text ist vorhanden
-    assert!(
-        body.contains("Länger nicht gemacht"),
-        "Body sollte Button-Text 'Länger nicht gemacht' enthalten"
+        !body.contains("Mittagessen-Rezepte anzeigen, die länger nicht gemacht wurden"),
+        "Body sollte das alte ARIA-Label des Buttons nicht mehr enthalten"
     );
 }

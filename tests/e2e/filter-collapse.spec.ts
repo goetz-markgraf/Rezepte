@@ -258,27 +258,13 @@ test.describe('Filter-Einklappen (Story 37)', () => {
     await expect(filterPanel).toHaveAttribute('aria-hidden', 'true');
   });
 
-  test('Story 40 K10: "Länger nicht gemacht"-Button von Wochenübersicht - Filter eingeklappt (Default)', async ({ page }) => {
+  test('Story 40 K10: "Länger nicht gemacht"-Button wurde aus Wochenübersicht entfernt', async ({ page }) => {
     // Gegeben: Wochenübersicht ist geöffnet
     await page.goto('/wochenvorschau');
 
-    // Wenn: Nutzer klickt auf "Länger nicht gemacht"-Button
+    // Dann: Der "Länger nicht gemacht"-Button sollte nicht mehr sichtbar sein
     const notMadeBtn = page.locator('.not-made-button');
-    await expect(notMadeBtn).toBeVisible();
-    await notMadeBtn.click();
-
-    // Dann: Landet auf der Rezeptliste (nicht mehr auf /wochenvorschau)
-    await expect(page).not.toHaveURL(/wochenvorschau/);
-
-    // Und: URL enthält keinen filter_collapsed Parameter (Story 40: Default eingeklappt)
-    await expect(page).not.toHaveURL(/filter_collapsed/);
-
-    // Und: URL enthält filter=laenger-nicht-gemacht
-    await expect(page).toHaveURL(/filter=laenger-nicht-gemacht/);
-
-    // Und: Filter sind eingeklappt (Story 40: Default)
-    const filterPanel = page.locator('#filter-panel');
-    await expect(filterPanel).not.toBeVisible();
+    await expect(notMadeBtn).not.toBeVisible();
   });
 
   test('Story 40 K10: "Zur Rezeptliste"-Link von Wochenübersicht - Filter eingeklappt (Default)', async ({ page }) => {

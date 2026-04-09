@@ -102,6 +102,7 @@ pub struct WochenvorschauTemplate {
     /// Zeitraum-Anzeige: "04.04.2026 – 18.04.2026"
     pub zeitraum_anzeige: String,
     /// true wenn mindestens ein Rezept in den 15 Tagen geplant ist.
+    #[allow(dead_code)]
     pub hat_rezepte: bool,
 }
 
