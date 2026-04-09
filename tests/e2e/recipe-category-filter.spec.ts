@@ -31,8 +31,9 @@ async function createRecipe(
 test.describe('Kategorie-Filter (Story 8)', () => {
 
   test('K1: Alle fünf Kategorien sind auf der Startseite sichtbar', async ({ page }) => {
-    // Given: Die Startseite wird aufgerufen
-    await page.goto('/');
+    // Given: Die Startseite wird mit ausgeklapptem Filter aufgerufen
+    // (Filter ist per Default eingeklappt seit Story 40, daher filter_collapsed=0)
+    await page.goto('/?filter_collapsed=0');
 
     // Then: Alle 5 Kategorie-Buttons sind in der richtigen Reihenfolge sichtbar
     const filterNav = page.locator('nav.category-filter');
@@ -57,8 +58,9 @@ test.describe('Kategorie-Filter (Story 8)', () => {
     await createRecipe(page, `Vollkornbrot ${suffix}`, ['Brot']);
     await createRecipe(page, `Spaghetti Bolognese ${suffix}`, ['Mittagessen']);
 
-    // When: Benutzer klickt auf Kategorie "Brot"
-    await page.goto('/');
+    // When: Benutzer öffnet Startseite mit ausgeklapptem Filter und klickt auf Kategorie "Brot"
+    // (Filter ist per Default eingeklappt seit Story 40, daher filter_collapsed=0)
+    await page.goto('/?filter_collapsed=0');
     await page.locator('nav.category-filter a').filter({ hasText: 'Brot' }).click();
 
     // Then: Nur "Vollkornbrot" ist sichtbar
@@ -81,10 +83,11 @@ test.describe('Kategorie-Filter (Story 8)', () => {
     await createRecipe(page, `Partybrot ${suffix}`, ['Brot', 'Party']);
     await createRecipe(page, `Spaghetti ${suffix}`, ['Mittagessen']);
 
-    // When: Benutzer wählt Kategorie "Kuchen", dann "Brot"
-    await page.goto('/');
-    await page.locator('nav.category-filter a').filter({ hasText: 'Kuchen' }).click();
-    await page.locator('nav.category-filter a').filter({ hasText: 'Brot' }).click();
+    // When: URL direkt mit beiden Kategorien aufgerufen wird (ODER-Logik via DeepLink)
+    // Hinweis: Interaktion via Klick würde nach dem ersten Klick das Filter-Panel einklappen
+    // (Story 40: Default eingeklappt), daher wird der Zwei-Kategorien-Zustand per URL geprüft.
+    // Das Filter-Panel wird ausgeklappt um die aktiven Buttons zu prüfen.
+    await page.goto('/?kategorie=Kuchen&kategorie=Brot&filter_collapsed=0');
 
     // Then: Käsekuchen und Partybrot sind sichtbar, Spaghetti nicht
     await expect(page.locator('#recipe-results')).toContainText(`Käsekuchen ${suffix}`);
@@ -104,7 +107,9 @@ test.describe('Kategorie-Filter (Story 8)', () => {
     await createRecipe(page, `Vollkornbrot ${suffix}`, ['Brot']);
     await createRecipe(page, `Spaghetti ${suffix}`, ['Mittagessen']);
 
-    await page.goto(`/?kategorie=Brot`);
+    // Filter ausgeklappt laden, damit der "Alle"-Button sichtbar und klickbar ist
+    // (Filter ist per Default eingeklappt seit Story 40, daher filter_collapsed=0)
+    await page.goto(`/?kategorie=Brot&filter_collapsed=0`);
     await expect(page.locator('#recipe-results')).toContainText(`Vollkornbrot ${suffix}`);
     await expect(page.locator('#recipe-results')).not.toContainText(`Spaghetti ${suffix}`);
 
@@ -126,7 +131,9 @@ test.describe('Kategorie-Filter (Story 8)', () => {
     await createRecipe(page, `Vollkornbrot ${suffix}`, ['Brot']);
     await createRecipe(page, `Spaghetti ${suffix}`, ['Mittagessen']);
 
-    await page.goto(`/?kategorie=Brot`);
+    // Filter ausgeklappt laden, damit der "Brot"-Button sichtbar und klickbar ist
+    // (Filter ist per Default eingeklappt seit Story 40, daher filter_collapsed=0)
+    await page.goto(`/?kategorie=Brot&filter_collapsed=0`);
     await expect(page.locator('#recipe-results')).toContainText(`Vollkornbrot ${suffix}`);
 
     // When: Benutzer klickt erneut auf "Brot" (Toggle)
