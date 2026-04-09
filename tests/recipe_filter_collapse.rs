@@ -41,20 +41,20 @@ async fn filter_collapsed_parameter_rendert_collapsed_klasse() {
     );
 }
 
-/// Test 2: GET / (ohne Parameter) → HTML enthält KEIN filter-panel--collapsed
+/// Test 2: GET / (ohne Parameter) → HTML enthält filter-panel--collapsed (Standard)
 #[tokio::test]
-async fn ohne_parameter_kein_collapsed() {
+async fn ohne_parameter_ist_standardmaessig_eingeklappt() {
     // Gegeben: App ohne Daten
     let (app, _temp) = setup_test_app().await;
 
     // Wenn: Seite ohne filter_collapsed aufgerufen wird
     let (status, body) = get_body(app, "/").await;
 
-    // Dann: HTTP 200 und kein filter-panel--collapsed im HTML
+    // Dann: HTTP 200 und filter-panel--collapsed im HTML
     assert_eq!(status, StatusCode::OK);
     assert!(
-        !body.contains("filter-panel--collapsed"),
-        "HTML sollte kein filter-panel--collapsed enthalten wenn Parameter fehlt"
+        body.contains("filter-panel--collapsed"),
+        "HTML sollte filter-panel--collapsed enthalten (Standard: eingeklappt) wenn Parameter fehlt"
     );
 }
 
@@ -110,20 +110,20 @@ async fn collapsed_toggle_url_zeigt_aufklappen() {
     );
 }
 
-/// Test 6: Toggle-URL ausgeklappt → zeigt URL mit filter_collapsed=1
+/// Test 6: Toggle-URL ausgeklappt (via filter_collapsed=0) → zeigt URL ohne filter_collapsed (zum Einklappen)
 #[tokio::test]
 async fn ausgeklappt_toggle_url_zeigt_einklappen() {
     // Gegeben: App ohne Daten
     let (app, _temp) = setup_test_app().await;
 
-    // Wenn: Seite ohne filter_collapsed aufgerufen wird
-    let (status, body) = get_body(app, "/").await;
+    // Wenn: Seite mit filter_collapsed=0 aufgerufen wird (Zustand: ausgeklappt)
+    let (status, body) = get_body(app, "/?filter_collapsed=0").await;
 
-    // Dann: Toggle-Button-Link enthält filter_collapsed=1 in der href (zum Einklappen)
+    // Dann: Toggle-Button-Link enthält keinen filter_collapsed Parameter mehr (zum Einklappen in Standardzustand)
     assert_eq!(status, StatusCode::OK);
     assert!(
-        body.contains("filter_collapsed=1"),
-        "Toggle-Button href sollte filter_collapsed=1 enthalten wenn ausgeklappt"
+        !body.contains("filter_collapsed"),
+        "Toggle-Button href sollte keinen filter_collapsed Parameter mehr enthalten wenn ausgeklappt (zum Einklappen)"
     );
     assert!(
         body.contains("Filter &#9660;") || body.contains("Filter ▼"),
