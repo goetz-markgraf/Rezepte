@@ -63,19 +63,21 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     const filterName = `Brot-Ideen-${suffix}`;
     await page.fill('#save-filter-name', filterName);
     await page.click('.save-filter-submit');
+    await page.waitForURL(/kategorie=Brot/);
 
-    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
+    // Panel aufklappen (Toggle ist ein einfacher Link → vollständige Seitennavigation)
     await page.locator('.filter-toggle-btn').click();
+    await page.waitForURL(/filter_collapsed=0/);
 
     // Dann: "Brot-Ideen" erscheint als Chip in der gespeicherten Filter-Liste
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).toBeVisible();
 
-    // Wenn: Benutzer setzt alle Filter zurück (direkte URL, da HTMX nur Teilbereich aktualisiert)
+    // Wenn: Benutzer setzt alle Filter zurück
     await page.goto('/');
-    await expect(page).toHaveURL('/');
 
-    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
+    // Panel aufklappen
     await page.locator('.filter-toggle-btn').click();
+    await page.waitForURL(/filter_collapsed=0/);
 
     // Dann: Klick auf gespeicherten Filter "Brot-Ideen"
     await page.locator('.saved-filter-btn', { hasText: filterName }).click();
@@ -95,14 +97,11 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     const filterName = `Persistenz-${suffix}`;
     await page.fill('#save-filter-name', filterName);
     await page.click('.save-filter-submit');
-    await page.waitForLoadState('networkidle');
+    await page.waitForURL(/kategorie=Brot/);
 
-    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
-    // (Vollseiten-Navigate mit filter_collapsed=0, da Toggle nur HTMX-Partial-Update macht)
-    const currentUrl = page.url();
-    const baseUrl = new URL(currentUrl);
-    baseUrl.searchParams.set('filter_collapsed', '0');
-    await page.goto(baseUrl.toString());
+    // Panel aufklappen (Toggle ist ein einfacher Link → vollständige Seitennavigation)
+    await page.locator('.filter-toggle-btn').click();
+    await page.waitForURL(/filter_collapsed=0/);
 
     // Dann: Filter gespeichert und sichtbar
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).toBeVisible();
@@ -124,9 +123,11 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     const filterName = `Loeschen-${suffix}`;
     await page.fill('#save-filter-name', filterName);
     await page.click('.save-filter-submit');
+    await page.waitForURL(/kategorie=Brot/);
 
-    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
+    // Panel aufklappen (Toggle ist ein einfacher Link → vollständige Seitennavigation)
     await page.locator('.filter-toggle-btn').click();
+    await page.waitForURL(/filter_collapsed=0/);
 
     // Dann: Filter sichtbar
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).toBeVisible();
@@ -138,9 +139,8 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     // Dann: Filter verschwindet (HTMX-Delete)
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).not.toBeVisible();
 
-    // Und: Nach Reload immer noch weg
+    // Und: Nach Reload immer noch weg (URL hat bereits filter_collapsed=0 → Panel bleibt offen)
     await page.reload();
-    await page.locator('.filter-toggle-btn').click();
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).not.toBeVisible();
   });
 
@@ -159,9 +159,11 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     const filterName = `Mittagessenplanung-${suffix}`;
     await page.fill('#save-filter-name', filterName);
     await page.click('.save-filter-submit');
+    await page.waitForURL(/kategorie=Mittagessen/);
 
-    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
+    // Panel aufklappen (Toggle ist ein einfacher Link → vollständige Seitennavigation)
     await page.locator('.filter-toggle-btn').click();
+    await page.waitForURL(/filter_collapsed=0/);
 
     // Dann: Filter sichtbar
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).toBeVisible();
@@ -171,6 +173,7 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
 
     // Panel aufklappen
     await page.locator('.filter-toggle-btn').click();
+    await page.waitForURL(/filter_collapsed=0/);
 
     // Dann: Klick auf gespeicherten Filter
     await page.locator('.saved-filter-btn', { hasText: filterName }).click();
@@ -193,26 +196,23 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     const filterName = `Duplikat-${suffix}`;
     await page.fill('#save-filter-name', filterName);
     await page.click('.save-filter-submit');
-    await page.waitForLoadState('networkidle');
+    await page.waitForURL(/kategorie=Brot/);
 
-    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
+    // Panel aufklappen (Toggle ist ein einfacher Link → vollständige Seitennavigation)
     await page.locator('.filter-toggle-btn').click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForURL(/filter_collapsed=0/);
 
     // Filter gespeichert
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).toBeVisible();
 
-    // Wenn: Erneut Filter speichern unter demselben Namen (direkt via URL wegen HTMX)
-    await page.goto('/?kategorie=Brot&filter_collapsed=0');
+    // Wenn: Erneut Filter speichern unter demselben Namen
     await page.fill('#save-filter-name', filterName);
     await page.click('.save-filter-submit');
-    await page.waitForLoadState('networkidle');
+    await page.waitForURL(/save_error=duplikat/);
 
-    // Nach dem Redirect: Panel aufklappen (filter_collapsed=0 zur URL hinzufügen)
-    const errorUrl = page.url();
-    const errorUrlObj = new URL(errorUrl);
-    errorUrlObj.searchParams.set('filter_collapsed', '0');
-    await page.goto(errorUrlObj.toString());
+    // Panel aufklappen: Toggle-Button bewahrt save_error nicht → URL manuell mit filter_collapsed=0 laden
+    const errorPageUrl = page.url();
+    await page.goto(errorPageUrl + '&filter_collapsed=0');
 
     // Dann: Fehlermeldung "existiert bereits" sichtbar
     await expect(page.locator('.save-filter-error')).toBeVisible();
@@ -234,9 +234,11 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     const filterName = `Naechste7Tage-${suffix}`;
     await page.fill('#save-filter-name', filterName);
     await page.click('.save-filter-submit');
+    await page.waitForURL(/filter=naechste-7-tage/);
 
-    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
+    // Panel aufklappen (Toggle ist ein einfacher Link → vollständige Seitennavigation)
     await page.locator('.filter-toggle-btn').click();
+    await page.waitForURL(/filter_collapsed=0/);
 
     // Dann: Filter sichtbar
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).toBeVisible();
@@ -246,6 +248,7 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
 
     // Panel aufklappen
     await page.locator('.filter-toggle-btn').click();
+    await page.waitForURL(/filter_collapsed=0/);
 
     await page.locator('.saved-filter-btn', { hasText: filterName }).click();
 
@@ -254,6 +257,7 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
 
     // Panel aufklappen um gespeicherte Filter sichtbar zu machen
     await page.locator('.filter-toggle-btn').click();
+    await page.waitForURL(/filter_collapsed=0/);
 
     // Und: Gespeicherter Filter bleibt in der Liste erhalten
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).toBeVisible();
