@@ -1,32 +1,31 @@
 # Story 43: Speichern-Button in Bearbeitungsansicht oben hinzufügen
 
 **Epic:** Rezept-Verwaltung (Grundlegendes CRUD)
-**Priorität:** [MVP Phase X / Nice-to-have]
+**Priorität:** Nice-to-have
 **Status:** Offen
 
 ---
 
 ## 1. Story-Satz
 
-Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
+Als **Benutzer** möchte ich **in der Rezept-Bearbeitungsansicht zusätzlich einen Speichern-Button am oberen Rand des Formulars haben**, damit ich **Änderungen schnell sichern kann, ohne zum Ende der Seite scrollen zu müssen**.
 
 ---
 
 ## 2. Geschäftsbezogene Details
 
 ### Kontext
-[Warum ist diese Funktion wichtig? Was ist der Hintergrund?]
+Bei längeren Rezeptbeschreibungen oder Zutatenlisten ist der Weg zum Speichern-Button am Ende der Seite weit. Ein redundanter Button am Anfang verbessert den Workflow.
 
 ### Nutzergruppe
-[Wer nutzt diese Funktion?]
+Alle Benutzer, die Rezepte bearbeiten.
 
 ### Business-Value
-[Was ist der konkrete Mehrwert?]
+Verbesserte Usability und Effizienz bei der Rezeptpflege.
 
 ### Edge Cases
-- **[Fall 1]:** [Beschreibung und erwartetes Verhalten]
-- **[Fall 2]:** [Beschreibung und erwartetes Verhalten]
-...
+- **Validierungsfehler:** Falls das Formular ungültig ist, wird der Speichervorgang wie gewohnt abgebrochen und die entsprechenden Fehlermeldungen angezeigt.
+- **Mobile Ansicht:** Der Button muss auch in der mobilen Ansicht gut positioniert sein und die Bedienbarkeit nicht einschränken.
 
 ---
 
@@ -34,40 +33,41 @@ Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
 
 ### Funktionale Kriterien
 
-- [ ] **K1: [Kriterium-Titel]**
-  - [Detail-Bedingung]
-  - [Detail-Bedingung]
-
-- [ ] **K2: [Kriterium-Titel]**
-  - [Detail-Bedingung]
+- [ ] **K1: Platzierung des Buttons**
+  - In der Bearbeitungsansicht befindet sich ein Speichern-Button in derselben Zeile wie die Überschrift "Rezept bearbeiten".
+- [ ] **K2: Optische Gestaltung**
+  - Der Button ist klein.
+  - Der Button ist blau.
+  - Der Button verwendet das bestehende Speichern-Icon.
+- [ ] **K3: Funktionalität**
+  - Ein Klick auf den oberen Button löst den identischen Speichervorgang aus wie der primäre Speichern-Button am Ende des Formulars.
+- [ ] **K4: Erhalt bestehender Elemente**
+  - Die ursprünglichen Buttons "Speichern" und "Abbrechen" am Ende der Seite bleiben unverändert an ihrer Position erhalten.
 
 ### Nicht-funktionale Kriterien
 
-- [ ] **K[N]: Performance**
-  - [Ladezeit-Ziel]
-  - [Speichervorgang-Ziel]
-
-- [ ] **K[N+1]: Barrierefreiheit**
-  - Alle Formularfelder haben korrekte Labels (WCAG 2.1 Level A)
-  - Tastatur-Navigation funktioniert vollständig
+- [ ] **K5: Barrierefreiheit**
+  - Der Button ist vollständig per Tastatur bedienbar.
+  - Der Button besitzt ein aussagekräftiges Label (z.B. `aria-label="Rezept speichern"`).
 
 ---
 
 ## 4. Technische Planung
 
 ### Datenmodell
-[Falls neue Felder/Tabellen notwendig: Beschreibung der Änderungen am Schema]
+Keine Änderungen am Datenmodell erforderlich.
 
 ### UI/UX-Spezifikation
-[Beschreibung des Layouts, der Interaktionen, des Flows]
+- Ergänzung im HTML-Template der Bearbeitungsansicht.
+- Integration in die Kopfzeile mittels Flexbox/Grid, um die Überschrift und den Button auf einer Linie zu halten.
+- Verwendung existierender CSS-Klassen für das Styling (Blau, Icon).
 
 ---
 
 ## 5. Nicht-funktionale Anforderungen
 
 ### Performance
-- Seite lädt ohne sichtbare Verzögerung (< 500ms)
-- [Weitere spezifische Ziele]
+- Die Hinzufügung eines weiteren Buttons hat keinen messbaren Einfluss auf die Ladezeit.
 
 ### Browser-Support
 - Aktuelle Chrome, Firefox, Safari, Edge Versionen
@@ -83,18 +83,19 @@ Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
 
 ### E2E-Tests (Playwright)
 
-**Testfall 1: [Bezeichnung]**
+**Testfall 1: Speichern über oberen Button**
 ```gherkin
-Given [Ausgangszustand]
-When [Aktion des Benutzers]
-Then [Erwartetes Ergebnis]
+Given ich befinde mich in der Bearbeitungsansicht eines Rezepts
+When ich ein Feld ändere und auf den oberen Speichern-Button klicke
+Then wird das Rezept gespeichert
+And ich werde zur Detailansicht zurückgeleitet
 ```
 
-**Testfall 2: [Bezeichnung]**
+**Testfall 2: Sichtbarkeit beider Buttons**
 ```gherkin
-Given [Ausgangszustand]
-When [Aktion des Benutzers]
-Then [Erwartetes Ergebnis]
+Given ich befinde mich in der Bearbeitungsansicht eines Rezepts
+Then sehe ich einen Speichern-Button neben der Überschrift "Rezept bearbeiten"
+And sehe ich am Ende des Formulars weiterhin die Buttons "Speichern" und "Abbrechen"
 ```
 
 ---
@@ -102,8 +103,7 @@ Then [Erwartetes Ergebnis]
 ## 7. Abhängigkeiten & Rahmenbedingungen
 
 ### Abhängigkeiten
-- [Story X muss implementiert sein / keine Abhängigkeiten]
-- [Blockiert: Story Y]
+- Story 02 (Rezept bearbeiten) muss implementiert sein.
 
 ### Rahmenbedingungen
 - SQLite-Datenbank muss existieren und erreichbar sein
@@ -112,14 +112,7 @@ Then [Erwartetes Ergebnis]
 ---
 
 ## Offene Punkte / Fragen
-
-- [ ] [Offene Frage oder Entscheidung]
-
----
-
-## Zusatzinformationen
-
-In der Bearbeitungsansicht soll es den Speichern-Button zusätzlich auch am oberen Rand des Formulars geben. Hier reicht ein kleiner, blauer Button mit dem Icon des Speichern Buttons, in derselben Zeile wie die Überschrift "Rezept bearbeiten". Wichtig: Der Button ist zusätzlich, die beiden bestehenden Buttons "Speichern" und "Abbrechen" am unteren Ende sollen da bleiben.
+- Keine
 
 ---
 
