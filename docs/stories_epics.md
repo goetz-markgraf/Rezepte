@@ -72,7 +72,7 @@ Rezepte bewerten und Zubereitungsdaten verwalten.
 | 16 | [Wochentag-Picker für intuitive Datumauswahl](./16-wochentag-picker/story.md) | Abgeschlossen |
 | 17 | [Inline-Bewertung ohne Edit-Mode](./17-inline-bewertung/story.md) | Abgeschlossen |
 | 28 | [Datum-Eingabe am Rezept (geplant / gekocht)](./28-datum-eingabe/story.md) | Abgeschlossen |
-| 41 | [Bewertungssterne im Bearbeitungsmodus](./41-bewertungssterne-im-edit-mode/story.md) | In Arbeit |
+| 41 | [Bewertungssterne im Bearbeitungsmodus](./41-bewertungssterne-im-edit-mode/story.md) | Abgeschlossen |
 
 ---
 
