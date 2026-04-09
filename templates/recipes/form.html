@@ -4,7 +4,11 @@
 {% block title %}{% if let Some(_) = recipe_id %}Rezept bearbeiten{% else %}Neues Rezept{% endif %} - Rezepte{% endblock %}
 
 {% block content %}
-<h1>{% if let Some(_) = recipe_id %}Rezept bearbeiten{% else %}Neues Rezept{% endif %}</h1>
+<form method="POST" action="{% if let Some(id) = recipe_id %}/recipes/{{ id }}{% else %}/recipes{% endif %}">
+<div class="form-header">
+    <h1>{% if let Some(_) = recipe_id %}Rezept bearbeiten{% else %}Neues Rezept{% endif %}</h1>
+    <button type="submit" class="btn-save-top" aria-label="Rezept speichern">{% call icons::icon_check() %}</button>
+</div>
 
 {% if !errors.is_empty() %}
 <div class="errors" role="alert" id="form-errors">
@@ -16,7 +20,6 @@
 </div>
 {% endif %}
 
-<form method="POST" action="{% if let Some(id) = recipe_id %}/recipes/{{ id }}{% else %}/recipes{% endif %}">
     <div class="form-group">
         <label for="title">Titel <span aria-hidden="true">*</span><span class="visually-hidden">Pflichtfeld</span></label>
         <input

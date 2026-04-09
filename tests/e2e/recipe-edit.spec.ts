@@ -84,4 +84,33 @@ test.describe('Rezept bearbeiten', () => {
     // Then: Fehlermeldung "Rezept mit ID 99999 nicht gefunden"
     await expect(page.locator('body')).toContainText('Rezept mit ID 99999 nicht gefunden');
   });
+
+  test('sollte ein Rezept über den oberen Speichern-Button bearbeiten', async ({ page }) => {
+    // Given: Ein Testrezept existiert bereits, Bearbeitungsformular ist geöffnet
+    await page.click('text=Bearbeiten');
+
+    // When: Titel geändert und der OBERE Speichern-Button geklickt wird
+    await page.fill('input[name="title"]', 'Testrezept Oben Geändert');
+    await page.click('button[aria-label="Rezept speichern"]');
+
+    // Then: Detailseite zeigt neue Werte
+    await expect(page).toHaveURL(/\/recipes\/\d+/);
+    await expect(page.locator('h1')).toContainText('Testrezept Oben Geändert');
+  });
+
+  test('sollte Sichtbarkeit beider Speichern-Buttons prüfen', async ({ page }) => {
+    // Given: Ein Testrezept existiert bereits, Bearbeitungsformular ist geöffnet
+    await page.click('text=Bearbeiten');
+
+    // Then: Oberer Button ist sichtbar neben der Überschrift
+    const topButton = page.locator('button[aria-label="Rezept speichern"]');
+    await expect(topButton).toBeVisible();
+
+    // Und: Untere Buttons sind weiterhin vorhanden
+    const submitButton = page.locator('button[type="submit"]:not([aria-label="Rezept speichern"])');
+    const cancelButton = page.locator('text=Abbrechen');
+    await expect(submitButton).toBeVisible();
+    await expect(cancelButton).toBeVisible();
+  });
 });
+
