@@ -1,32 +1,31 @@
 # Story 42: Suche "Länger nicht gemacht" in Top-Bar verschieben
 
 **Epic:** Epic 5: Wochenplanung
-**Priorität:** [MVP Phase X / Nice-to-have]
-**Status:** Offen
+**Priorität:** Medium
+**Status:** In Arbeit
 
 ---
 
 ## 1. Story-Satz
 
-Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
+Als **Nutzer (Haushalt)** möchte ich **die Suche "Länger nicht gemacht & Mittagessen" direkt in der Top-Bar finden**, damit ich **unabhängig von meiner aktuellen Position in der App schnell eine Inspiration für das Mittagessen der nächsten Woche erhalten kann**.
 
 ---
 
 ## 2. Geschäftsbezogene Details
 
 ### Kontext
-[Warum ist diese Funktion wichtig? Was ist der Hintergrund?]
+Aktuell gibt es in der Wochenvorschau einen Button, der eine gefilterte Suche auslöst ("Länger nicht gemacht" kombiniert mit der Kategorie "Mittagessen"). Da dies ein zentraler Workflow bei der wöchentlichen Planung (Mittwoch/Donnerstag) ist, soll dieser Zugriff global über die Top-Bar ermöglicht werden.
 
 ### Nutzergruppe
-[Wer nutzt diese Funktion?]
+Die beiden Partner im Haushalt.
 
 ### Business-Value
-[Was ist der konkrete Mehrwert?]
+Steigerung der Effizienz bei der Wochenplanung. Die Hürde, zur Wochenvorschau zu navigieren, um dann die Suche zu starten, wird eliminiert.
 
 ### Edge Cases
-- **[Fall 1]:** [Beschreibung und erwartetes Verhalten]
-- **[Fall 2]:** [Beschreibung und erwartetes Verhalten]
-...
+- **Keine Rezepte vorhanden:** Die Suche führt zu einer leeren Liste mit entsprechendem Hinweis.
+- **Kategorie "Mittagessen" existiert nicht/ist leer:** Die Liste zeigt keine Ergebnisse.
 
 ---
 
@@ -34,40 +33,35 @@ Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
 
 ### Funktionale Kriterien
 
-- [ ] **K1: [Kriterium-Titel]**
-  - [Detail-Bedingung]
-  - [Detail-Bedingung]
-
-- [ ] **K2: [Kriterium-Titel]**
-  - [Detail-Bedingung]
+- [ ] **K1: Link in der Top-Bar**
+  - In der Kopfzeile (Top-Bar) der Anwendung ist ein deutlich sichtbarer Link oder Button mit der Bezeichnung "Länger nicht gemacht (Mittagessen)" (oder ähnlich prägnant) integriert.
+- [ ] **K2: Auslösung der Suche**
+  - Ein Klick auf diesen Link führt direkt zur Rezept-Übersicht.
+  - Die Übersicht ist automatisch gefiltert nach der Kategorie "Mittagessen".
+  - Die Sortierung ist auf "Länger nicht gemacht" (Datum aufsteigend) gesetzt.
+- [ ] **K3: Entfernung aus Wochenvorschau**
+  - Der bisherige Button für diese spezifische Suche in der Wochenvorschau wird entfernt, da er durch die Top-Bar redundant wird.
 
 ### Nicht-funktionale Kriterien
 
-- [ ] **K[N]: Performance**
-  - [Ladezeit-Ziel]
-  - [Speichervorgang-Ziel]
-
-- [ ] **K[N+1]: Barrierefreiheit**
-  - Alle Formularfelder haben korrekte Labels (WCAG 2.1 Level A)
-  - Tastatur-Navigation funktioniert vollständig
+- [ ] **K4: Barrierefreiheit**
+  - Der Link in der Top-Bar ist tastaturnavigierbar und besitzt einen korrekten Fokus-Indikator.
+  - Der Kontrast des Links entspricht WCAG 2.1 Level A.
+- [ ] **K5: Responsive Design**
+  - Der Link ist auch in der mobilen Ansicht der Top-Bar (z.B. im Hamburger-Menü oder als kompaktes Icon/Text) gut erreichbar und bedienbar.
 
 ---
 
 ## 4. Technische Planung
 
-### Datenmodell
-[Falls neue Felder/Tabellen notwendig: Beschreibung der Änderungen am Schema]
-
-### UI/UX-Spezifikation
-[Beschreibung des Layouts, der Interaktionen, des Flows]
+*(Wird im Rahmen von Phase 2: Implementierungsplan detailliert)*
 
 ---
 
 ## 5. Nicht-funktionale Anforderungen
 
 ### Performance
-- Seite lädt ohne sichtbare Verzögerung (< 500ms)
-- [Weitere spezifische Ziele]
+- Der Wechsel von der aktuellen Seite zur gefilterten Liste erfolgt ohne spürbare Verzögerung (< 500ms).
 
 ### Browser-Support
 - Aktuelle Chrome, Firefox, Safari, Edge Versionen
@@ -75,7 +69,6 @@ Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
 
 ### Barrierefreiheit
 - WCAG 2.1 Level A konform
-- Fokus-Indikatoren sichtbar
 
 ---
 
@@ -83,18 +76,19 @@ Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
 
 ### E2E-Tests (Playwright)
 
-**Testfall 1: [Bezeichnung]**
+**Testfall 1: Navigation über Top-Bar**
 ```gherkin
-Given [Ausgangszustand]
-When [Aktion des Benutzers]
-Then [Erwartetes Ergebnis]
+Given der Nutzer befindet sich auf einer beliebigen Seite (z.B. Detailansicht)
+When der Nutzer in der Top-Bar auf "Länger nicht gemacht (Mittagessen)" klickt
+Then wird die Rezept-Liste angezeigt
+And die Liste ist nach der Kategorie "Mittagessen" gefiltert
+And die Rezepte sind nach dem Datum "Zuletzt gemacht" aufsteigend sortiert
 ```
 
-**Testfall 2: [Bezeichnung]**
+**Testfall 2: Entfernung aus Wochenvorschau**
 ```gherkin
-Given [Ausgangszustand]
-When [Aktion des Benutzers]
-Then [Erwartetes Ergebnis]
+Given der Nutzer befindet sich in der Wochenvorschau
+Then ist der Button "Länger nicht gemacht (Mittagessen)" dort nicht mehr vorhanden
 ```
 
 ---
@@ -102,24 +96,10 @@ Then [Erwartetes Ergebnis]
 ## 7. Abhängigkeiten & Rahmenbedingungen
 
 ### Abhängigkeiten
-- [Story X muss implementiert sein / keine Abhängigkeiten]
-- [Blockiert: Story Y]
+- Die Funktionen für Kategorien-Filter und die Sortierung "Länger nicht gemacht" müssen bereits implementiert sein (Story 08 & 09).
 
 ### Rahmenbedingungen
-- SQLite-Datenbank muss existieren und erreichbar sein
-- Keine Authentifizierung erforderlich (LAN-only)
-
----
-
-## Offene Punkte / Fragen
-
-- [ ] [Offene Frage oder Entscheidung]
-
----
-
-## Zusatzinformationen
-
-In der Wochenvorschau ist ein Button auf eine Suche: Länger nicht gemacht und Mittagessen. Diese Suche soll von da in die Top-Bar wandern. Sie kann also auf der Wochenübersicht entfallen, muss dafür aber als Link in der Top-Bar stehen.
+- LAN-only, keine Authentifizierung.
 
 ---
 
