@@ -174,7 +174,12 @@ test.describe('Filter-Einklappen (Story 37)', () => {
     await page.fill('#save-filter-name', `BrotFilter-${suffix}`);
     await page.click('.save-filter-submit');
 
-    // Warte bis die Seite neu geladen ist und der Button sichtbar ist
+    // Warte bis die Seite neu geladen ist
+    await page.waitForLoadState('networkidle');
+
+    // Panel aufklappen, damit der gespeicherte Filter-Button sichtbar wird
+    const toggleBtn = page.locator('.filter-toggle-btn');
+    await toggleBtn.click();
     await page.waitForLoadState('networkidle');
 
     // Wenn: Nutzer klickt auf gespeicherten Filter

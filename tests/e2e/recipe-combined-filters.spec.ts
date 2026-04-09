@@ -47,7 +47,7 @@ test.describe('Kombinierte Filter (Story 12)', () => {
     await createRecipeWithOptions(page, `Dinkelmuesli-${suffix}`, ['Snacks']);
 
     // Wenn: Kategorie "Brot" wählen und "Dinkel" ins Suchfeld eingeben
-    await page.goto('/');
+    await page.goto('/?filter_collapsed=0');
     await page.locator('a.category-filter-btn', { hasText: 'Brot' }).click();
     await page.fill('input[name="q"]', `Dinkel`);
     await page.click('button[type="submit"]');
@@ -73,10 +73,11 @@ test.describe('Kombinierte Filter (Story 12)', () => {
     await createRecipeWithOptions(page, `Roggenbrot-${suffix}`, ['Brot'], 2);
     await createRecipeWithOptions(page, `Spaghetti-${suffix}`, ['Mittagessen'], 5);
 
-    // Wenn: Kategorie "Brot" klicken, dann "Nur Gute" klicken
-    await page.goto('/');
-    await page.locator('a.category-filter-btn', { hasText: 'Brot' }).click();
-    await page.locator('a.sort-filter-btn', { hasText: '★★★+ Nur Gute' }).click();
+    // Wenn: Kategorie "Brot" und "Nur Gute" direkt via URL aufrufen
+    await page.goto('/?kategorie=Brot&bewertung=gut&filter_collapsed=0');
+    // Verifiziere dass die Filter korrekt aktiv sind
+    await expect(page.locator('a.category-filter-btn', { hasText: 'Brot' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('a.sort-filter-btn', { hasText: '★★★+ Nur Gute' })).toHaveAttribute('aria-pressed', 'true');
 
     // Dann: Nur "Dinkelbrot" sichtbar
     await expect(page.locator('.recipe-item h2', { hasText: `Dinkelbrot-${suffix}` })).toBeVisible();
@@ -147,7 +148,7 @@ test.describe('Kombinierte Filter (Story 12)', () => {
     await createRecipeWithOptions(page, `Dinkelbrot-${suffix}`, ['Brot'], 4);
     await createRecipeWithOptions(page, `Roggenbrot-${suffix}`, ['Brot'], 2);
 
-    await page.goto(`/?kategorie=Brot&bewertung=gut`);
+    await page.goto(`/?kategorie=Brot&bewertung=gut&filter_collapsed=0`);
 
     // Dann: "Dinkelbrot" sichtbar, "Roggenbrot" nicht (4 Sterne >= 3, 2 Sterne < 3)
     await expect(page.locator('.recipe-item h2', { hasText: `Dinkelbrot-${suffix}` })).toBeVisible();
@@ -233,7 +234,7 @@ test.describe('Kombinierte Filter (Story 12)', () => {
     await expect(page.locator('a.reset-all-filters-btn')).not.toBeVisible();
 
     // Wenn: Ein Filter aktiviert wird
-    await page.goto('/?bewertung=gut');
+    await page.goto('/?bewertung=gut&filter_collapsed=0');
 
     // Dann: "Alle Filter zurücksetzen"-Button erscheint
     await expect(page.locator('a.reset-all-filters-btn')).toBeVisible();
@@ -246,7 +247,7 @@ test.describe('Kombinierte Filter (Story 12)', () => {
     await createRecipeWithOptions(page, `Roggenbrot-${suffix}`, ['Brot'], 2);
     await createRecipeWithOptions(page, `Spaghetti-${suffix}`, ['Mittagessen'], 4);
 
-    await page.goto(`/?kategorie=Brot&bewertung=gut`);
+    await page.goto(`/?kategorie=Brot&bewertung=gut&filter_collapsed=0`);
 
     // Wenn: Klick auf "Alle Filter zurücksetzen"
     await page.locator('a.reset-all-filters-btn').click();

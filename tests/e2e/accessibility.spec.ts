@@ -116,8 +116,8 @@ test.describe('Accessibility (Story 25)', () => {
     await page.keyboard.press('Space');
     await expect(checkbox).toBeChecked();
 
-    // Speichern per Tab + Enter
-    const submitBtn = page.locator('button[type="submit"]');
+    // Speichern per Tab + Enter (unteren Speichern-Button nutzen)
+    const submitBtn = page.locator('button[type="submit"].btn-primary');
     await submitBtn.focus();
     await page.keyboard.press('Enter');
 

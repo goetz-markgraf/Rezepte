@@ -27,8 +27,8 @@ async function createRecipeWithDate(
 test.describe('Filter "Länger nicht gemacht" (Story 9)', () => {
 
   test('K1: Filter-Button ist sichtbar und aktivierbar', async ({ page }) => {
-    // Given: Die Startseite wird aufgerufen
-    await page.goto('/');
+    // Given: Die Startseite wird aufgerufen (Filter-Panel aufgeklappt)
+    await page.goto('/?filter_collapsed=0');
 
     // Then: Button "Länger nicht gemacht" ist sichtbar
     const filterBtn = page.locator('a.sort-filter-btn', { hasText: 'Länger nicht gemacht' });
@@ -57,7 +57,7 @@ test.describe('Filter "Länger nicht gemacht" (Story 9)', () => {
     await createRecipeWithDate(page, `Pizza ${suffix}`, ['Mittagessen']); // kein Datum
 
     // When: Filter "Länger nicht gemacht" aktiviert wird
-    await page.goto('/');
+    await page.goto('/?filter_collapsed=0');
     await page.locator('a.sort-filter-btn', { hasText: 'Länger nicht gemacht' }).click();
 
     // Then: Pizza (kein Datum) erscheint als erstes
@@ -84,7 +84,7 @@ test.describe('Filter "Länger nicht gemacht" (Story 9)', () => {
     await createRecipeWithDate(page, `Linseneintopf ${suffix}`, ['Mittagessen'], '1.1.2020');
 
     // When: Filter "Länger nicht gemacht" aktiviert wird
-    await page.goto('/');
+    await page.goto('/?filter_collapsed=0');
     await page.locator('a.sort-filter-btn', { hasText: 'Länger nicht gemacht' }).click();
 
     // Then: Linseneintopf ist sichtbar
@@ -99,7 +99,7 @@ test.describe('Filter "Länger nicht gemacht" (Story 9)', () => {
     const suffix = Date.now();
     await createRecipeWithDate(page, `Gulasch ${suffix}`, ['Mittagessen'], '1.1.2020');
 
-    await page.goto('/?filter=laenger-nicht-gemacht');
+    await page.goto('/?filter=laenger-nicht-gemacht&filter_collapsed=0');
     const filterBtn = page.locator('a.sort-filter-btn', { hasText: 'Länger nicht gemacht' });
     await expect(filterBtn).toHaveAttribute('aria-pressed', 'true');
 
@@ -157,7 +157,7 @@ test.describe('Filter "Länger nicht gemacht" (Story 9)', () => {
     await createRecipeWithDate(page, `Spaghetti ${suffix}`, ['Mittagessen'], '1.1.2020');
 
     // When: Kategorie "Brot" UND Filter "Länger nicht gemacht" aktiv
-    await page.goto(`/?kategorie=Brot`);
+    await page.goto(`/?kategorie=Brot&filter_collapsed=0`);
     await page.locator('a.sort-filter-btn', { hasText: 'Länger nicht gemacht' }).click();
 
     // Then: Nur Brot-Rezepte sichtbar

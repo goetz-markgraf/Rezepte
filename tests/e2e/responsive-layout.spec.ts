@@ -72,8 +72,8 @@ test.describe('Responsive Layout', () => {
     expect(inputBox).not.toBeNull();
     expect(inputBox!.width).toBeGreaterThanOrEqual(44);
 
-    // Then: Speichern-Button sichtbar und mindestens 44px hoch
-    const submitBtn = page.locator('button[type="submit"]');
+    // Then: Primärer Speichern-Button sichtbar und mindestens 44px hoch
+    const submitBtn = page.locator('button[type="submit"].btn-primary');
     await expect(submitBtn).toBeVisible();
     const btnBox = await submitBtn.boundingBox();
     expect(btnBox).not.toBeNull();

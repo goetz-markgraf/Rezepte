@@ -189,8 +189,8 @@ test.describe('Story 35: "Länger nicht gemacht" mit vorselektiertem Mittagessen
     await createRecipeWithDate(page, `Spaghetti-${suffix}`, ['Mittagessen'], '1.1.2020');
     await createRecipeWithDate(page, `Dinkelbrot-${suffix}`, ['Brot'], '1.1.2020');
 
-    // Given: Gefilterte Suche mit beiden Parametern ist aktiv
-    await page.goto('/?filter=laenger-nicht-gemacht&kategorie=Mittagessen');
+    // Given: Gefilterte Suche mit beiden Parametern ist aktiv (Panel aufgeklappt für Klick)
+    await page.goto('/?filter=laenger-nicht-gemacht&kategorie=Mittagessen&filter_collapsed=0');
 
     // When: Mittagessen-Filter wird abgewählt
     const mittagssenBtn = page.locator('a.category-filter-btn', { hasText: 'Mittagessen' });

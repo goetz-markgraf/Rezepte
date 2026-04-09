@@ -33,8 +33,8 @@ function futureDateInDays(days: number): string {
 test.describe('Filter "Nächste 7 Tage" (Story 10)', () => {
 
   test('K1: Filter-Button ist sichtbar und aktivierbar', async ({ page }) => {
-    // Given: Die Startseite wird aufgerufen
-    await page.goto('/');
+    // Given: Die Startseite wird aufgerufen (Filter-Panel aufgeklappt)
+    await page.goto('/?filter_collapsed=0');
 
     // Then: Button "Nächste 7 Tage" ist sichtbar
     const filterBtn = page.locator('a.sort-filter-btn', { hasText: 'Nächste 7 Tage' });
@@ -62,7 +62,7 @@ test.describe('Filter "Nächste 7 Tage" (Story 10)', () => {
     await createRecipeWithDate(page, `Linseneintopf ${suffix}`, ['Mittagessen']);
 
     // When: Filter "Nächste 7 Tage" aktiviert wird
-    await page.goto('/');
+    await page.goto('/?filter_collapsed=0');
     await page.locator('a.sort-filter-btn', { hasText: 'Nächste 7 Tage' }).click();
 
     // Then: Spaghetti und Pizza sichtbar, Linseneintopf (ohne Datum) nicht sichtbar
@@ -78,7 +78,7 @@ test.describe('Filter "Nächste 7 Tage" (Story 10)', () => {
     await createRecipeWithDate(page, `Spaghetti ${suffix}`, ['Mittagessen'], futureDateInDays(2));
 
     // When: Filter "Nächste 7 Tage" aktiviert wird
-    await page.goto('/');
+    await page.goto('/?filter_collapsed=0');
     await page.locator('a.sort-filter-btn', { hasText: 'Nächste 7 Tage' }).click();
 
     // Then: Spaghetti (früher) erscheint vor Pizza (später)
@@ -102,7 +102,7 @@ test.describe('Filter "Nächste 7 Tage" (Story 10)', () => {
     await createRecipeWithDate(page, `Vergangen-Rezept ${suffix}`, ['Mittagessen'], futureDateInDays(-1));
 
     // When: Filter "Nächste 7 Tage" aktiviert wird
-    await page.goto('/');
+    await page.goto('/?filter_collapsed=0');
     await page.locator('a.sort-filter-btn', { hasText: 'Nächste 7 Tage' }).click();
 
     // Then: Heute-Rezept und Tag-7-Rezept sichtbar, andere nicht
@@ -117,7 +117,7 @@ test.describe('Filter "Nächste 7 Tage" (Story 10)', () => {
     const suffix = Date.now();
     await createRecipeWithDate(page, `Gulasch ${suffix}`, ['Mittagessen'], futureDateInDays(2));
 
-    await page.goto('/?filter=naechste-7-tage');
+    await page.goto('/?filter=naechste-7-tage&filter_collapsed=0');
     const filterBtn = page.locator('a.sort-filter-btn', { hasText: 'Nächste 7 Tage' });
     await expect(filterBtn).toHaveAttribute('aria-pressed', 'true');
 
@@ -190,7 +190,7 @@ test.describe('Filter "Nächste 7 Tage" (Story 10)', () => {
     await createRecipeWithDate(page, `Spaghetti ${suffix}`, ['Mittagessen'], futureDateInDays(3));
 
     // When: Kategorie "Brot" gewählt + Filter "Nächste 7 Tage" aktiviert
-    await page.goto('/?kategorie=Brot');
+    await page.goto('/?kategorie=Brot&filter_collapsed=0');
     await page.locator('a.sort-filter-btn', { hasText: 'Nächste 7 Tage' }).click();
 
     // Then: Nur "Dinkelbrot" sichtbar, "Spaghetti" nicht sichtbar

@@ -41,8 +41,8 @@ async function createRecipeWithRating(
 test.describe('Filter nach Bewertung (Story 11)', () => {
 
   test('K1: Filter-Buttons sichtbar und auswählbar', async ({ page }) => {
-    // Given: Startseite wird aufgerufen
-    await page.goto('/');
+    // Given: Startseite wird aufgerufen (Filter-Panel aufgeklappt)
+    await page.goto('/?filter_collapsed=0');
 
     // Then: "★★★+ Nur Gute"-Button ist sichtbar (aria-pressed="false")
     const gutBtn = page.locator('a.sort-filter-btn', { hasText: '★★★+ Nur Gute' });
@@ -63,7 +63,7 @@ test.describe('Filter nach Bewertung (Story 11)', () => {
     await createRecipeWithRating(page, `Pizza-${suffix}`, ['Mittagessen']);
 
     // When: Klick auf "Nur Gute"-Button
-    await page.goto('/');
+    await page.goto('/?filter_collapsed=0');
     await page.locator('a.sort-filter-btn', { hasText: '★★★+ Nur Gute' }).click();
 
     // Then: "Spaghetti Bolognese" sichtbar
@@ -92,7 +92,7 @@ test.describe('Filter nach Bewertung (Story 11)', () => {
     await createRecipeWithRating(page, `Rührei-${suffix}`, ['Mittagessen'], 3);
 
     // When: Klick auf "Favoriten"-Button
-    await page.goto('/');
+    await page.goto('/?filter_collapsed=0');
     await page.locator('a.sort-filter-btn', { hasText: '★★★★★ Favoriten' }).click();
 
     // Then: Nur "Omas Apfelkuchen" sichtbar
@@ -129,7 +129,7 @@ test.describe('Filter nach Bewertung (Story 11)', () => {
     const suffix = Date.now();
     await createRecipeWithRating(page, `ToggleRezept-${suffix}`, ['Mittagessen'], 4);
 
-    await page.goto('/?bewertung=gut');
+    await page.goto('/?bewertung=gut&filter_collapsed=0');
     await expect(page.locator('a.sort-filter-btn', { hasText: '★★★+ Nur Gute' })).toHaveAttribute('aria-pressed', 'true');
 
     // When: Erneuter Klick auf "Nur Gute"-Button
@@ -154,7 +154,7 @@ test.describe('Filter nach Bewertung (Story 11)', () => {
     await createRecipeWithRating(page, `NiedrigRezept2-${suffix}`, ['Mittagessen'], 2);
 
     // When: Klick auf "Nur Gute" mit Suche, die nur die Test-Rezepte zeigt
-    await page.goto(`/?q=${suffix}`);
+    await page.goto(`/?q=${suffix}&filter_collapsed=0`);
     await page.locator('a.sort-filter-btn', { hasText: '★★★+ Nur Gute' }).click();
 
     // Then: Hinweistext sichtbar

@@ -52,9 +52,8 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     const suffix = `sf1-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     await createRecipe(page, `Vollkornbrot-${suffix}`, ['Brot']);
 
-    // Wenn: Benutzer klickt Kategorie "Brot"
-    await page.goto('/');
-    await page.locator('a.category-filter-btn', { hasText: 'Brot' }).click();
+    // Wenn: Benutzer navigiert direkt zu Kategorie "Brot" (Vollseitenaufruf wegen HTMX-Partial-Update)
+    await page.goto('/?kategorie=Brot&filter_collapsed=0');
     await expect(page).toHaveURL(/kategorie=Brot/);
 
     // Dann: Speichern-Formular sichtbar (Filter aktiv)
@@ -65,12 +64,18 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     await page.fill('#save-filter-name', filterName);
     await page.click('.save-filter-submit');
 
+    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
+    await page.locator('.filter-toggle-btn').click();
+
     // Dann: "Brot-Ideen" erscheint als Chip in der gespeicherten Filter-Liste
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).toBeVisible();
 
-    // Wenn: Benutzer setzt alle Filter zurück (klickt "Alle")
-    await page.locator('a.category-filter-btn', { hasText: 'Alle' }).click();
+    // Wenn: Benutzer setzt alle Filter zurück (direkte URL, da HTMX nur Teilbereich aktualisiert)
+    await page.goto('/');
     await expect(page).toHaveURL('/');
+
+    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
+    await page.locator('.filter-toggle-btn').click();
 
     // Dann: Klick auf gespeicherten Filter "Brot-Ideen"
     await page.locator('.saved-filter-btn', { hasText: filterName }).click();
@@ -86,16 +91,23 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     await createRecipe(page, `Brot-Persistenz-${suffix}`, ['Brot']);
 
     // Wenn: Kategorie "Brot" aktiv, Filter speichern
-    await page.goto('/');
-    await page.locator('a.category-filter-btn', { hasText: 'Brot' }).click();
+    await page.goto('/?kategorie=Brot&filter_collapsed=0');
     const filterName = `Persistenz-${suffix}`;
     await page.fill('#save-filter-name', filterName);
     await page.click('.save-filter-submit');
+    await page.waitForLoadState('networkidle');
+
+    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
+    // (Vollseiten-Navigate mit filter_collapsed=0, da Toggle nur HTMX-Partial-Update macht)
+    const currentUrl = page.url();
+    const baseUrl = new URL(currentUrl);
+    baseUrl.searchParams.set('filter_collapsed', '0');
+    await page.goto(baseUrl.toString());
 
     // Dann: Filter gespeichert und sichtbar
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).toBeVisible();
 
-    // Wenn: Seite neu laden
+    // Wenn: Seite neu laden (Reload behält URL-Parameter bei)
     await page.reload();
 
     // Dann: Filter "Persistenz-..." immer noch sichtbar
@@ -108,11 +120,13 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     await createRecipe(page, `Brot-Loeschen-${suffix}`, ['Brot']);
 
     // Wenn: Kategorie "Brot" aktiv, Filter speichern
-    await page.goto('/');
-    await page.locator('a.category-filter-btn', { hasText: 'Brot' }).click();
+    await page.goto('/?kategorie=Brot&filter_collapsed=0');
     const filterName = `Loeschen-${suffix}`;
     await page.fill('#save-filter-name', filterName);
     await page.click('.save-filter-submit');
+
+    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
+    await page.locator('.filter-toggle-btn').click();
 
     // Dann: Filter sichtbar
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).toBeVisible();
@@ -126,6 +140,7 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
 
     // Und: Nach Reload immer noch weg
     await page.reload();
+    await page.locator('.filter-toggle-btn').click();
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).not.toBeVisible();
   });
 
@@ -136,9 +151,7 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     await createRecipe(page, `Roggenbrot-${suffix}`, ['Brot']);
 
     // Wenn: Kategorie "Mittagessen" und Bewertungsfilter "★★★+ Nur Gute" aktiv
-    await page.goto('/');
-    await page.locator('a.category-filter-btn', { hasText: 'Mittagessen' }).click();
-    await page.locator('a.sort-filter-btn', { hasText: '★★★+ Nur Gute' }).click();
+    await page.goto('/?kategorie=Mittagessen&bewertung=gut&filter_collapsed=0');
     await expect(page).toHaveURL(/kategorie=Mittagessen/);
     await expect(page).toHaveURL(/bewertung=gut/);
 
@@ -147,11 +160,17 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     await page.fill('#save-filter-name', filterName);
     await page.click('.save-filter-submit');
 
+    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
+    await page.locator('.filter-toggle-btn').click();
+
     // Dann: Filter sichtbar
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).toBeVisible();
 
     // Wenn: Alle Filter zurücksetzen
     await page.goto('/');
+
+    // Panel aufklappen
+    await page.locator('.filter-toggle-btn').click();
 
     // Dann: Klick auf gespeicherten Filter
     await page.locator('.saved-filter-btn', { hasText: filterName }).click();
@@ -170,18 +189,30 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     const suffix = `sf5-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     await createRecipe(page, `Brot-Duplikat-${suffix}`, ['Brot']);
 
-    await page.goto('/');
-    await page.locator('a.category-filter-btn', { hasText: 'Brot' }).click();
+    await page.goto('/?kategorie=Brot&filter_collapsed=0');
     const filterName = `Duplikat-${suffix}`;
     await page.fill('#save-filter-name', filterName);
     await page.click('.save-filter-submit');
+    await page.waitForLoadState('networkidle');
+
+    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
+    await page.locator('.filter-toggle-btn').click();
+    await page.waitForLoadState('networkidle');
 
     // Filter gespeichert
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).toBeVisible();
 
-    // Wenn: Erneut Filter speichern unter demselben Namen
+    // Wenn: Erneut Filter speichern unter demselben Namen (direkt via URL wegen HTMX)
+    await page.goto('/?kategorie=Brot&filter_collapsed=0');
     await page.fill('#save-filter-name', filterName);
     await page.click('.save-filter-submit');
+    await page.waitForLoadState('networkidle');
+
+    // Nach dem Redirect: Panel aufklappen (filter_collapsed=0 zur URL hinzufügen)
+    const errorUrl = page.url();
+    const errorUrlObj = new URL(errorUrl);
+    errorUrlObj.searchParams.set('filter_collapsed', '0');
+    await page.goto(errorUrlObj.toString());
 
     // Dann: Fehlermeldung "existiert bereits" sichtbar
     await expect(page.locator('.save-filter-error')).toBeVisible();
@@ -196,8 +227,7 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     const suffix = `sf6-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
     // Wenn: Benutzer aktiviert den "Nächste 7 Tage" Filter
-    await page.goto('/');
-    await page.locator('a.sort-filter-btn', { hasText: 'Nächste 7 Tage' }).click();
+    await page.goto('/?filter=naechste-7-tage&filter_collapsed=0');
     await expect(page).toHaveURL(/filter=naechste-7-tage/);
 
     // Filter speichern
@@ -205,15 +235,25 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     await page.fill('#save-filter-name', filterName);
     await page.click('.save-filter-submit');
 
+    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
+    await page.locator('.filter-toggle-btn').click();
+
     // Dann: Filter sichtbar
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).toBeVisible();
 
     // Wenn: Alle Filter zurücksetzen, dann auf gespeicherten Filter klicken
     await page.goto('/');
+
+    // Panel aufklappen
+    await page.locator('.filter-toggle-btn').click();
+
     await page.locator('.saved-filter-btn', { hasText: filterName }).click();
 
     // Dann: URL enthält naechste-7-tage (keine Rezepte → Keine-Treffer-Meldung erscheint oder nicht — Filter bleibt)
     await expect(page).toHaveURL(/filter=naechste-7-tage/);
+
+    // Panel aufklappen um gespeicherte Filter sichtbar zu machen
+    await page.locator('.filter-toggle-btn').click();
 
     // Und: Gespeicherter Filter bleibt in der Liste erhalten
     await expect(page.locator('.saved-filter-btn', { hasText: filterName })).toBeVisible();
@@ -226,8 +266,8 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
     // Dann: Speichern-Formular nicht sichtbar
     await expect(page.locator('.save-filter-form')).not.toBeVisible();
 
-    // Wenn: Kategorie "Brot" aktiviert
-    await page.locator('a.category-filter-btn', { hasText: 'Brot' }).click();
+    // Wenn: Kategorie "Brot" aktiviert (Panel aufgeklappt für sichtbares Speichern-Formular)
+    await page.goto('/?kategorie=Brot&filter_collapsed=0');
 
     // Dann: Speichern-Formular sichtbar
     await expect(page.locator('.save-filter-form')).toBeVisible();
