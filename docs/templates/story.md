@@ -1,7 +1,6 @@
 # Story N: [Titel]
 
 **Epic:** [Epic-Name]
-**Priorität:** [MVP Phase X / Nice-to-have]
 **Status:** Offen
 
 ---
@@ -12,21 +11,14 @@ Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
 
 ---
 
-## 2. Geschäftsbezogene Details
+## 2. Weiterer Kontext
 
-### Kontext
-[Warum ist diese Funktion wichtig? Was ist der Hintergrund?]
-
-### Nutzergruppe
-[Wer nutzt diese Funktion?]
-
-### Business-Value
-[Was ist der konkrete Mehrwert?]
-
-### Edge Cases
-- **[Fall 1]:** [Beschreibung und erwartetes Verhalten]
-- **[Fall 2]:** [Beschreibung und erwartetes Verhalten]
-...
+<!--
+  Hier nur etwas eintragen, wenn es dem Verständnis der Story hilf, z. B. 
+  - Warum ist das wichtig?
+  - Wer sind die Nutzer?
+  - Wann soll das Feature genutzt werden
+-->
 
 ---
 
@@ -34,87 +26,16 @@ Als **[Rolle]** möchte ich **[Ziel/Wunsch]**, damit ich **[Nutzen]**.
 
 ### Funktionale Kriterien
 
-- [ ] **K1: [Kriterium-Titel]**
-  - [Detail-Bedingung]
-  - [Detail-Bedingung]
-
-- [ ] **K2: [Kriterium-Titel]**
-  - [Detail-Bedingung]
+<!--
+  Im Gherkin-Stil:
+  - Angenommen
+  - Wenn
+  - Dann
+-->
 
 ### Nicht-funktionale Kriterien
 
-- [ ] **K[N]: Performance**
-  - [Ladezeit-Ziel]
-  - [Speichervorgang-Ziel]
-
-- [ ] **K[N+1]: Barrierefreiheit**
-  - Alle Formularfelder haben korrekte Labels (WCAG 2.1 Level A)
-  - Tastatur-Navigation funktioniert vollständig
-
----
-
-## 4. Technische Planung
-
-### Datenmodell
-[Falls neue Felder/Tabellen notwendig: Beschreibung der Änderungen am Schema]
-
-### UI/UX-Spezifikation
-[Beschreibung des Layouts, der Interaktionen, des Flows]
-
----
-
-## 5. Nicht-funktionale Anforderungen
-
-### Performance
-- Seite lädt ohne sichtbare Verzögerung (< 500ms)
-- [Weitere spezifische Ziele]
-
-### Browser-Support
-- Aktuelle Chrome, Firefox, Safari, Edge Versionen
-- iOS Safari und Android Chrome (letzte 2 Versionen)
-
-### Barrierefreiheit
-- WCAG 2.1 Level A konform
-- Fokus-Indikatoren sichtbar
-
----
-
-## 6. Teststrategie
-
-### E2E-Tests (Playwright)
-
-**Testfall 1: [Bezeichnung]**
-```gherkin
-Given [Ausgangszustand]
-When [Aktion des Benutzers]
-Then [Erwartetes Ergebnis]
-```
-
-**Testfall 2: [Bezeichnung]**
-```gherkin
-Given [Ausgangszustand]
-When [Aktion des Benutzers]
-Then [Erwartetes Ergebnis]
-```
-
----
-
-## 7. Abhängigkeiten & Rahmenbedingungen
-
-### Abhängigkeiten
-- [Story X muss implementiert sein / keine Abhängigkeiten]
-- [Blockiert: Story Y]
-
-### Rahmenbedingungen
-- SQLite-Datenbank muss existieren und erreichbar sein
-- Keine Authentifizierung erforderlich (LAN-only)
-
----
-
-## Offene Punkte / Fragen
-
-- [ ] [Offene Frage oder Entscheidung]
-
----
-
-**Letzte Aktualisierung:** YYYY-MM-DD
+<!--
+  Was ist sonst noch wichtig?
+  Gibt es technische Rahmenbedingungen?
+-->
