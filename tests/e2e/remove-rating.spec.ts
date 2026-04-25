@@ -3,11 +3,15 @@ import { test, expect } from '@playwright/test';
 async function createRecipe(
   page: import('@playwright/test').Page,
   title: string,
-  category: string
+  category: string,
+  plannedDate?: string
 ): Promise<string> {
   await page.goto('/recipes/new');
   await page.fill('input[name="title"]', title);
   await page.check(`input[name="categories"][value="${category}"]`);
+  if (plannedDate) {
+    await page.fill('input[name="planned_date"]', plannedDate);
+  }
   await page.click('button[type="submit"]');
   await expect(page).toHaveURL(/\/recipes\/\d+/);
   return page.url();
@@ -66,7 +70,12 @@ test.describe('Bewertungsmechanismus entfernt (Story 44)', () => {
 
   test('K6: "Heute gekocht" zeigt keine Sterne', async ({ page }) => {
     const suffix = Date.now();
-    await createRecipe(page, `Heute-Test-${suffix}`, 'Mittagessen');
+    const today = new Date();
+    const day = today.getDate();
+    const month = today.getMonth() + 1;
+    const year = today.getFullYear();
+    const dateStr = `${day}.${month}.${year}`;
+    await createRecipe(page, `Heute-Test-${suffix}`, 'Mittagessen', dateStr);
 
     await page.goto('/heute');
     const item = page.locator('.heute-rezept-titel', { hasText: `Heute-Test-${suffix}` });

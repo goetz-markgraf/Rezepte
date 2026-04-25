@@ -72,21 +72,6 @@ fn date_in_days(n: i64) -> String {
     format!("{}.{}.{}", d.day(), d.month() as u8, d.year())
 }
 
-async fn post_rating(app: axum::Router, id: i64, rating: &str) -> (StatusCode, String) {
-    let form_data = format!("rating={}", rating);
-    let request = Request::builder()
-        .method("POST")
-        .uri(format!("/heute/recipes/{}/rating", id))
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .body(Body::from(form_data))
-        .unwrap();
-    let response = app.oneshot(request).await.unwrap();
-    let status = response.status();
-    let body = response.into_body().collect().await.unwrap().to_bytes();
-    let body_str = String::from_utf8(body.to_vec()).unwrap();
-    (status, body_str)
-}
-
 #[tokio::test]
 async fn heute_returns_200() {
     // Given: App ohne Rezepte
