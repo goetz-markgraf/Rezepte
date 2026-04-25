@@ -2,21 +2,35 @@
 
 ## Technische Schritte
 
-### Schritt 1: Datenbank-Layer & Migration
-- [ ] **Keine DB-Migration nötig:** Die `rating`-Spalte in `recipes` bleibt erhalten. Bestehende Daten gehen nicht verloren.
-- [ ] **sqlx-Migrationssystem prüfen:** Das Projekt nutzt bereits `sqlx migrate run` (CLI) bzw. `sqlx::migrate::Migrator` (Rust-API) für Schema-Versionierung. Für diese Story ist keine neue Migrationsdatei erforderlich, da keine DDL-Änderung erfolgt.
-- [ ] `update_recipe` in `src/models/recipe_db.rs` anpassen: `rating` aus dem UPDATE-Statement entfernen, damit bestehende Bewertungen bei Edits erhalten bleiben.
-- [ ] `create_recipe` in `src/models/recipe_db.rs` anpassen: `rating` immer als `NULL` binden (da kein Formularfeld mehr existiert).
-- [ ] `update_recipe_rating()` in `src/models/recipe_db.rs` entfernen.
-- [ ] `rating_sql_clause()` und alle Bewertungsfilter-Logiken in `src/models/recipe_db.rs` entfernen (`filter_recipes_by_categories`, `filter_recipes_not_made_recently`, `filter_recipes_next_seven_days`).
-- [ ] `SimilarRecipe.rating` und `DublettenPaar` rating-Felder in `src/models/recipe_db.rs` entfernen.
-- [ ] Unit-Test: `recipe_db.rs` – alle Rating-Filter-Tests entfernen oder umschreiben.
+### Schritt 1: Datenbank-Migration
+- [ ] **Migration `003_remove_rating.sql` erstellen:** `ALTER TABLE recipes DROP COLUMN rating;`
+- [ ] **sqlx-Migrationssystem prüfen:** Das Projekt nutzt bereits `sqlx migrate run` (CLI). Die Migration wird automatisch beim nächsten App-Start oder manuell via `sqlx migrate run` ausgeführt.
+- [ ] `cargo sqlx prepare` ausführen, damit sqlx die geänderten Queries bei Compile-Zeit validieren kann (oder DB lokal laufen lassen und `SQLX_OFFLINE=true` verwenden).
 
-**Betroffene Dateien:** `src/models/recipe_db.rs`
+**Betroffene Dateien:** `migrations/003_remove_rating.sql`
 
 ---
 
-### Schritt 2: Modelle & Validierung
+### Schritt 2: Datenbank-Layer
+- [ ] `Recipe.rating` in `src/models/recipe.rs` entfernen.
+- [ ] `create_recipe` in `src/models/recipe_db.rs`: `rating` aus INSERT-Statement und Bind entfernen.
+- [ ] `get_recipe_by_id` in `src/models/recipe_db.rs`: `rating` aus SELECT entfernen.
+- [ ] `get_all_recipes` in `src/models/recipe_db.rs`: `rating` aus SELECT entfernen.
+- [ ] `update_recipe` in `src/models/recipe_db.rs`: `rating` aus UPDATE-Statement und Bind entfernen.
+- [ ] `update_recipe_rating()` in `src/models/recipe_db.rs` entfernen.
+- [ ] `search_recipes` in `src/models/recipe_db.rs`: `rating` aus SELECT entfernen.
+- [ ] `rating_sql_clause()` und alle Bewertungsfilter-Logiken in `src/models/recipe_db.rs` entfernen (`filter_recipes_by_categories`, `filter_recipes_not_made_recently`, `filter_recipes_next_seven_days`).
+- [ ] `get_recipes_current_week`, `get_recipes_drei_tage`, `get_recipes_by_date_range` in `src/models/recipe_db.rs`: `rating` aus SELECT entfernen.
+- [ ] `SimilarRecipe.rating` und `DublettenPaar` rating-Felder in `src/models/recipe_db.rs` entfernen.
+- [ ] `find_similar_recipes` in `src/models/recipe_db.rs`: `rating` aus SELECT entfernen.
+- [ ] `merge_recipes` in `src/models/recipe_db.rs`: `rating` aus UPDATE-Statement und Bind entfernen.
+- [ ] Unit-Test: `recipe_db.rs` – alle Rating-Filter-Tests entfernen oder umschreiben.
+
+**Betroffene Dateien:** `src/models/recipe_db.rs`, `src/models/recipe.rs`
+
+---
+
+### Schritt 3: Modelle & Validierung
 - [ ] `validate_rating()` in `src/models/recipe.rs` entfernen.
 - [ ] `validate_recipe_fields()` in `src/models/recipe.rs`: `rating`-Parameter entfernen.
 - [ ] `CreateRecipe.rating` und `UpdateRecipe.rating` in `src/models/recipe.rs` entfernen.
@@ -30,7 +44,7 @@
 
 ---
 
-### Schritt 3: Routes & Handler
+### Schritt 4: Routes & Handler
 - [ ] `parse_rating()` in `src/routes/recipes.rs` entfernen.
 - [ ] `update_recipe_rating_handler()` in `src/routes/recipes.rs` entfernen.
 - [ ] `create_recipe_handler` in `src/routes/recipes.rs`: Kein `rating` mehr aus Form-Daten parsen.
@@ -52,7 +66,7 @@
 
 ---
 
-### Schritt 4: Templates (Rust structs)
+### Schritt 5: Templates (Rust structs)
 - [ ] `RecipeListItem.rating` und `stars_display()` in `src/templates.rs` entfernen.
 - [ ] `RecipeDetailTemplate.rating` und `star_filled()`/`rating_is_active()` in `src/templates.rs` entfernen.
 - [ ] `RecipeFormTemplate.rating` und `rating_is()` in `src/templates.rs` entfernen.
@@ -67,7 +81,7 @@
 
 ---
 
-### Schritt 5: HTML-Templates (Askama)
+### Schritt 6: HTML-Templates (Askama)
 - [ ] `templates/index.html`: Bewertungsfilter-Buttons ("★★★+ Nur Gute", "★★★★★ Favoriten") entfernen. Bewertungs-Query-Parameter im Suchformular entfernen. Sterne in der Rezeptliste (`recipe.stars_display()`) entfernen. "Keine Rezepte mit dieser Bewertung"-Meldungen entfernen.
 - [ ] `templates/recipes/detail.html`: `{% include "recipes/_inline_rating.html" %}` entfernen.
 - [ ] `templates/recipes/form.html`: `star-rating`-Fieldset komplett entfernen.
@@ -81,14 +95,14 @@
 
 ---
 
-### Schritt 6: Styling
+### Schritt 7: Styling
 - [ ] `src/static/css/app.css`: Alle `.star-rating`, `.star-filled`, `.star-empty`, `.star-rating-options`, `.star-rating-none`, `.recipe-stars`, `.recipe-stars-list`, `.inline-rating`, `.inline-rating-form`, `.inline-rating-btn`, `.duplicate-card .stars` Regeln entfernen.
 
 **Betroffene Dateien:** `src/static/css/app.css`
 
 ---
 
-### Schritt 7: E2E-Tests
+### Schritt 8: E2E-Tests
 - [ ] `tests/e2e/recipe-rating.spec.ts` löschen (Story 14/17/41 Tests entfallen).
 - [ ] `tests/e2e/recipe-rating-filter.spec.ts` löschen (Story 11 Tests entfallen).
 - [ ] `tests/e2e/recipe-edit-rating.spec.ts` löschen (Story 41 Tests entfallen).
@@ -112,7 +126,7 @@
 
 ---
 
-### Schritt 8: Qualitätschecks & Dokumentation
+### Schritt 9: Qualitätschecks & Dokumentation
 - [ ] `cargo build` – keine Compiler-Fehler.
 - [ ] `cargo clippy -- -D warnings` – keine Warnungen.
 - [ ] `cargo fmt --check` – korrekt formatiert.
@@ -152,6 +166,7 @@ GET  /?bewertung=favoriten      → Parameter wird stillschweigend ignoriert
 - [ ] Integrationstest: GET `/?bewertung=gut` gibt 200 zurück, zeigt aber alle Rezepte (Filter ignoriert).
 - [ ] Integrationstest: POST `/recipes/:id/rating` gibt 404 zurück.
 - [ ] Integrationstest: POST `/heute/recipes/:id/rating` gibt 404 zurück.
+- [ ] Integrationstest: Migration `003` läuft erfolgreich auf frischer DB.
 - [ ] E2E-Test: Startseite ohne Bewertungsfilter-Buttons.
 - [ ] E2E-Test: Rezept erstellen ohne Bewertung funktioniert.
 - [ ] E2E-Test: Rezept bearbeiten ohne Bewertungsfeld.
@@ -160,10 +175,9 @@ GET  /?bewertung=favoriten      → Parameter wird stillschweigend ignoriert
 - [ ] E2E-Test: "Heute gekocht" ohne Sterne.
 - [ ] E2E-Test: Dubletten/Merge ohne Bewertungsanzeige.
 - [ ] E2E-Test: AXE-Level-A bleibt grün.
-- [ ] Manueller Test: Bestehende Rezepte mit Bewertung bleiben in DB erhalten.
 
 ---
 
 ## Offene Punkte
 
-- **Keine:** Die Story beschreibt eindeutig, dass die DB-Spalte beibehalten wird und keine Migration nötig ist. Das eingebaute sqlx-Migrationssystem (`sqlx migrate run`) ist für zukünftige Schema-Änderungen weiterhin verfügbar, für diese Story jedoch nicht erforderlich.
+- **Hinweis zur Datenmigration:** Die `003_remove_rating.sql` entfernt die Spalte physisch. Bestehende Bewertungswerte gehen damit verloren. Das ist beabsichtigt, da das Feature komplett abgeschaltet wird und kein toter Code im Schema verbleiben soll. Für ein Backup der Daten vor dem Deployment sollte eine manuelle DB-Sicherung erfolgen.
