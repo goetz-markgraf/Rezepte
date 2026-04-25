@@ -32,7 +32,7 @@ Stelle in `docs/stories_epics.md` die Story auf den Status "In Arbeit" und commi
 
 ## Phase 1: Fachexperte — Story-Verfeinerung
 
-Lade den Skill `refine-story` und starte einen Subagenten.
+Starte einen Subagenten, der den Skill `refine-story` benutzen soll.
 
 Der Subagent:
 - liest die Story aus `docs/stories_epics.md` (Story $1)
@@ -45,7 +45,7 @@ Warte auf Abschluss, bevor du weitermachst.
 
 ## Phase 2: Planer — Implementierungsplan
 
-Lade den Skill `plan-implementation` und starte einen Subagenten.
+Starte einen Subagenten, der den Skill `plan-implementation` benutzen soll.
 
 Übergib das Story-Verzeichnis aus Phase 1 (z.B. `docs/$1-story-name/`).
 
@@ -59,7 +59,7 @@ Warte auf Abschluss, bevor du weitermachst.
 
 ## Phase 3: Dev — Implementierung
 
-Lade den Skill `implement` und starte einen Subagenten.
+Starte einen Subagenten, der den Skill `implement` benutzen soll.
 
 Übergib das Story-Verzeichnis (z.B. `docs/$1-story-name/`).
 
@@ -75,7 +75,7 @@ Warte auf Abschluss, bevor du weitermachst.
 
 ## Phase 4: Review
 
-Lade den Skill `review-implementation` und starte einen Subagenten.
+Starte einen Subagenten, der den Skill `review-implementation` benutzen soll.
 
 Übergib das Story-Verzeichnis (z.B. `docs/$1-story-name/`).
 
@@ -103,7 +103,7 @@ Nur ausführen, wenn das Review Prio-1-Probleme enthält.
 
 ### Schritt 5a: Rework
 
-Lade den Skill `rework` und starte einen Subagenten.
+Starte einen Subagenten, der den Skill `rework` benutzen soll.
 
 Übergib das Story-Verzeichnis (z.B. `docs/$1-story-name/`).
 
@@ -117,7 +117,7 @@ Warte auf Abschluss, bevor du weitermachst.
 
 ### Schritt 5b: Erneutes Review
 
-Lade den Skill `review-implementation` und starte einen neuen Subagenten.
+Starte einen Subagenten, der den Skill `review-implementation` benutzen soll.
 
 Übergib das Story-Verzeichnis (z.B. `docs/$1-story-name/`).
 
