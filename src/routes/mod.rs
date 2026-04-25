@@ -23,10 +23,6 @@ pub fn create_router(pool: SqlitePool) -> Router {
             get(wochenvorschau::wochenvorschau_handler),
         )
         .route("/heute", get(heute::heute_handler))
-        .route(
-            "/heute/recipes/:id/rating",
-            post(heute::heute_rating_handler),
-        )
         .route("/recipes", post(recipes::create_recipe_handler))
         .route("/recipes/new", get(recipes::new_recipe_form))
         .route("/recipes/check-duplicate", get(recipes::check_duplicate))
@@ -42,10 +38,6 @@ pub fn create_router(pool: SqlitePool) -> Router {
         .route("/recipes/:id/edit", get(recipes::edit_recipe_form))
         .route("/recipes/:id/confirm-delete", get(recipes::confirm_delete))
         .route("/recipes/:id/delete", post(recipes::delete_recipe_handler))
-        .route(
-            "/recipes/:id/rating",
-            post(recipes::update_recipe_rating_handler),
-        )
         .route("/saved-filters", post(recipes::create_saved_filter_handler))
         .route(
             "/saved-filters/:id/delete",

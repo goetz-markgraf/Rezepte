@@ -1,17 +1,16 @@
 use crate::error::AppError;
 use crate::markdown::render_and_sanitize;
-use crate::models::recipe::validate_rating;
 use crate::models::{
     create_recipe, create_saved_filter, delete_recipe, delete_saved_filter, determine_merge_target,
     filter_recipes_by_categories, filter_recipes_next_seven_days, filter_recipes_not_made_recently,
     find_all_duplicate_pairs, find_similar_recipes, get_all_saved_filters, get_recipe_by_id,
-    get_recipes_by_date_range, merge_recipes, update_recipe, update_recipe_rating, CreateRecipe,
-    CreateSavedFilter, Recipe, UpdateRecipe, VALID_CATEGORIES,
+    get_recipes_by_date_range, merge_recipes, update_recipe, CreateRecipe, CreateSavedFilter,
+    Recipe, UpdateRecipe, VALID_CATEGORIES,
 };
 use crate::templates::{
     CategoryFilterItem, ConfirmDeleteTemplate, DublettenPaarItem, DublettenUebersichtTemplate,
-    DuplicateHintTemplate, IndexTemplate, InlineRatingTemplate, MergeRezeptInfo, MergeTemplate,
-    NotFoundTemplate, RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem, SavedFilterItem,
+    DuplicateHintTemplate, IndexTemplate, MergeRezeptInfo, MergeTemplate, NotFoundTemplate,
+    RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem, SavedFilterItem,
     WeekdayPickerRecipeInfo,
 };
 use askama::Template;
@@ -84,6 +83,7 @@ pub struct RecipeDetailQuery {
 pub struct IndexQuery {
     pub deleted: Option<String>,
     pub q: Option<String>,
+    #[allow(dead_code)]
     pub bewertung: Option<String>,
     pub save_error: Option<String>,
     pub save_name: Option<String>,
@@ -93,14 +93,13 @@ pub struct IndexQuery {
 /// Baut die Toggle-URL für das Ein-/Ausklappen des Filterbereichs.
 /// Eingeklappt (`true`) → gibt URL mit `filter_collapsed=0` zurück (Aufklappen).
 /// Ausgeklappt (`false`) → gibt URL ohne `filter_collapsed`-Parameter zurück (Einklappen).
-/// Alle anderen aktiven Parameter (q, kategorie, filter, bewertung) bleiben erhalten.
+/// Alle anderen aktiven Parameter (q, kategorie, filter) bleiben erhalten.
 pub fn build_filter_collapsed_toggle_url(
     is_collapsed: bool,
     active_categories: &[String],
     search_query: &str,
     not_made_filter_active: bool,
     next_seven_days_filter_active: bool,
-    bewertung: Option<&str>,
 ) -> String {
     let mut params: Vec<String> = Vec::new();
 
@@ -118,9 +117,6 @@ pub fn build_filter_collapsed_toggle_url(
         params.push("filter=naechste-7-tage".to_string());
     }
 
-    if let Some(b) = bewertung {
-        params.push(format!("bewertung={}", urlencoding::encode(b)));
-    }
 
     // Zustand umkehren: war eingeklappt → jetzt ausklappen (filter_collapsed=0 hinzufügen)
     // war ausgeklappt → jetzt einklappen (kein Parameter = Default eingeklappt, Story 40)
@@ -181,12 +177,6 @@ pub fn format_date(date_str: &str) -> String {
     date_str.to_string()
 }
 
-/// Parst einen rohen Rating-String aus dem Formular. Leer oder fehlend → None.
-fn parse_rating(raw: Option<&str>) -> Option<i32> {
-    raw.filter(|s| !s.trim().is_empty())
-        .and_then(|s| s.trim().parse::<i32>().ok())
-}
-
 fn render_template<T: askama::Template>(template: T) -> Result<String, AppError> {
     template
         .render()
@@ -218,7 +208,7 @@ fn parse_form_data(body: &[u8]) -> std::collections::HashMap<String, Vec<String>
 }
 
 /// Baut die Toggle-URL für eine Kategorie: aktiv→entfernen, inaktiv→hinzufügen.
-/// Bestehender Suchbegriff, `not_made_filter_active`, `next_seven_days_filter_active` und `bewertung` bleiben erhalten.
+/// Bestehender Suchbegriff, `not_made_filter_active`, `next_seven_days_filter_active` bleiben erhalten.
 fn build_category_toggle_url(
     category: &str,
     is_active: bool,
@@ -226,7 +216,6 @@ fn build_category_toggle_url(
     search_query: &str,
     not_made_filter_active: bool,
     next_seven_days_filter_active: bool,
-    bewertung: Option<&str>,
 ) -> String {
     let mut params: Vec<String> = Vec::new();
 
@@ -251,9 +240,6 @@ fn build_category_toggle_url(
         params.push("filter=naechste-7-tage".to_string());
     }
 
-    if let Some(b) = bewertung {
-        params.push(format!("bewertung={}", urlencoding::encode(b)));
-    }
 
     if params.is_empty() {
         "/".to_string()
@@ -268,7 +254,6 @@ fn build_category_filters(
     search_query: &str,
     not_made_filter_active: bool,
     next_seven_days_filter_active: bool,
-    bewertung: Option<&str>,
 ) -> Vec<CategoryFilterItem> {
     VALID_CATEGORIES
         .iter()
@@ -281,7 +266,6 @@ fn build_category_filters(
                 search_query,
                 not_made_filter_active,
                 next_seven_days_filter_active,
-                bewertung,
             );
             CategoryFilterItem {
                 name: cat.to_string(),
@@ -293,12 +277,11 @@ fn build_category_filters(
 }
 
 /// Erstellt die URL zum Zurücksetzen aller Kategorie-Filter (Suchbegriff bleibt erhalten).
-/// Wenn `not_made_filter_active`, `next_seven_days_filter_active` oder `bewertung` gesetzt ist, bleiben diese erhalten.
+/// Wenn `not_made_filter_active` oder `next_seven_days_filter_active` gesetzt ist, bleiben diese erhalten.
 fn build_reset_url(
     search_query: &str,
     not_made_filter_active: bool,
     next_seven_days_filter_active: bool,
-    bewertung: Option<&str>,
 ) -> String {
     let mut params: Vec<String> = Vec::new();
     if !search_query.is_empty() {
@@ -308,9 +291,6 @@ fn build_reset_url(
         params.push("filter=laenger-nicht-gemacht".to_string());
     } else if next_seven_days_filter_active {
         params.push("filter=naechste-7-tage".to_string());
-    }
-    if let Some(b) = bewertung {
-        params.push(format!("bewertung={}", urlencoding::encode(b)));
     }
     if params.is_empty() {
         "/".to_string()
@@ -320,13 +300,12 @@ fn build_reset_url(
 }
 
 /// Baut die Toggle-URL für den "Länger nicht gemacht"-Filter.
-/// Aktiv → URL ohne `filter`-Parameter (Kategorie + Suche + bewertung bleiben erhalten).
-/// Inaktiv → URL mit `filter=laenger-nicht-gemacht` (Kategorie + Suche + bewertung bleiben erhalten).
+/// Aktiv → URL ohne `filter`-Parameter (Kategorie + Suche bleiben erhalten).
+/// Inaktiv → URL mit `filter=laenger-nicht-gemacht` (Kategorie + Suche bleiben erhalten).
 fn build_not_made_toggle_url(
     is_active: bool,
     active_categories: &[String],
     search_query: &str,
-    bewertung: Option<&str>,
 ) -> String {
     let mut params: Vec<String> = Vec::new();
 
@@ -342,9 +321,6 @@ fn build_not_made_toggle_url(
         params.push("filter=laenger-nicht-gemacht".to_string());
     }
 
-    if let Some(b) = bewertung {
-        params.push(format!("bewertung={}", urlencoding::encode(b)));
-    }
 
     if params.is_empty() {
         "/".to_string()
@@ -354,13 +330,12 @@ fn build_not_made_toggle_url(
 }
 
 /// Baut die Toggle-URL für den "Nächste 7 Tage"-Filter.
-/// Aktiv → URL ohne `filter`-Parameter (Kategorie + Suche + bewertung bleiben erhalten).
-/// Inaktiv → URL mit `filter=naechste-7-tage` (Kategorie + Suche + bewertung bleiben erhalten).
+/// Aktiv → URL ohne `filter`-Parameter (Kategorie + Suche bleiben erhalten).
+/// Inaktiv → URL mit `filter=naechste-7-tage` (Kategorie + Suche bleiben erhalten).
 fn build_next_seven_days_toggle_url(
     is_active: bool,
     active_categories: &[String],
     search_query: &str,
-    bewertung: Option<&str>,
 ) -> String {
     let mut params: Vec<String> = Vec::new();
 
@@ -376,49 +351,6 @@ fn build_next_seven_days_toggle_url(
         params.push("filter=naechste-7-tage".to_string());
     }
 
-    if let Some(b) = bewertung {
-        params.push(format!("bewertung={}", urlencoding::encode(b)));
-    }
-
-    if params.is_empty() {
-        "/".to_string()
-    } else {
-        format!("/?{}", params.join("&"))
-    }
-}
-
-/// Baut die Toggle-URL für den Bewertungsfilter.
-/// Wenn der aktuelle Wert dem Zielwert entspricht (Toggle: deaktivieren), wird `bewertung` aus der URL entfernt.
-/// Andernfalls wird `bewertung={value}` gesetzt (ggf. ersetzt).
-/// Alle anderen Parameter (q, kategorie, filter) bleiben erhalten.
-fn build_bewertung_toggle_url(
-    value: &str,
-    current: Option<&str>,
-    active_categories: &[String],
-    search_query: &str,
-    not_made_filter_active: bool,
-    next_seven_days_filter_active: bool,
-) -> String {
-    let mut params: Vec<String> = Vec::new();
-
-    if !search_query.is_empty() {
-        params.push(format!("q={}", urlencoding::encode(search_query)));
-    }
-
-    for cat in active_categories {
-        params.push(format!("kategorie={}", urlencoding::encode(cat)));
-    }
-
-    if not_made_filter_active {
-        params.push("filter=laenger-nicht-gemacht".to_string());
-    } else if next_seven_days_filter_active {
-        params.push("filter=naechste-7-tage".to_string());
-    }
-
-    // Toggle: gleiches Value → deaktivieren (kein bewertung-Parameter)
-    if current != Some(value) {
-        params.push(format!("bewertung={}", urlencoding::encode(value)));
-    }
 
     if params.is_empty() {
         "/".to_string()
@@ -434,7 +366,6 @@ fn build_current_query_string(
     search_query: &str,
     not_made_filter_active: bool,
     next_seven_days_filter_active: bool,
-    bewertung: Option<&str>,
 ) -> String {
     let mut params: Vec<String> = Vec::new();
 
@@ -452,9 +383,6 @@ fn build_current_query_string(
         params.push("filter=naechste-7-tage".to_string());
     }
 
-    if let Some(b) = bewertung {
-        params.push(format!("bewertung={}", urlencoding::encode(b)));
-    }
 
     params.join("&")
 }
@@ -477,7 +405,6 @@ fn normalize_categories(raw: Vec<String>) -> Vec<String> {
 /// Unterstützt `?kategorie=Brot&kategorie=Kuchen` für den Kategorie-Filter (ODER-Logik).
 /// Unterstützt `?filter=laenger-nicht-gemacht` für den "Länger nicht gemacht"-Filter.
 /// Unterstützt `?filter=naechste-7-tage` für den "Nächste 7 Tage"-Filter.
-/// Unterstützt `?bewertung=gut` (rating >= 3) und `?bewertung=favoriten` (rating = 5) für den Bewertungsfilter.
 pub async fn index(
     State(pool): State<Arc<SqlitePool>>,
     Query(query): Query<IndexQuery>,
@@ -495,38 +422,14 @@ pub async fn index(
     // filter_collapsed: "0" → ausgeklappt, alles andere → eingeklappt (Story 40)
     let filter_collapsed = query.filter_collapsed.as_deref() != Some("0");
 
-    // Bewertungsfilter: nur "gut" und "favoriten" akzeptieren, Rest ignorieren
-    let bewertung: Option<String> = query.bewertung.and_then(|b| {
-        if b == "gut" || b == "favoriten" {
-            Some(b)
-        } else {
-            None
-        }
-    });
-
     let recipes: Vec<Recipe> = if not_made_filter_active {
-        filter_recipes_not_made_recently(
-            &pool,
-            &active_categories,
-            &search_query,
-            bewertung.as_deref(),
-        )
+        filter_recipes_not_made_recently(&pool, &active_categories, &search_query)
         .await?
     } else if next_seven_days_filter_active {
-        filter_recipes_next_seven_days(
-            &pool,
-            &active_categories,
-            &search_query,
-            bewertung.as_deref(),
-        )
+        filter_recipes_next_seven_days(&pool, &active_categories, &search_query)
         .await?
     } else {
-        filter_recipes_by_categories(
-            &pool,
-            &active_categories,
-            &search_query,
-            bewertung.as_deref(),
-        )
+        filter_recipes_by_categories(&pool, &active_categories, &search_query)
         .await?
     };
 
@@ -542,65 +445,20 @@ pub async fn index(
             } else {
                 None
             },
-            rating: r.rating,
         })
         .collect();
 
-    let category_filters = build_category_filters(
-        &active_categories,
-        &search_query,
-        not_made_filter_active,
-        next_seven_days_filter_active,
-        bewertung.as_deref(),
-    );
-    let reset_categories_url = build_reset_url(
-        &search_query,
-        not_made_filter_active,
-        next_seven_days_filter_active,
-        bewertung.as_deref(),
-    );
-    let not_made_filter_toggle_url = build_not_made_toggle_url(
-        not_made_filter_active,
-        &active_categories,
-        &search_query,
-        bewertung.as_deref(),
-    );
-    let next_seven_days_filter_toggle_url = build_next_seven_days_toggle_url(
-        next_seven_days_filter_active,
-        &active_categories,
-        &search_query,
-        bewertung.as_deref(),
-    );
-    let bewertung_gut_toggle_url = build_bewertung_toggle_url(
-        "gut",
-        bewertung.as_deref(),
-        &active_categories,
-        &search_query,
-        not_made_filter_active,
-        next_seven_days_filter_active,
-    );
-    let bewertung_favoriten_toggle_url = build_bewertung_toggle_url(
-        "favoriten",
-        bewertung.as_deref(),
-        &active_categories,
-        &search_query,
-        not_made_filter_active,
-        next_seven_days_filter_active,
-    );
+    let category_filters = build_category_filters(&active_categories, &search_query, not_made_filter_active, next_seven_days_filter_active);
+    let reset_categories_url = build_reset_url(&search_query, not_made_filter_active, next_seven_days_filter_active);
+    let not_made_filter_toggle_url = build_not_made_toggle_url(not_made_filter_active, &active_categories, &search_query);
+    let next_seven_days_filter_toggle_url = build_next_seven_days_toggle_url(next_seven_days_filter_active, &active_categories, &search_query);
 
     let any_filter_active = !active_categories.is_empty()
         || !search_query.is_empty()
         || not_made_filter_active
-        || next_seven_days_filter_active
-        || bewertung.is_some();
+        || next_seven_days_filter_active;
 
-    let current_query_string = build_current_query_string(
-        &active_categories,
-        &search_query,
-        not_made_filter_active,
-        next_seven_days_filter_active,
-        bewertung.as_deref(),
-    );
+    let current_query_string = build_current_query_string(&active_categories, &search_query, not_made_filter_active, next_seven_days_filter_active);
 
     let saved_filters = get_all_saved_filters(&pool).await?;
     let saved_filter_items: Vec<SavedFilterItem> = saved_filters
@@ -613,14 +471,7 @@ pub async fn index(
         })
         .collect();
 
-    let filter_collapsed_toggle_url = build_filter_collapsed_toggle_url(
-        filter_collapsed,
-        &active_categories,
-        &search_query,
-        not_made_filter_active,
-        next_seven_days_filter_active,
-        bewertung.as_deref(),
-    );
+    let filter_collapsed_toggle_url = build_filter_collapsed_toggle_url(filter_collapsed, &active_categories, &search_query, not_made_filter_active, next_seven_days_filter_active);
 
     let template = IndexTemplate {
         recipes: recipe_items,
@@ -633,9 +484,6 @@ pub async fn index(
         not_made_filter_toggle_url,
         next_seven_days_filter_active,
         next_seven_days_filter_toggle_url,
-        bewertung_filter: bewertung,
-        bewertung_gut_toggle_url,
-        bewertung_favoriten_toggle_url,
         any_filter_active,
         saved_filters: saved_filter_items,
         current_query_string,
@@ -716,12 +564,6 @@ pub async fn create_recipe_handler(
         .filter(|s| !s.is_empty())
         .cloned();
     let planned_date_raw = params.get("planned_date").and_then(|v| v.first()).cloned();
-    let rating = parse_rating(
-        params
-            .get("rating")
-            .and_then(|v| v.first())
-            .map(|s| s.as_str()),
-    );
 
     let recipe = CreateRecipe {
         title: title.clone(),
@@ -729,7 +571,6 @@ pub async fn create_recipe_handler(
         ingredients: ingredients.clone(),
         instructions: instructions.clone(),
         planned_date_input: planned_date_raw.clone(),
-        rating,
     };
 
     if let Err(errors) = recipe.validate() {
@@ -746,7 +587,6 @@ pub async fn create_recipe_handler(
             instructions: instructions.unwrap_or_default(),
             recipe_id: None,
             planned_date: planned_date_raw.unwrap_or_default(),
-            rating,
             planned_recipes,
         };
         return Ok((StatusCode::BAD_REQUEST, Html(render_template(template)?)).into_response());
@@ -785,7 +625,6 @@ pub async fn show_recipe(
         updated_at: format_date(&recipe.updated_at),
         success: query.success.as_deref() == Some("1"),
         planned_date,
-        rating: recipe.rating,
     };
 
     Ok(Html(render_template(template)?).into_response())
@@ -811,7 +650,6 @@ pub async fn edit_recipe_form(
         instructions: recipe.instructions.unwrap_or_default(),
         recipe_id: Some(id),
         planned_date,
-        rating: recipe.rating,
         planned_recipes,
     };
 
@@ -843,12 +681,6 @@ pub async fn update_recipe_handler(
         .filter(|s| !s.is_empty())
         .cloned();
     let planned_date_raw = params.get("planned_date").and_then(|v| v.first()).cloned();
-    let rating = parse_rating(
-        params
-            .get("rating")
-            .and_then(|v| v.first())
-            .map(|s| s.as_str()),
-    );
 
     let recipe = UpdateRecipe {
         title: title.clone(),
@@ -856,7 +688,6 @@ pub async fn update_recipe_handler(
         ingredients: ingredients.clone(),
         instructions: instructions.clone(),
         planned_date_input: planned_date_raw.clone(),
-        rating,
     };
 
     if let Err(errors) = recipe.validate() {
@@ -870,7 +701,6 @@ pub async fn update_recipe_handler(
             instructions: instructions.unwrap_or_default(),
             recipe_id: Some(id),
             planned_date: planned_date_raw.unwrap_or_default(),
-            rating,
             planned_recipes,
         };
         return Ok((StatusCode::BAD_REQUEST, Html(render_template(template)?)).into_response());
@@ -901,38 +731,6 @@ pub async fn confirm_delete(
         id: recipe.id,
         title: recipe.title,
     };
-    Ok(Html(render_template(template)?))
-}
-
-/// Aktualisiert nur die Bewertung eines Rezepts und gibt das aktualisierte HTML-Fragment zurück.
-/// Antwortet mit dem Inline-Rating-Fragment für HTMX-Swap.
-pub async fn update_recipe_rating_handler(
-    State(pool): State<Arc<SqlitePool>>,
-    Path(id): Path<i64>,
-    axum::extract::RawForm(body): axum::extract::RawForm,
-) -> Result<impl IntoResponse, AppError> {
-    let params = parse_form_data(&body);
-    let rating_raw = params
-        .get("rating")
-        .and_then(|v| v.first())
-        .map(|s| s.as_str());
-    let rating = parse_rating(rating_raw);
-
-    // Validierung: Wert vorhanden und außerhalb 1-5 → 400
-    if let Some(err) = validate_rating(rating) {
-        return Err(AppError::BadRequest(err));
-    }
-
-    update_recipe_rating(&pool, id, rating)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::RowNotFound => {
-                AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", id))
-            }
-            other => AppError::Database(other),
-        })?;
-
-    let template = InlineRatingTemplate { id, rating };
     Ok(Html(render_template(template)?))
 }
 
@@ -1077,10 +875,8 @@ pub async fn duplicates_handler(
         .map(|p| DublettenPaarItem {
             id_a: p.rezept_a.id,
             titel_a: p.rezept_a.title,
-            bewertung_a: p.rezept_a.rating,
             id_b: p.rezept_b.id,
             titel_b: p.rezept_b.title,
-            bewertung_b: p.rezept_b.rating,
         })
         .collect();
     let template = DublettenUebersichtTemplate { paare: paar_items };
@@ -1102,7 +898,6 @@ fn recipe_to_merge_info(recipe: &Recipe) -> MergeRezeptInfo {
         categories: recipe.categories_vec(),
         ingredients: recipe.ingredients.clone(),
         instructions: recipe.instructions.clone(),
-        rating: recipe.rating,
         planned_date,
         created_at: format_date(&recipe.created_at),
         updated_at: format_date(&recipe.updated_at),
@@ -1195,11 +990,6 @@ pub async fn merge_handler(
         .and_then(|v| v.first())
         .map(|s| s.as_str())
         .unwrap_or("a");
-    let rating_from = params
-        .get("rating_from")
-        .and_then(|v| v.first())
-        .map(|s| s.as_str())
-        .unwrap_or("a");
     let planned_date_from = params
         .get("planned_date_from")
         .and_then(|v| v.first())
@@ -1230,12 +1020,6 @@ pub async fn merge_handler(
         source.instructions.clone()
     };
 
-    let rating = if rating_from == "b" {
-        target.rating
-    } else {
-        source.rating
-    };
-
     // Datum: Wir speichern im deutschen Format für den Input
     let planned_date_input = if planned_date_from == "b" {
         target
@@ -1253,7 +1037,6 @@ pub async fn merge_handler(
         ingredients: ingredients.clone(),
         instructions: instructions.clone(),
         planned_date_input: planned_date_input.clone(),
-        rating,
     };
 
     if let Err(errors) = recipe.validate() {
@@ -1286,7 +1069,7 @@ mod tests {
     #[test]
     fn toggle_url_ausgeklappt_zu_eingeklappt() {
         // Gegeben: Filter ausgeklappt, kein aktiver Filter
-        let url = build_filter_collapsed_toggle_url(false, &[], "", false, false, None);
+        let url = build_filter_collapsed_toggle_url(false, &[], "", false, false);
         // Dann: URL enthält keinen filter_collapsed Parameter (Story 40: Default eingeklappt)
         assert_eq!(url, "/");
     }
@@ -1294,7 +1077,7 @@ mod tests {
     #[test]
     fn toggle_url_eingeklappt_zu_ausgeklappt() {
         // Gegeben: Filter eingeklappt, kein aktiver Filter
-        let url = build_filter_collapsed_toggle_url(true, &[], "", false, false, None);
+        let url = build_filter_collapsed_toggle_url(true, &[], "", false, false);
         // Dann: URL enthält filter_collapsed=0 (Story 40: explizit ausklappen)
         assert_eq!(url, "/?filter_collapsed=0");
     }
@@ -1302,7 +1085,7 @@ mod tests {
     #[test]
     fn toggle_url_behaelt_suchbegriff() {
         // Gegeben: Suchbegriff "pasta" aktiv, Filter ausgeklappt (Story 40: kein Parameter = eingeklappt)
-        let url = build_filter_collapsed_toggle_url(false, &[], "pasta", false, false, None);
+        let url = build_filter_collapsed_toggle_url(false, &[], "pasta", false, false);
         // Dann: URL enthält q=pasta und keinen filter_collapsed Parameter
         assert!(url.contains("q=pasta"), "URL sollte q=pasta enthalten");
         assert!(
@@ -1315,7 +1098,7 @@ mod tests {
     fn toggle_url_behaelt_kategorie() {
         // Gegeben: Kategorie "Brot" aktiv, Filter ausgeklappt (Story 40: kein Parameter = eingeklappt)
         let url =
-            build_filter_collapsed_toggle_url(false, &["Brot".to_string()], "", false, false, None);
+            build_filter_collapsed_toggle_url(false, &["Brot".to_string()], "", false, false);
         // Dann: URL enthält kategorie=Brot und keinen filter_collapsed Parameter
         assert!(
             url.contains("kategorie=Brot"),
@@ -1330,26 +1113,11 @@ mod tests {
     #[test]
     fn toggle_url_behaelt_nicht_gemacht_filter() {
         // Gegeben: "Länger nicht gemacht"-Filter aktiv, Filter ausgeklappt (Story 40: kein Parameter = eingeklappt)
-        let url = build_filter_collapsed_toggle_url(false, &[], "", true, false, None);
+        let url = build_filter_collapsed_toggle_url(false, &[], "", true, false);
         // Dann: URL enthält filter=laenger-nicht-gemacht und keinen filter_collapsed Parameter
         assert!(
             url.contains("filter=laenger-nicht-gemacht"),
             "URL sollte filter=laenger-nicht-gemacht enthalten"
-        );
-        assert!(
-            !url.contains("filter_collapsed"),
-            "URL sollte keinen filter_collapsed Parameter enthalten"
-        );
-    }
-
-    #[test]
-    fn toggle_url_behaelt_bewertung() {
-        // Gegeben: Bewertungsfilter "gut" aktiv, Filter ausgeklappt (Story 40: kein Parameter = eingeklappt)
-        let url = build_filter_collapsed_toggle_url(false, &[], "", false, false, Some("gut"));
-        // Dann: URL enthält bewertung=gut und keinen filter_collapsed Parameter
-        assert!(
-            url.contains("bewertung=gut"),
-            "URL sollte bewertung=gut enthalten"
         );
         assert!(
             !url.contains("filter_collapsed"),
@@ -1366,12 +1134,10 @@ mod tests {
             "pasta",
             false,
             false,
-            Some("gut"),
         );
         // Dann: URL enthält alle Parameter INKLUSIVE filter_collapsed=0 (ausklappen)
         assert!(url.contains("kategorie=Brot"), "kategorie=Brot fehlt");
         assert!(url.contains("q=pasta"), "q=pasta fehlt");
-        assert!(url.contains("bewertung=gut"), "bewertung=gut fehlt");
         assert!(
             url.contains("filter_collapsed=0"),
             "filter_collapsed=0 sollte enthalten sein wenn eingeklappt (um auszuklappen)"
@@ -1387,12 +1153,10 @@ mod tests {
             "pasta",
             false,
             false,
-            Some("gut"),
         );
         // Dann: URL enthält alle Parameter AUSSER filter_collapsed (einklappen = Default)
         assert!(url.contains("kategorie=Brot"), "kategorie=Brot fehlt");
         assert!(url.contains("q=pasta"), "q=pasta fehlt");
-        assert!(url.contains("bewertung=gut"), "bewertung=gut fehlt");
         assert!(
             !url.contains("filter_collapsed"),
             "filter_collapsed sollte fehlen wenn ausgeklappt (einklappen = Default)"

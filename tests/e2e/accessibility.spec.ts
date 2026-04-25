@@ -11,17 +11,11 @@ import AxeBuilder from '@axe-core/playwright';
 async function createRecipe(
   page: import('@playwright/test').Page,
   title: string,
-  category: string,
-  rating?: number
+  category: string
 ): Promise<string> {
   await page.goto('/recipes/new');
   await page.fill('input[name="title"]', title);
   await page.check(`input[name="categories"][value="${category}"]`);
-  if (rating !== undefined) {
-    const input = page.locator(`input[name="rating"][value="${rating}"]`);
-    const label = input.locator('xpath=ancestor::label');
-    await label.click();
-  }
   await page.click('button[type="submit"]');
   await expect(page).toHaveURL(/\/recipes\/\d+/);
   return page.url();
@@ -33,7 +27,7 @@ test.describe('Accessibility (Story 25)', () => {
     test.setTimeout(90_000);
     // Given: Zwei Rezepte für den Test erstellen
     const suffix = Date.now();
-    await createRecipe(page, `Rezept-A11y-1-${suffix}`, 'Mittagessen', 3);
+    await createRecipe(page, `Rezept-A11y-1-${suffix}`, 'Mittagessen');
     await createRecipe(page, `Rezept-A11y-2-${suffix}`, 'Kuchen');
 
     // When: Startseite mit Kategorie-Filter öffnen (nur die zwei Test-Rezepte sichtbar, kleinerer DOM)
@@ -50,7 +44,7 @@ test.describe('Accessibility (Story 25)', () => {
   test('T2: Detailansicht hat keine axe Level-A-Violations', async ({ page }) => {
     // Given: Ein Rezept mit Bewertung existiert
     const suffix = Date.now();
-    const detailUrl = await createRecipe(page, `Detail-A11y-${suffix}`, 'Mittagessen', 4);
+    const detailUrl = await createRecipe(page, `Detail-A11y-${suffix}`, 'Mittagessen');
 
     // When: Detailseite öffnen
     await page.goto(detailUrl);
@@ -162,32 +156,6 @@ test.describe('Accessibility (Story 25)', () => {
     await expect(editBtn).toBeVisible();
   });
 
-  test('T8: Inline-Rating ohne Bewertung hat aria-label "Noch keine Bewertung" (L10)', async ({ page }) => {
-    // Given: Ein Rezept ohne Bewertung existiert
-    const suffix = Date.now();
-    const detailUrl = await createRecipe(page, `NoBewertung-${suffix}`, 'Party');
-
-    // When: Detailseite öffnen
-    await page.goto(detailUrl);
-
-    // Then: Das Inline-Rating-Widget hat aria-label "Noch keine Bewertung"
-    const ratingDiv = page.locator('#inline-rating');
-    await expect(ratingDiv).toHaveAttribute('aria-label', 'Noch keine Bewertung');
-  });
-
-  test('T9: Inline-Rating mit Bewertung hat korrekte Sterne im aria-label (L10)', async ({ page }) => {
-    // Given: Ein Rezept mit 4 Sternen existiert
-    const suffix = Date.now();
-    const detailUrl = await createRecipe(page, `MitBewertung-${suffix}`, 'Mittagessen', 4);
-
-    // When: Detailseite öffnen
-    await page.goto(detailUrl);
-
-    // Then: Das Inline-Rating-Widget hat aria-label "4 von 5 Sternen"
-    const ratingDiv = page.locator('#inline-rating');
-    await expect(ratingDiv).toHaveAttribute('aria-label', '4 von 5 Sternen');
-  });
-
   test('T10: Tastaturnavigation – Lösch-Bestätigung (K7)', async ({ page }) => {
     // Given: Ein Rezept existiert
     const suffix = Date.now();
@@ -228,8 +196,7 @@ test.describe('Accessibility (Story 25)', () => {
     await page.goto('/recipes/new');
 
     // Then: Kategorien sind in einem fieldset mit legend
-    // Das Kategorien-Fieldset hat nur die Klasse "form-group" (kein "star-rating")
-    const fieldset = page.locator('fieldset.form-group:not(.star-rating)');
+    const fieldset = page.locator('fieldset.form-group');
     await expect(fieldset).toBeVisible();
     const legend = fieldset.locator('legend');
     await expect(legend).toContainText('Kategorien');

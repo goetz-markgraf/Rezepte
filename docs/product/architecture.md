@@ -201,7 +201,6 @@ POST /recipes/{id}/delete → Rezept löschen (mit Confirmation)
 
 # Spezielle Ansichten
 GET  /recipes?planned=next-7-days → Geplante Rezeite (Wochenplanung)
-GET  /recipes?rating=5      → 5-Sterne Rezepte
 ```
 
 ### Query-Parameter für Filter
@@ -210,18 +209,16 @@ GET  /recipes?rating=5      → 5-Sterne Rezepte
 |-----------|------|--------------|
 | `q` | String | Volltextsuche (Titel, Zutaten, Anleitung) |
 | `category` | Enum | Einzelne Kategorie filtern |
-| `sort` | `title`, `date`, `rating` | Sortierfeld |
+| `sort` | `title`, `date` | Sortierfeld |
 | `order` | `asc`, `desc` | Sortierrichtung |
 | `filter` | `laenger-nicht-gemacht` | "Länger nicht gemacht" |
 | `planned` | `next-7-days` | Geplante Rezepte |
-| `rating` | 1-5 | Nach Bewertung filtern |
 
 ### HTMX Integration (optional)
 
 HTMX wird für interaktive Verbesserungen eingesetzt, ohne die DeepLink-Struktur zu brechen:
 
-- **Live-Suche:** `hx-get="/recipes" hx-trigger="keyup changed"` 
-- **Inline-Bewertung:** `hx-post="/recipes/{id}/rate"`
+- **Live-Suche:** `hx-get="/recipes" hx-trigger="keyup changed"`
 - **Filter anwenden:** `hx-get="/recipes"` mit Query-Parametern
 - **Löschen bestätigen:** `hx-confirm="Rezept wirklich löschen?"`
 

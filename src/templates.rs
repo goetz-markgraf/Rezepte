@@ -12,19 +12,6 @@ pub struct DuplicateHintTemplate {
 pub struct HeuteRezeptItem {
     pub id: i64,
     pub title: String,
-    pub rating: Option<i32>,
-}
-
-impl HeuteRezeptItem {
-    /// Gibt true zurück, wenn die aktuelle Bewertung dem Wert `n` entspricht.
-    pub fn rating_is_active(&self, n: i32) -> bool {
-        self.rating == Some(n)
-    }
-
-    /// Gibt true zurück, wenn der Stern `n` ausgefüllt sein soll (rating >= n).
-    pub fn star_filled(&self, n: i32) -> bool {
-        self.rating.unwrap_or(0) >= n
-    }
 }
 
 /// Ein Tagesabschnitt auf der "Heute gekocht"-Seite (Gestern, Heute oder Morgen).
@@ -49,28 +36,6 @@ pub struct HeuteTemplate {
     pub abschnitte: Vec<HeuteTagesabschnitt>,
     /// Datum-Zeile im Seitenkopf: "Donnerstag, 2. April 2026"
     pub heute_anzeige: String,
-}
-
-/// Template für das Inline-Rating-Fragment auf der "Heute gekocht"-Seite.
-/// Nutzt `id="inline-rating-{{ id }}"` statt `id="inline-rating"` für eindeutige IDs
-/// bei mehreren gleichzeitig sichtbaren Rezepten.
-#[derive(Template)]
-#[template(path = "recipes/_inline_rating_heute.html")]
-pub struct InlineRatingHeuteTemplate {
-    pub id: i64,
-    pub rating: Option<i32>,
-}
-
-impl InlineRatingHeuteTemplate {
-    /// Gibt true zurück, wenn die aktuelle Bewertung dem Wert `n` entspricht.
-    pub fn rating_is_active(&self, n: i32) -> bool {
-        self.rating == Some(n)
-    }
-
-    /// Gibt true zurück, wenn der Stern `n` ausgefüllt sein soll (rating >= n).
-    pub fn star_filled(&self, n: i32) -> bool {
-        self.rating.unwrap_or(0) >= n
-    }
 }
 
 /// Ein einzelner Rezepteintrag in der Wochenvorschau.
@@ -132,8 +97,6 @@ pub struct RecipeFormTemplate {
     pub recipe_id: Option<i64>,
     /// Datum im deutschen Format (T.M.JJJJ) oder leer.
     pub planned_date: String,
-    /// Bewertung 1-5 Sterne. None bedeutet keine Bewertung.
-    pub rating: Option<i32>,
     /// Geplante Rezepte für die nächsten 10 Tage (morgen bis +10 Tage).
     /// Index 0-9 entspricht den Tagen im Picker.
     /// None = kein Rezept geplant an diesem Tag.
@@ -155,8 +118,6 @@ pub struct RecipeDetailTemplate {
     pub success: bool,
     /// Datum im langen deutschen Format (z.B. "5. März 2025") oder None.
     pub planned_date: Option<String>,
-    /// Bewertung 1-5 Sterne. None bedeutet keine Bewertung.
-    pub rating: Option<i32>,
 }
 
 /// Template für die Bestätigungsseite zum Löschen eines Rezepts.
@@ -206,19 +167,13 @@ pub struct IndexTemplate {
     pub next_seven_days_filter_active: bool,
     /// URL zum Umschalten des "Nächste 7 Tage"-Filters.
     pub next_seven_days_filter_toggle_url: String,
-    /// Aktiver Bewertungsfilter: `Some("gut")` | `Some("favoriten")` | `None`.
-    pub bewertung_filter: Option<String>,
-    /// Toggle-URL für den "Nur Gute" (3+ Sterne) Bewertungsfilter.
-    pub bewertung_gut_toggle_url: String,
-    /// Toggle-URL für den "Favoriten" (5 Sterne) Bewertungsfilter.
-    pub bewertung_favoriten_toggle_url: String,
-    /// Ob irgendein Filter aktiv ist (Kategorie, Suche, Datumsfilter oder Bewertung).
+    /// Ob irgendein Filter aktiv ist (Kategorie, Suche, Datumsfilter).
     /// Steuert die Sichtbarkeit des "Alle Filter zurücksetzen"-Buttons.
     pub any_filter_active: bool,
     /// Alle gespeicherten Filter (aus DB, für die Anzeige).
     pub saved_filters: Vec<SavedFilterItem>,
     /// Query-String des aktuellen Filterzustands (für das Speichern-Formular).
-    /// Leer wenn kein Filter aktiv. Format: "kategorie=Brot&bewertung=gut"
+    /// Leer wenn kein Filter aktiv. Format: "kategorie=Brot"
     pub current_query_string: String,
     /// Fehler beim Speichern: "duplikat" | None
     pub save_error: Option<String>,
@@ -240,8 +195,6 @@ pub struct RecipeListItem {
     /// Datum mit Wochentag (z.B. "Mo, 31.03.2026") oder None.
     /// Wird nur beim aktiven "Nächste 7 Tage"-Filter befüllt.
     pub planned_date_weekday: Option<String>,
-    /// Bewertung 1-5 Sterne. None bedeutet keine Bewertung.
-    pub rating: Option<i32>,
 }
 
 impl Default for RecipeFormTemplate {
@@ -258,7 +211,6 @@ impl Default for RecipeFormTemplate {
             instructions: String::new(),
             recipe_id: None,
             planned_date: String::new(),
-            rating: None,
             planned_recipes: vec![None; 10], // 10 Tage initialisieren
         }
     }
@@ -269,97 +221,14 @@ impl RecipeFormTemplate {
         Self::default()
     }
 
-    /// Gibt true zurück, wenn die aktuelle Bewertung dem Wert `n` entspricht.
-    pub fn rating_is(&self, n: i32) -> bool {
-        self.rating == Some(n)
-    }
-}
-
-/// Template für das Inline-Rating-Fragment in der Detailansicht.
-#[derive(Template)]
-#[template(path = "recipes/_inline_rating.html")]
-pub struct InlineRatingTemplate {
-    pub id: i64,
-    pub rating: Option<i32>,
-}
-
-impl InlineRatingTemplate {
-    /// Gibt true zurück, wenn die aktuelle Bewertung dem Wert `n` entspricht.
-    pub fn rating_is_active(&self, n: i32) -> bool {
-        self.rating == Some(n)
-    }
-
-    /// Gibt true zurück, wenn der Stern `n` ausgefüllt sein soll (rating >= n).
-    pub fn star_filled(&self, n: i32) -> bool {
-        self.rating.unwrap_or(0) >= n
-    }
-}
-
-impl RecipeDetailTemplate {
-    /// Gibt true zurück, wenn die aktuelle Bewertung dem Wert `n` entspricht (für Inline-Rating-Partial).
-    pub fn rating_is_active(&self, n: i32) -> bool {
-        self.rating == Some(n)
-    }
-
-    /// Gibt true zurück, wenn der Stern `n` ausgefüllt sein soll (rating >= n).
-    pub fn star_filled(&self, n: i32) -> bool {
-        self.rating.unwrap_or(0) >= n
-    }
-}
-
-impl RecipeListItem {
-    /// Gibt die Sterndarstellung für die Listenansicht zurück (nur ausgefüllte Sterne).
-    /// Gibt einen leeren String zurück, wenn keine Bewertung vorhanden ist.
-    pub fn stars_display(&self) -> String {
-        match self.rating {
-            Some(r) => "★".repeat(r as usize),
-            None => String::new(),
-        }
-    }
 }
 
 /// Ein einzelnes Dubletten-Paar für das Template.
 pub struct DublettenPaarItem {
     pub id_a: i64,
     pub titel_a: String,
-    pub bewertung_a: Option<i32>,
     pub id_b: i64,
     pub titel_b: String,
-    pub bewertung_b: Option<i32>,
-}
-
-impl DublettenPaarItem {
-    /// Gibt die Sterndarstellung für Rezept A zurück (z.B. "★★★") oder einen leeren String.
-    pub fn sterne_a(&self) -> String {
-        match self.bewertung_a {
-            Some(r) => "★".repeat(r as usize),
-            None => String::new(),
-        }
-    }
-
-    /// Gibt die Sterndarstellung für Rezept B zurück (z.B. "★★★") oder einen leeren String.
-    pub fn sterne_b(&self) -> String {
-        match self.bewertung_b {
-            Some(r) => "★".repeat(r as usize),
-            None => String::new(),
-        }
-    }
-
-    /// Gibt ein beschreibendes Bewertungs-Label für Screenreader zurück (z.B. "3 von 5 Sternen").
-    pub fn rating_label_a(&self) -> String {
-        match self.bewertung_a {
-            Some(r) => format!("{} von 5 Sternen", r),
-            None => String::new(),
-        }
-    }
-
-    /// Gibt ein beschreibendes Bewertungs-Label für Screenreader zurück (z.B. "3 von 5 Sternen").
-    pub fn rating_label_b(&self) -> String {
-        match self.bewertung_b {
-            Some(r) => format!("{} von 5 Sternen", r),
-            None => String::new(),
-        }
-    }
 }
 
 /// Template für die Dubletten-Übersichtsseite.
@@ -375,20 +244,9 @@ pub struct MergeRezeptInfo {
     pub categories: Vec<String>,
     pub ingredients: Option<String>,
     pub instructions: Option<String>,
-    pub rating: Option<i32>,
     pub planned_date: Option<String>,
     pub created_at: String,
     pub updated_at: String,
-}
-
-impl MergeRezeptInfo {
-    /// Gibt die Sterndarstellung zurück (z.B. "★★★") oder einen leeren String.
-    pub fn sterne(&self) -> String {
-        match self.rating {
-            Some(r) => "★".repeat(r as usize),
-            None => String::new(),
-        }
-    }
 }
 
 /// Template für die Merge-Seite (Rezepte zusammenführen).
@@ -417,10 +275,6 @@ impl MergeTemplate {
 
     pub fn hat_konflikt_instructions(&self) -> bool {
         self.rezept_a.instructions.is_some() && self.rezept_b.instructions.is_some()
-    }
-
-    pub fn hat_konflikt_rating(&self) -> bool {
-        self.rezept_a.rating.is_some() && self.rezept_b.rating.is_some()
     }
 
     pub fn hat_konflikt_planned_date(&self) -> bool {

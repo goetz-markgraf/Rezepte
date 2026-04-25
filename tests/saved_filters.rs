@@ -177,11 +177,11 @@ async fn duplikater_name_gibt_fehler_redirect() {
     )
     .await;
 
-    // Wenn: POST /saved-filters mit name="Brot-Ideen" und query_string="bewertung=gut"
+    // Wenn: POST /saved-filters mit name="Brot-Ideen" und query_string="kategorie=Kuchen"
     let (status, location) = post_form(
         &app,
         "/saved-filters",
-        "name=Brot-Ideen&query_string=bewertung%3Dgut",
+        "name=Brot-Ideen&query_string=kategorie%3DKuchen",
     )
     .await;
 

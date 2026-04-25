@@ -27,16 +27,12 @@ async fn create_recipe(
     app: &axum::Router,
     title: &str,
     categories: &[&str],
-    rating: Option<i32>,
     planned_date: Option<&str>,
 ) {
     // Gegeben: Rezept wird per POST /recipes angelegt
     let mut form_data = format!("title={}", urlencoding::encode(title));
     for cat in categories {
         form_data.push_str(&format!("&categories={}", urlencoding::encode(cat)));
-    }
-    if let Some(r) = rating {
-        form_data.push_str(&format!("&rating={r}"));
     }
     if let Some(date) = planned_date {
         form_data.push_str(&format!("&planned_date={}", urlencoding::encode(date)));
@@ -53,26 +49,25 @@ async fn create_recipe(
 }
 
 #[tokio::test]
-async fn three_filters_category_rating_not_made_returns_matching_recipes() {
-    // Gegeben: "Dinkelbrot" (Brot, 5 Sterne, planned_date 2025-06-01),
-    //          "Roggenbrot" (Brot, 5 Sterne, planned_date 2026-06-01 = Zukunft),
-    //          "Linseneintopf" (Mittagessen, 5 Sterne, planned_date 2024-01-01)
+async fn three_filters_category_not_made_returns_matching_recipes() {
+    // Gegeben: "Dinkelbrot" (Brot, planned_date 2025-06-01),
+    //          "Roggenbrot" (Brot, planned_date 2026-06-01 = Zukunft),
+    //          "Linseneintopf" (Mittagessen, planned_date 2024-01-01)
     let (app, _temp) = setup_test_app().await;
-    create_recipe(&app, "Dinkelbrot", &["Brot"], Some(5), Some("1.6.2025")).await;
-    create_recipe(&app, "Roggenbrot", &["Brot"], Some(5), Some("1.6.2026")).await;
+    create_recipe(&app, "Dinkelbrot", &["Brot"], Some("1.6.2025")).await;
+    create_recipe(&app, "Roggenbrot", &["Brot"], Some("1.6.2026")).await;
     create_recipe(
         &app,
         "Linseneintopf",
         &["Mittagessen"],
-        Some(5),
         Some("1.1.2024"),
     )
     .await;
 
-    // Wenn: GET /?kategorie=Brot&bewertung=favoriten&filter=laenger-nicht-gemacht
+    // Wenn: GET /?kategorie=Brot&filter=laenger-nicht-gemacht
     let (status, body) = get_body(
         app,
-        "/?kategorie=Brot&bewertung=favoriten&filter=laenger-nicht-gemacht",
+        "/?kategorie=Brot&filter=laenger-nicht-gemacht",
     )
     .await;
 
@@ -80,7 +75,7 @@ async fn three_filters_category_rating_not_made_returns_matching_recipes() {
     assert_eq!(status, StatusCode::OK);
     assert!(
         body.contains("Dinkelbrot"),
-        "Dinkelbrot soll sichtbar sein (Brot, 5 Sterne, Vergangenheitsdatum)"
+        "Dinkelbrot soll sichtbar sein (Brot, Vergangenheitsdatum)"
     );
     assert!(
         !body.contains("Linseneintopf"),
@@ -96,9 +91,9 @@ async fn three_filters_category_rating_not_made_returns_matching_recipes() {
 async fn category_and_search_combined_returns_intersection() {
     // Gegeben: "Dinkelbrot" (Brot), "Roggenbrot" (Brot), "Dinkel-Müsli" (Snacks)
     let (app, _temp) = setup_test_app().await;
-    create_recipe(&app, "Dinkelbrot", &["Brot"], None, None).await;
-    create_recipe(&app, "Roggenbrot", &["Brot"], None, None).await;
-    create_recipe(&app, "Dinkel-Müsli", &["Snacks"], None, None).await;
+    create_recipe(&app, "Dinkelbrot", &["Brot"], None).await;
+    create_recipe(&app, "Roggenbrot", &["Brot"], None).await;
+    create_recipe(&app, "Dinkel-Müsli", &["Snacks"], None).await;
 
     // Wenn: GET /?kategorie=Brot&q=Dinkel
     let (status, body) = get_body(app, "/?kategorie=Brot&q=Dinkel").await;
@@ -117,25 +112,25 @@ async fn category_and_search_combined_returns_intersection() {
 }
 
 #[tokio::test]
-async fn category_and_rating_combined_returns_intersection() {
-    // Gegeben: "Dinkelbrot" (Brot, 4 Sterne), "Roggenbrot" (Brot, 2 Sterne), "Spaghetti" (Mittagessen, 5 Sterne)
+async fn category_and_date_filter_combined_returns_intersection() {
+    // Gegeben: "Dinkelbrot" (Brot, planned_date Vergangenheit), "Roggenbrot" (Brot, None), "Spaghetti" (Mittagessen)
     let (app, _temp) = setup_test_app().await;
-    create_recipe(&app, "Dinkelbrot", &["Brot"], Some(4), None).await;
-    create_recipe(&app, "Roggenbrot", &["Brot"], Some(2), None).await;
-    create_recipe(&app, "Spaghetti", &["Mittagessen"], Some(5), None).await;
+    create_recipe(&app, "Dinkelbrot", &["Brot"], Some("1.1.2024")).await;
+    create_recipe(&app, "Roggenbrot", &["Brot"], None).await;
+    create_recipe(&app, "Spaghetti", &["Mittagessen"], None).await;
 
-    // Wenn: GET /?kategorie=Brot&bewertung=gut
-    let (status, body) = get_body(app, "/?kategorie=Brot&bewertung=gut").await;
+    // Wenn: GET /?kategorie=Brot&filter=laenger-nicht-gemacht
+    let (status, body) = get_body(app, "/?kategorie=Brot&filter=laenger-nicht-gemacht").await;
 
-    // Dann: "Dinkelbrot" vorhanden, "Roggenbrot" nicht, "Spaghetti" nicht
+    // Dann: "Dinkelbrot" vorhanden (Vergangenheitsdatum), "Roggenbrot" auch (kein Datum = erstes), "Spaghetti" nicht
     assert_eq!(status, StatusCode::OK);
     assert!(
         body.contains("Dinkelbrot"),
-        "Dinkelbrot soll sichtbar sein (Brot, 4 Sterne >= 3)"
+        "Dinkelbrot soll sichtbar sein (Brot, Vergangenheitsdatum)"
     );
     assert!(
-        !body.contains("Roggenbrot"),
-        "Roggenbrot soll nicht sichtbar sein (2 Sterne)"
+        body.contains("Roggenbrot"),
+        "Roggenbrot soll sichtbar sein (Brot, kein Datum)"
     );
     assert!(
         !body.contains("Spaghetti"),
@@ -144,33 +139,12 @@ async fn category_and_rating_combined_returns_intersection() {
 }
 
 #[tokio::test]
-async fn no_results_from_combination_shows_appropriate_message() {
-    // Gegeben: Nur "Roggenbrot" (Brot, 2 Sterne)
-    let (app, _temp) = setup_test_app().await;
-    create_recipe(&app, "Roggenbrot", &["Brot"], Some(2), None).await;
-
-    // Wenn: GET /?kategorie=Brot&bewertung=favoriten (5 Sterne, aber nur 2-Sterne-Rezept vorhanden)
-    let (status, body) = get_body(app, "/?kategorie=Brot&bewertung=favoriten").await;
-
-    // Dann: Kein Rezept, Hinweistext search-no-results vorhanden
-    assert_eq!(status, StatusCode::OK);
-    assert!(
-        !body.contains("Roggenbrot"),
-        "Roggenbrot soll nicht sichtbar sein (nur 2 Sterne)"
-    );
-    assert!(
-        body.contains("search-no-results"),
-        "Keine-Treffer-Meldung soll sichtbar sein"
-    );
-}
-
-#[tokio::test]
 async fn reset_all_filters_button_appears_when_filter_active() {
-    // Gegeben: Ein Filter ist aktiv (?bewertung=gut)
+    // Gegeben: Ein Filter ist aktiv (?filter=laenger-nicht-gemacht)
     let (app, _temp) = setup_test_app().await;
 
-    // Wenn: GET /?bewertung=gut
-    let (status, body) = get_body(app, "/?bewertung=gut").await;
+    // Wenn: GET /?filter=laenger-nicht-gemacht
+    let (status, body) = get_body(app, "/?filter=laenger-nicht-gemacht").await;
 
     // Dann: Body enthält "Alle Filter zurücksetzen"-Text
     assert_eq!(status, StatusCode::OK);
@@ -224,25 +198,25 @@ async fn conflict_both_date_filters_in_url_applies_first_one() {
 
 #[tokio::test]
 async fn deeplink_multiple_filters_returns_correct_state() {
-    // Gegeben: "Dinkelbrot" (Brot, 5 Sterne) existiert
+    // Gegeben: "Dinkelbrot" (Brot) und "Roggenbrot" (Brot) existieren
     let (app, _temp) = setup_test_app().await;
-    create_recipe(&app, "Dinkelbrot", &["Brot"], Some(5), None).await;
-    create_recipe(&app, "Roggenbrot", &["Brot"], Some(2), None).await;
+    create_recipe(&app, "Dinkelbrot", &["Brot"], None).await;
+    create_recipe(&app, "Roggenbrot", &["Brot"], None).await;
 
-    // Wenn: GET /?kategorie=Brot&bewertung=favoriten direkt aufgerufen
-    let (status, body) = get_body(app, "/?kategorie=Brot&bewertung=favoriten").await;
+    // Wenn: GET /?kategorie=Brot direkt aufgerufen
+    let (status, body) = get_body(app, "/?kategorie=Brot").await;
 
     // Dann: HTTP 200, "Dinkelbrot" vorhanden, "Roggenbrot" nicht vorhanden
     assert_eq!(status, StatusCode::OK);
     assert!(
         body.contains("Dinkelbrot"),
-        "Dinkelbrot soll sichtbar sein (Brot, 5 Sterne)"
+        "Dinkelbrot soll sichtbar sein (Brot)"
     );
     assert!(
-        !body.contains("Roggenbrot"),
-        "Roggenbrot soll nicht sichtbar sein (nur 2 Sterne)"
+        body.contains("Roggenbrot"),
+        "Roggenbrot soll sichtbar sein (Brot)"
     );
-    // Und: aria-pressed="true" für Bewertungs-Button vorhanden
+    // Und: aria-pressed="true" für aktiven Filter-Button vorhanden
     assert!(
         body.contains("aria-pressed=\"true\""),
         "Aktiver Filter-Button soll aria-pressed=\"true\" haben"

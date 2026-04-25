@@ -19,18 +19,12 @@
                 <div class="duplicate-card">
                     <a href="/recipes/{{ paar.id_a }}" aria-label="{{ paar.titel_a }} – Rezept anzeigen">
                         <span class="duplicate-card-title">{{ paar.titel_a }}</span>
-                        {% if !paar.sterne_a().is_empty() %}
-                        <span class="stars" aria-label="{{ paar.rating_label_a() }}">{{ paar.sterne_a() }}</span>
-                        {% endif %}
                     </a>
                 </div>
                 <div class="duplicate-pair-separator" aria-hidden="true">vs.</div>
                 <div class="duplicate-card">
                     <a href="/recipes/{{ paar.id_b }}" aria-label="{{ paar.titel_b }} – Rezept anzeigen">
                         <span class="duplicate-card-title">{{ paar.titel_b }}</span>
-                        {% if !paar.sterne_b().is_empty() %}
-                        <span class="stars" aria-label="{{ paar.rating_label_b() }}">{{ paar.sterne_b() }}</span>
-                        {% endif %}
                     </a>
                 </div>
             </div>

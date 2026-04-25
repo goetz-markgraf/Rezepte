@@ -36,22 +36,13 @@ pub fn parse_german_date(input: &str) -> Result<Date, String> {
         .map_err(|_| "Kein gültiges Datum. Bitte im Format T.M.JJJJ eingeben.".to_string())
 }
 
-/// Validiert die Bewertung (Rating). Gibt eine Fehlermeldung zurück, wenn der Wert ungültig ist.
-/// Gültige Werte: None (keine Bewertung) oder 1-5.
-pub fn validate_rating(rating: Option<i32>) -> Option<String> {
-    rating
-        .filter(|&r| !(1..=5).contains(&r))
-        .map(|_| "Bewertung muss zwischen 1 und 5 Sternen liegen".to_string())
-}
-
-/// Validiert die gemeinsamen Felder eines Rezept-Formulars (Titel, Kategorien, Zutaten, Anleitung, Bewertung).
+/// Validiert die gemeinsamen Felder eines Rezept-Formulars (Titel, Kategorien, Zutaten, Anleitung).
 /// Gibt eine Liste von Fehlermeldungen zurück, falls die Validierung fehlschlägt.
 pub fn validate_recipe_fields(
     title: &str,
     categories: &[String],
     ingredients: Option<&str>,
     instructions: Option<&str>,
-    rating: Option<i32>,
 ) -> Vec<String> {
     let mut errors = Vec::new();
 
@@ -83,34 +74,18 @@ pub fn validate_recipe_fields(
         }
     }
 
-    if let Some(err) = validate_rating(rating) {
-        errors.push(err);
-    }
-
     errors
 }
 
 /// Bestimmt den Vorschlag für `(target_id, source_id)` beim Mergen zweier Rezepte.
 /// Das "wertvollere" Rezept wird als Ziel (bleibt erhalten) vorgeschlagen.
-/// Priorisierung: Hat Bewertung → Ziel; mehr Felder ausgefüllt → Ziel; neueres `updated_at` → Ziel; sonst: kleinere ID.
+/// Priorisierung: mehr Felder ausgefüllt → Ziel; neueres `updated_at` → Ziel; sonst: kleinere ID.
 pub fn determine_merge_target(recipe_a: &Recipe, recipe_b: &Recipe) -> (i64, i64) {
-    // 1. Hat Bewertung
-    let a_has_rating = recipe_a.rating.is_some();
-    let b_has_rating = recipe_b.rating.is_some();
-    if a_has_rating && !b_has_rating {
-        return (recipe_a.id, recipe_b.id);
-    }
-    if b_has_rating && !a_has_rating {
-        return (recipe_b.id, recipe_a.id);
-    }
-
-    // 2. Mehr Felder ausgefüllt
-    let a_score = a_has_rating as u32
-        + recipe_a.ingredients.is_some() as u32
+    // 1. Mehr Felder ausgefüllt
+    let a_score = recipe_a.ingredients.is_some() as u32
         + recipe_a.instructions.is_some() as u32
         + recipe_a.planned_date.is_some() as u32;
-    let b_score = b_has_rating as u32
-        + recipe_b.ingredients.is_some() as u32
+    let b_score = recipe_b.ingredients.is_some() as u32
         + recipe_b.instructions.is_some() as u32
         + recipe_b.planned_date.is_some() as u32;
 
@@ -147,8 +122,6 @@ pub struct Recipe {
     pub planned_date: Option<Date>,
     pub created_at: String,
     pub updated_at: String,
-    /// Bewertung 1-5 Sterne. None bedeutet keine Bewertung.
-    pub rating: Option<i32>,
 }
 
 impl Recipe {
@@ -165,8 +138,6 @@ pub struct CreateRecipe {
     pub instructions: Option<String>,
     /// Roheingabe des Datums aus dem Formular (deutsches Format T.M.JJJJ oder leer).
     pub planned_date_input: Option<String>,
-    /// Bewertung 1-5 Sterne. None bedeutet keine Bewertung.
-    pub rating: Option<i32>,
 }
 
 impl CreateRecipe {
@@ -177,7 +148,6 @@ impl CreateRecipe {
             &self.categories,
             self.ingredients.as_deref(),
             self.instructions.as_deref(),
-            self.rating,
         );
 
         if let Some(ref input) = self.planned_date_input {
@@ -217,8 +187,6 @@ pub struct UpdateRecipe {
     pub instructions: Option<String>,
     /// Roheingabe des Datums aus dem Formular (deutsches Format T.M.JJJJ oder leer).
     pub planned_date_input: Option<String>,
-    /// Bewertung 1-5 Sterne. None bedeutet keine Bewertung.
-    pub rating: Option<i32>,
 }
 
 impl UpdateRecipe {
@@ -229,7 +197,6 @@ impl UpdateRecipe {
             &self.categories,
             self.ingredients.as_deref(),
             self.instructions.as_deref(),
-            self.rating,
         );
 
         if let Some(ref input) = self.planned_date_input {
@@ -317,52 +284,8 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[test]
-    fn validate_rating_rejects_zero() {
-        // Given: Bewertung 0 (unter dem Minimum)
-        let result = validate_rating(Some(0));
-        // Then: Fehlermeldung zurückgegeben
-        assert!(result.is_some());
-        assert!(result
-            .unwrap()
-            .contains("Bewertung muss zwischen 1 und 5 Sternen liegen"));
-    }
-
-    #[test]
-    fn validate_rating_accepts_one() {
-        // Given: Bewertung 1 (Minimum)
-        let result = validate_rating(Some(1));
-        // Then: Kein Fehler
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn validate_rating_accepts_five() {
-        // Given: Bewertung 5 (Maximum)
-        let result = validate_rating(Some(5));
-        // Then: Kein Fehler
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn validate_rating_rejects_six() {
-        // Given: Bewertung 6 (über dem Maximum)
-        let result = validate_rating(Some(6));
-        // Then: Fehlermeldung zurückgegeben
-        assert!(result.is_some());
-    }
-
-    #[test]
-    fn validate_rating_accepts_none() {
-        // Given: Keine Bewertung (None)
-        let result = validate_rating(None);
-        // Then: Kein Fehler (Bewertung ist optional)
-        assert!(result.is_none());
-    }
-
     fn make_test_recipe(
         id: i64,
-        rating: Option<i32>,
         ingredients: bool,
         instructions: bool,
     ) -> Recipe {
@@ -383,29 +306,15 @@ mod tests {
             planned_date: None,
             created_at: "2026-01-01 10:00:00".to_string(),
             updated_at: "2026-01-01 10:00:00".to_string(),
-            rating,
+
         }
     }
 
     #[test]
-    fn determine_merge_target_prefers_rated_recipe() {
-        // Given: Rezept A hat Bewertung, B hat keine
-        let a = make_test_recipe(1, Some(5), false, false);
-        let b = make_test_recipe(2, None, true, true);
-
-        // When: merge target bestimmen
-        let (target, source) = determine_merge_target(&a, &b);
-
-        // Then: A wird Ziel (hat Bewertung)
-        assert_eq!(target, 1);
-        assert_eq!(source, 2);
-    }
-
-    #[test]
     fn determine_merge_target_prefers_more_filled_recipe() {
-        // Given: Beide haben Bewertung, aber B hat mehr Felder
-        let a = make_test_recipe(1, Some(3), false, false);
-        let b = make_test_recipe(2, Some(4), true, true);
+        // Given: B hat mehr Felder ausgefüllt als A
+        let a = make_test_recipe(1, false, false);
+        let b = make_test_recipe(2, true, true);
 
         let (target, source) = determine_merge_target(&a, &b);
 
@@ -416,8 +325,8 @@ mod tests {
     #[test]
     fn determine_merge_target_falls_back_to_smaller_id() {
         // Given: Beide Rezepte gleich
-        let a = make_test_recipe(1, None, false, false);
-        let b = make_test_recipe(2, None, false, false);
+        let a = make_test_recipe(1, false, false);
+        let b = make_test_recipe(2, false, false);
 
         let (target, source) = determine_merge_target(&a, &b);
 
@@ -433,7 +342,6 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: None,
-            rating: None,
         };
 
         let result = recipe.validate();
@@ -451,7 +359,6 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: None,
-            rating: None,
         };
 
         let result = recipe.validate();
@@ -469,7 +376,6 @@ mod tests {
             ingredients: Some("Nudeln, Eier, Speck".to_string()),
             instructions: Some("Kochen und mischen".to_string()),
             planned_date_input: None,
-            rating: None,
         };
 
         let result = recipe.validate();
@@ -485,7 +391,6 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: Some("5.3.2025".to_string()),
-            rating: None,
         };
         // Then: Validierung erfolgreich
         assert!(recipe.validate().is_ok());
@@ -500,9 +405,8 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: Some("morgen".to_string()),
-            rating: None,
         };
-        // Then: Fehlermeldung über das Datum
+
         let result = recipe.validate();
         assert!(result.is_err());
         let errors = result.unwrap_err();
@@ -518,7 +422,6 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: Some("".to_string()),
-            rating: None,
         };
         // Then: Validierung erfolgreich (kein Datum = kein Fehler)
         assert!(recipe.validate().is_ok());
@@ -532,7 +435,6 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: None,
-            rating: None,
         };
 
         let result = recipe.validate();
@@ -547,7 +449,6 @@ mod tests {
             ingredients: None,
             instructions: None,
             planned_date_input: None,
-            rating: None,
         };
 
         let json = recipe.categories_json();

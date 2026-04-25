@@ -5,7 +5,6 @@
     {% for c in candidates %}
     <li>
       <a href="/recipes/{{ c.id }}">{{ c.title }}</a>
-      {% if let Some(r) = c.rating %}({{ r }}★){% else %}(nicht bewertet){% endif %}
     </li>
     {% endfor %}
   </ul>

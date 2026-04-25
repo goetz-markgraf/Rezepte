@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 
 interface RecipeDetails {
   title: string;
-  rating?: number;
   ingredients?: string;
   instructions?: string;
   categories?: string[];
@@ -21,13 +20,6 @@ async function createRecipeWithDetails(
   const categories = details.categories ?? ['Mittagessen'];
   for (const cat of categories) {
     await page.check(`input[name="categories"][value="${cat}"]`);
-  }
-
-  if (details.rating !== undefined) {
-    // Klick auf das Label des Sterne-Radio-Buttons
-    const input = page.locator(`input[name="rating"][value="${details.rating}"]`);
-    const label = input.locator('xpath=ancestor::label');
-    await label.click();
   }
 
   if (details.ingredients) {
@@ -71,11 +63,10 @@ test.describe('Rezepte-Merge', () => {
   });
 
   test('K2: Merge-Seite zeigt beide Rezepte vollständig', async ({ page }) => {
-    // Given: Rezept A mit Bewertung, Rezept B mit Zutaten
+    // Given: Rezept A, Rezept B mit Zutaten
     const ts = Date.now();
     const idA = await createRecipeWithDetails(page, {
       title: `MergeTest${ts}A`,
-      rating: 5,
     });
     const idB = await createRecipeWithDetails(page, {
       title: `MergeTest${ts}B`,
@@ -165,11 +156,10 @@ test.describe('Rezepte-Merge', () => {
   });
 
   test('K5+K6: Erfolgreicher Merge-Durchlauf', async ({ page }) => {
-    // Given: Rezept A mit Bewertung, Rezept B mit Zutaten
+    // Given: Rezept A, Rezept B mit Zutaten
     const ts = Date.now();
     const idA = await createRecipeWithDetails(page, {
       title: `MergeA${ts}`,
-      rating: 5,
     });
     const idB = await createRecipeWithDetails(page, {
       title: `MergeB${ts}`,

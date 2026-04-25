@@ -55,38 +55,6 @@
         </div>
     </fieldset>
 
-    <fieldset class="form-group star-rating">
-        <legend>Bewertung</legend>
-        <div class="star-rating-options">
-            <label class="star-rating-none">
-                <input type="radio" name="rating" value="" {% if rating.is_none() %}checked{% endif %} aria-label="Keine Bewertung">
-                Keine Bewertung
-            </label>
-            <div class="stars-container">
-                <label aria-label="5 Sterne">
-                    <input type="radio" name="rating" value="5" {% if self.rating_is(5) %}checked{% endif %}>
-                    ★
-                </label>
-                <label aria-label="4 Sterne">
-                    <input type="radio" name="rating" value="4" {% if self.rating_is(4) %}checked{% endif %}>
-                    ★
-                </label>
-                <label aria-label="3 Sterne">
-                    <input type="radio" name="rating" value="3" {% if self.rating_is(3) %}checked{% endif %}>
-                    ★
-                </label>
-                <label aria-label="2 Sterne">
-                    <input type="radio" name="rating" value="2" {% if self.rating_is(2) %}checked{% endif %}>
-                    ★
-                </label>
-                <label aria-label="1 Stern">
-                    <input type="radio" name="rating" value="1" {% if self.rating_is(1) %}checked{% endif %}>
-                    ★
-                </label>
-            </div>
-        </div>
-    </fieldset>
-
     <div class="form-group">
         <label for="planned_date">Datum (geplant / gekocht)</label>
         <div class="date-input-group">

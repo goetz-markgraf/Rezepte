@@ -185,47 +185,6 @@
         </div>
         {% endif %}
 
-        <!-- Bewertung -->
-        {% if self.hat_konflikt_rating() %}
-        <fieldset class="merge-field-row merge-conflict-row">
-            <legend class="merge-field-label">Bewertung</legend>
-            <div class="merge-field-options">
-                <label class="merge-option">
-                    <input type="radio" name="rating_from" value="a" required>
-                    <span class="merge-field-value">{{ rezept_a.sterne() }}</span>
-                </label>
-                <label class="merge-option">
-                    <input type="radio" name="rating_from" value="b" required>
-                    <span class="merge-field-value">{{ rezept_b.sterne() }}</span>
-                </label>
-            </div>
-        </fieldset>
-        {% else if rezept_a.rating.is_some() %}
-        <div class="merge-field-row merge-auto-row">
-            <div class="merge-field-label">Bewertung</div>
-            <div class="merge-field-value merge-auto-value">
-                {{ rezept_a.sterne() }}
-                <span class="merge-auto-badge">Automatisch aus Rezept A übernommen</span>
-            </div>
-            <input type="hidden" name="rating_from" value="a">
-        </div>
-        {% else if rezept_b.rating.is_some() %}
-        <div class="merge-field-row merge-auto-row">
-            <div class="merge-field-label">Bewertung</div>
-            <div class="merge-field-value merge-auto-value">
-                {{ rezept_b.sterne() }}
-                <span class="merge-auto-badge">Automatisch aus Rezept B übernommen</span>
-            </div>
-            <input type="hidden" name="rating_from" value="b">
-        </div>
-        {% else %}
-        <div class="merge-field-row merge-auto-row">
-            <div class="merge-field-label">Bewertung</div>
-            <div class="merge-field-value merge-auto-value merge-empty">Keine Bewertung in beiden Rezepten</div>
-            <input type="hidden" name="rating_from" value="a">
-        </div>
-        {% endif %}
-
         <!-- Datum -->
         {% if self.hat_konflikt_planned_date() %}
         <fieldset class="merge-field-row merge-conflict-row">

@@ -940,20 +940,6 @@ pre {
     gap: 0.5rem;
 }
 
-.star-rating {
-    display: inline-flex;
-    gap: 0.125rem;
-    color: #f59e0b;
-}
-
-.star-filled {
-    fill: currentColor;
-}
-
-.star-empty {
-    fill: none;
-}
-
 /* Suchfeld */
 .search-form {
     margin-bottom: 1.5rem;
@@ -1492,175 +1478,9 @@ fieldset.merge-field-row legend.merge-field-label {
     padding: 0;
 }
 
-/* === Sterne-Bewertung im Bearbeitungsmodus === */
-.star-rating-options .stars-container {
-    display: flex;
-    flex-direction: row-reverse;
-    justify-content: flex-end;
-    gap: 0.5rem;
-}
-
-.star-rating-options .stars-container label {
-    cursor: pointer;
-    font-size: 1.5rem;
-    color: #6b7280;
-    transition: color 0.15s;
-    padding: 0 0.25rem;
-}
-
-.star-rating-options .stars-container label:has(input:checked) ~ label {
-    color: #f59e0b;
-}
-
-.star-rating-options .stars-container label:hover ~ label {
-    color: #f59e0b;
-}
-
-.star-rating-options .stars-container label:hover,
-.star-rating-options .stars-container label:hover ~ label {
-    color: #f59e0b;
-}
-
-.star-rating-options .stars-container input[type="radio"] {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-
-.star-rating legend {
-    padding: 0 0.25rem;
-    font-weight: 500;
-    color: var(--text-color);
-}
-
-.star-rating-options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
-    margin-top: 0.5rem;
-}
-
-.star-rating-options label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 44px;
-    min-width: 44px;
-    cursor: pointer;
-    font-size: 1.5rem;
-    color: #6b7280;
-    transition: color 0.15s;
-    padding: 0 0.25rem;
-}
-
-.star-rating-none {
-    font-size: 0.875rem !important;
-    color: var(--text-color) !important;
-    min-width: auto !important;
-    padding: 0 0.5rem !important;
-    gap: 0.25rem;
-}
-
-.star-rating-options input[type="radio"] {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.star-rating-options label:has(input:checked) {
-    color: #f59e0b;
-}
-
-.star-rating-options label:not(.star-rating-none):hover {
-    color: #f59e0b;
-}
-
 /* Sterne-Anzeige in Detail- und Listenansicht */
 
-.recipe-stars {
-    font-size: 1.25rem;
-    color: #f59e0b;
-    letter-spacing: 0.05em;
-    display: inline-block;
-}
 
-.recipe-stars-list {
-    font-size: 1rem;
-    margin-left: 0.25rem;
-    vertical-align: middle;
-}
-
-/* === Inline-Rating (Detailansicht) === */
-
-.inline-rating {
-    display: flex;
-    align-items: center;
-    gap: 0.125rem;
-    margin: 0.25rem 0;
-}
-
-.inline-rating-form {
-    display: flex;
-    flex-direction: row-reverse;
-    flex-wrap: wrap;
-    gap: 0.125rem;
-    align-items: center;
-    /* Verhindert horizontales Überlaufen auf schmalen Viewports */
-    max-width: 100%;
-}
-
-.inline-rating-btn {
-    /* Button-Reset */
-    background: none;
-    border: none;
-    cursor: pointer;
-    /* Touch-Zielfläche mindestens 44x44px (WCAG K8): padding statt min-width für kein Overflow */
-    padding: 10px 6px;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: #6b7280;
-    line-height: 1;
-    border-radius: 4px;
-    transition: color 0.1s;
-}
-
-.inline-rating-btn.active {
-    color: #f59e0b;
-}
-
-/* Hover-Effekt: dank flex-direction:row-reverse + ~ Selektor werden
-   alle Sterne vom gehoverten bis zum letzten (= niedrigster Wert) gelb */
-.inline-rating-form:hover .inline-rating-btn {
-    color: #fbbf24;
-}
-
-.inline-rating-form .inline-rating-btn:hover ~ .inline-rating-btn {
-    color: #fbbf24;
-}
-
-.inline-rating-form .inline-rating-btn:not(:hover) {
-    color: #9ca3af;
-}
-
-/* Überschreibt: ab dem gehoverten Stern und alle "danach" (DOM-Reihenfolge = visuell davor) */
-.inline-rating-form:hover .inline-rating-btn:hover,
-.inline-rating-form:hover .inline-rating-btn:hover ~ .inline-rating-btn {
-    color: #f59e0b;
-}
-
-/* Fokus-Ring für Tastatur-Navigation (WCAG K8) */
-.inline-rating-btn:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-    border-radius: 4px;
-}
 
 /* === Gespeicherte Filter === */
 
@@ -1913,10 +1733,7 @@ fieldset.merge-field-row legend.merge-field-label {
     color: var(--primary-color);
 }
 
-.duplicate-card .stars {
-    color: #f59e0b;
-    font-size: 0.875rem;
-}
+
 
 /* Desktop: Cards nebeneinander */
 @media (min-width: 600px) {

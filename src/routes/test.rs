@@ -38,8 +38,8 @@ pub async fn seed_recipe(
 
     match sqlx::query(
         r#"
-        INSERT INTO recipes (title, categories, ingredients, instructions, planned_date, rating)
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+        INSERT INTO recipes (title, categories, ingredients, instructions, planned_date)
+        VALUES (?1, ?2, ?3, ?4, ?5)
         "#,
     )
     .bind(&request.title)
@@ -47,7 +47,6 @@ pub async fn seed_recipe(
     .bind("") // ingredients
     .bind("") // instructions
     .bind(planned_date)
-    .bind(None::<i32>) // rating
     .execute(&*pool)
     .await
     {

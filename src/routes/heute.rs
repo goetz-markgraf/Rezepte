@@ -1,14 +1,10 @@
 use crate::error::AppError;
-use crate::models::recipe::validate_rating;
-use crate::models::{get_recipe_by_id, get_recipes_drei_tage, update_recipe_rating};
-use crate::templates::{
-    HeuteRezeptItem, HeuteTagesabschnitt, HeuteTemplate, InlineRatingHeuteTemplate,
-};
+use crate::models::get_recipes_drei_tage;
+use crate::templates::{HeuteRezeptItem, HeuteTagesabschnitt, HeuteTemplate};
 use askama::Template;
 use axum::{
-    extract::{Path, State},
-    http::StatusCode,
-    response::{Html, IntoResponse},
+    extract::State,
+    response::Html,
 };
 use sqlx::SqlitePool;
 use std::sync::Arc;
@@ -73,34 +69,6 @@ fn render_template<T: Template>(template: T) -> Result<String, AppError> {
         .map_err(|e: askama::Error| AppError::BadRequest(e.to_string()))
 }
 
-fn parse_rating(raw: Option<&str>) -> Option<i32> {
-    raw.filter(|s| !s.trim().is_empty())
-        .and_then(|s| s.trim().parse::<i32>().ok())
-}
-
-fn parse_form_data(body: &[u8]) -> std::collections::HashMap<String, Vec<String>> {
-    let form_data = String::from_utf8_lossy(body);
-    let mut params: std::collections::HashMap<String, Vec<String>> =
-        std::collections::HashMap::new();
-
-    for pair in form_data.split('&') {
-        if let Some((key, value)) = pair.split_once('=') {
-            let key = decode_form_value(key);
-            let value = decode_form_value(value);
-            params.entry(key).or_default().push(value);
-        }
-    }
-
-    params
-}
-
-fn decode_form_value(value: &str) -> String {
-    let with_spaces = value.replace('+', " ");
-    urlencoding::decode(&with_spaces)
-        .unwrap_or_default()
-        .to_string()
-}
-
 /// Handler für GET /heute — zeigt die Rezepte von gestern, heute und morgen.
 pub async fn heute_handler(State(pool): State<Arc<SqlitePool>>) -> Result<Html<String>, AppError> {
     let today = time::OffsetDateTime::now_utc().date();
@@ -121,7 +89,6 @@ pub async fn heute_handler(State(pool): State<Arc<SqlitePool>>) -> Result<Html<S
                 .map(|r| HeuteRezeptItem {
                     id: r.id,
                     title: r.title.clone(),
-                    rating: r.rating,
                 })
                 .collect(),
         },
@@ -136,7 +103,6 @@ pub async fn heute_handler(State(pool): State<Arc<SqlitePool>>) -> Result<Html<S
                 .map(|r| HeuteRezeptItem {
                     id: r.id,
                     title: r.title.clone(),
-                    rating: r.rating,
                 })
                 .collect(),
         },
@@ -151,7 +117,6 @@ pub async fn heute_handler(State(pool): State<Arc<SqlitePool>>) -> Result<Html<S
                 .map(|r| HeuteRezeptItem {
                     id: r.id,
                     title: r.title.clone(),
-                    rating: r.rating,
                 })
                 .collect(),
         },
@@ -163,43 +128,6 @@ pub async fn heute_handler(State(pool): State<Arc<SqlitePool>>) -> Result<Html<S
     };
 
     Ok(Html(render_template(template)?))
-}
-
-/// Handler für POST /heute/recipes/:id/rating — speichert Inline-Bewertung und
-/// gibt das Rating-Fragment mit kontextueller ID zurück.
-pub async fn heute_rating_handler(
-    State(pool): State<Arc<SqlitePool>>,
-    Path(id): Path<i64>,
-    axum::extract::RawForm(body): axum::extract::RawForm,
-) -> Result<impl IntoResponse, AppError> {
-    let params = parse_form_data(&body);
-    let rating_raw = params
-        .get("rating")
-        .and_then(|v| v.first())
-        .map(|s| s.as_str());
-    let rating = parse_rating(rating_raw);
-
-    // Validierung: Wert vorhanden und außerhalb 1-5 → 400
-    if let Some(err) = validate_rating(rating) {
-        return Err(AppError::BadRequest(err));
-    }
-
-    // Prüfen, ob Rezept existiert
-    get_recipe_by_id(&pool, id)
-        .await?
-        .ok_or_else(|| AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", id)))?;
-
-    update_recipe_rating(&pool, id, rating)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::RowNotFound => {
-                AppError::NotFound(format!("Rezept mit ID {} nicht gefunden", id))
-            }
-            other => AppError::Database(other),
-        })?;
-
-    let template = InlineRatingHeuteTemplate { id, rating };
-    Ok((StatusCode::OK, Html(render_template(template)?)))
 }
 
 #[cfg(test)]

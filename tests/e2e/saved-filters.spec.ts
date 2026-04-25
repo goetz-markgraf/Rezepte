@@ -20,31 +20,6 @@ async function createRecipe(
   await expect(page).toHaveURL(/\/recipes\/\d+/);
 }
 
-async function selectRating(
-  page: import('@playwright/test').Page,
-  rating: number
-): Promise<void> {
-  const input = page.locator(`input[name="rating"][value="${rating}"]`);
-  const label = input.locator('xpath=ancestor::label');
-  await label.click();
-}
-
-async function createRecipeWithRating(
-  page: import('@playwright/test').Page,
-  title: string,
-  categories: string[],
-  rating: number
-): Promise<void> {
-  await page.goto('/recipes/new');
-  await page.fill('input[name="title"]', title);
-  for (const category of categories) {
-    await page.check(`input[name="categories"][value="${category}"]`);
-  }
-  await selectRating(page, rating);
-  await page.click('button[type="submit"]');
-  await expect(page).toHaveURL(/\/recipes\/\d+/);
-}
-
 test.describe('Gespeicherte Filter (Story 13)', () => {
 
   test('K1/K2: Filter speichern und aufrufen', async ({ page }) => {
@@ -145,15 +120,15 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
   });
 
   test('Kombinierten Filter speichern und aufrufen', async ({ page }) => {
-    // Gegeben: Rezept mit Kategorie "Mittagessen" und Bewertung 4
+    // Gegeben: Rezept mit Kategorie "Mittagessen"
     const suffix = `sf4-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    await createRecipeWithRating(page, `Spaghetti-${suffix}`, ['Mittagessen'], 4);
+    await createRecipe(page, `Spaghetti-${suffix}`, ['Mittagessen']);
     await createRecipe(page, `Roggenbrot-${suffix}`, ['Brot']);
 
-    // Wenn: Kategorie "Mittagessen" und Bewertungsfilter "★★★+ Nur Gute" aktiv
-    await page.goto('/?kategorie=Mittagessen&bewertung=gut&filter_collapsed=0');
+    // Wenn: Kategorie "Mittagessen" und "Länger nicht gemacht" Filter aktiv
+    await page.goto('/?kategorie=Mittagessen&filter=laenger-nicht-gemacht&filter_collapsed=0');
     await expect(page).toHaveURL(/kategorie=Mittagessen/);
-    await expect(page).toHaveURL(/bewertung=gut/);
+    await expect(page).toHaveURL(/filter=laenger-nicht-gemacht/);
 
     // Wenn: Filter speichern als "Mittagessenplanung-..."
     const filterName = `Mittagessenplanung-${suffix}`;
@@ -180,7 +155,7 @@ test.describe('Gespeicherte Filter (Story 13)', () => {
 
     // Dann: URL enthält beide Parameter
     await expect(page).toHaveURL(/kategorie=Mittagessen/);
-    await expect(page).toHaveURL(/bewertung=gut/);
+    await expect(page).toHaveURL(/filter=laenger-nicht-gemacht/);
 
     // Und: Spaghetti sichtbar, Roggenbrot nicht
     await expect(page.locator('.recipe-item', { hasText: `Spaghetti-${suffix}` })).toBeVisible();

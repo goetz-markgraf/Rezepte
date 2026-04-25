@@ -74,6 +74,7 @@ Rezepte bewerten und Zubereitungsdaten verwalten.
 | 17 | [Inline-Bewertung ohne Edit-Mode](./17-inline-bewertung/story.md) | Abgeschlossen |
 | 28 | [Datum-Eingabe am Rezept (geplant / gekocht)](./28-datum-eingabe/story.md) | Abgeschlossen |
 | 41 | [Bewertungssterne im Bearbeitungsmodus](./41-bewertungssterne-im-edit-mode/story.md) | Abgeschlossen |
+| 44 | [Bewertungsmechanismus entfernen](./44-bewertungsmechanismus-entfernen/story.md) | Abgeschlossen |
 
 ---
 
