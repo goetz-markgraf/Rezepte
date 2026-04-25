@@ -8,7 +8,7 @@
       bun
       opencode
       zig
-      cargo-zigbuild
+      cargo
     ];
   };
 }
