@@ -57,7 +57,7 @@ Intelligente Filter und Suche für schnelle Rezeptfindung.
 | 13 | [Gespeicherte Filter für Schnellzugriff](./13-gespeicherte-filter/story.md) | Abgeschlossen |
 | 37 | [Einklappen der Filter](./37-filter-einklappen/story.md) | Abgeschlossen |
 | 40 | [Filter standardmäßig eingeklappt](./40-filter-default-eingeklappt/story.md) | Abgeschlossen |
-| 45 | [Hamburger-Menü öffnet nicht an der richtigen Position](./45-hamburger-menu-position/story.md) | Offen |
+| 45 | [Hamburger-Menü öffnet nicht an der richtigen Position](./45-hamburger-menu-position/story.md) | In Arbeit |
 
 ---
 
