@@ -1965,8 +1965,9 @@ fieldset.merge-field-row legend.merge-field-label {
 .hamburger-menu {
     position: absolute;
     top: calc(100% + 0.5rem);
-    right: 0;
-    min-width: 180px;
+    left: 0;
+    width: max-content;
+    min-width: 120px;
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
@@ -2014,8 +2015,12 @@ fieldset.merge-field-row legend.merge-field-label {
 
 /* Mobile: Menü auf volle Breite oder angepasst */
 @media (max-width: 767px) {
+    .hamburger-menu-container {
+        width: 100%;
+    }
+
     .hamburger-menu {
-        right: 0;
         min-width: 160px;
+        right: auto;
     }
 }

@@ -61,6 +61,21 @@
         }
         
         function openMenu() {
+            // Menü-Position dynamisch an Hamburger-Icon anpassen
+            const btnRect = hamburgerBtn.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const menuWidth = 220;
+            
+            // Wenn Icon in rechter Bildschirmhälfte → right: 0
+            // Wenn Icon in linker Bildschirmhälfte → left: 0
+            if (btnRect.right > viewportWidth / 2) {
+                hamburgerMenu.style.left = 'auto';
+                hamburgerMenu.style.right = '0';
+            } else {
+                hamburgerMenu.style.right = 'auto';
+                hamburgerMenu.style.left = '0';
+            }
+            
             hamburgerMenu.classList.add('open');
             hamburgerMenu.setAttribute('aria-hidden', 'false');
             hamburgerBtn.setAttribute('aria-expanded', 'true');
