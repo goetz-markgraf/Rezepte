@@ -32,7 +32,7 @@ header {
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 header .site-title {
@@ -2015,10 +2015,6 @@ fieldset.merge-field-row legend.merge-field-label {
 
 /* Mobile: Menü auf volle Breite oder angepasst */
 @media (max-width: 767px) {
-    .hamburger-menu-container {
-        width: 100%;
-    }
-
     .hamburger-menu {
         min-width: 160px;
         right: auto;
