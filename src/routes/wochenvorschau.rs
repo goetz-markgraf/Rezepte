@@ -170,6 +170,7 @@ mod tests {
             rezepte: vec![WochentagesEintragItem {
                 id: 1,
                 title: "Test-Rezept".to_string(),
+                emoji: Some("🍽️"),
             }],
         };
         assert_eq!(tag.wochentag_name, "Mi, 01.04.2026");
