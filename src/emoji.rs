@@ -84,20 +84,6 @@ pub fn recipe_emoji(
     Some("🍽️")
 }
 
-/// Bestimmt ein Kategorie-gebundenes Emoji (für Rezepte ohne Inhalt, aber mit Kategorie).
-/// Gibt `None` wenn keine Kategorie passt.
-#[allow(dead_code)]
-pub fn emoji_from_category(category: &str) -> Option<&'static str> {
-    match category {
-        "Mittagessen" => Some("🥘"),
-        "Brot" => Some("🍞"),
-        "Kuchen" => Some("🎂"),
-        "Party" => Some("🎉"),
-        "Snacks" => Some("🍿"),
-        _ => None,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -165,20 +151,6 @@ mod tests {
     fn recipe_emoji_case_insensitive() {
         let result = recipe_emoji("Gemüsepfanne", Some("SUPPE vom Feld"), None);
         assert_eq!(result, Some("🍲"));
-    }
-
-    #[test]
-    fn emoji_from_category_returns_correct_emoji() {
-        assert_eq!(emoji_from_category("Brot"), Some("🍞"));
-        assert_eq!(emoji_from_category("Kuchen"), Some("🎂"));
-        assert_eq!(emoji_from_category("Mittagessen"), Some("🥘"));
-        assert_eq!(emoji_from_category("Party"), Some("🎉"));
-        assert_eq!(emoji_from_category("Snacks"), Some("🍿"));
-    }
-
-    #[test]
-    fn emoji_from_category_returns_none_for_unknown() {
-        assert!(emoji_from_category("Unbekannt").is_none());
     }
 
     #[test]
