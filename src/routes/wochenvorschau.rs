@@ -1,3 +1,4 @@
+use crate::emoji::recipe_emoji;
 use crate::error::AppError;
 use crate::models::get_recipes_current_week;
 use crate::templates::{Wochentag, WochentagesEintragItem, WochenvorschauTemplate};
@@ -33,9 +34,7 @@ const GERMAN_MONTHS_LONG: &[&str] = &[
 ];
 
 #[allow(dead_code)]
-const GERMAN_WEEKDAYS_SHORT: &[&str] = &[
-    "Mo", "Di", "Mi", "Do", "Fr", "Sa", "So",
-];
+const GERMAN_WEEKDAYS_SHORT: &[&str] = &["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
 /// Gibt den kurzen deutschen Wochentag-Namen zurück: "Mo" bis "So".
 fn german_weekday_short(weekday: time::Weekday) -> &'static str {
@@ -86,6 +85,11 @@ pub async fn wochenvorschau_handler(
                 .map(|r| WochentagesEintragItem {
                     id: r.id,
                     title: r.title.clone(),
+                    emoji: recipe_emoji(
+                        &r.title,
+                        r.ingredients.as_deref(),
+                        r.instructions.as_deref(),
+                    ),
                 })
                 .collect();
             Wochentag {

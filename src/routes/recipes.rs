@@ -1,3 +1,4 @@
+use crate::emoji::recipe_emoji;
 use crate::error::AppError;
 use crate::markdown::render_and_sanitize;
 use crate::models::{
@@ -116,7 +117,6 @@ pub fn build_filter_collapsed_toggle_url(
     } else if next_seven_days_filter_active {
         params.push("filter=naechste-7-tage".to_string());
     }
-
 
     // Zustand umkehren: war eingeklappt → jetzt ausklappen (filter_collapsed=0 hinzufügen)
     // war ausgeklappt → jetzt einklappen (kein Parameter = Default eingeklappt, Story 40)
@@ -240,7 +240,6 @@ fn build_category_toggle_url(
         params.push("filter=naechste-7-tage".to_string());
     }
 
-
     if params.is_empty() {
         "/".to_string()
     } else {
@@ -321,7 +320,6 @@ fn build_not_made_toggle_url(
         params.push("filter=laenger-nicht-gemacht".to_string());
     }
 
-
     if params.is_empty() {
         "/".to_string()
     } else {
@@ -350,7 +348,6 @@ fn build_next_seven_days_toggle_url(
     if !is_active {
         params.push("filter=naechste-7-tage".to_string());
     }
-
 
     if params.is_empty() {
         "/".to_string()
@@ -382,7 +379,6 @@ fn build_current_query_string(
     } else if next_seven_days_filter_active {
         params.push("filter=naechste-7-tage".to_string());
     }
-
 
     params.join("&")
 }
@@ -423,14 +419,11 @@ pub async fn index(
     let filter_collapsed = query.filter_collapsed.as_deref() != Some("0");
 
     let recipes: Vec<Recipe> = if not_made_filter_active {
-        filter_recipes_not_made_recently(&pool, &active_categories, &search_query)
-        .await?
+        filter_recipes_not_made_recently(&pool, &active_categories, &search_query).await?
     } else if next_seven_days_filter_active {
-        filter_recipes_next_seven_days(&pool, &active_categories, &search_query)
-        .await?
+        filter_recipes_next_seven_days(&pool, &active_categories, &search_query).await?
     } else {
-        filter_recipes_by_categories(&pool, &active_categories, &search_query)
-        .await?
+        filter_recipes_by_categories(&pool, &active_categories, &search_query).await?
     };
 
     let recipe_items: Vec<RecipeListItem> = recipes
@@ -445,20 +438,44 @@ pub async fn index(
             } else {
                 None
             },
+            emoji: recipe_emoji(
+                &r.title,
+                r.ingredients.as_deref(),
+                r.instructions.as_deref(),
+            ),
         })
         .collect();
 
-    let category_filters = build_category_filters(&active_categories, &search_query, not_made_filter_active, next_seven_days_filter_active);
-    let reset_categories_url = build_reset_url(&search_query, not_made_filter_active, next_seven_days_filter_active);
-    let not_made_filter_toggle_url = build_not_made_toggle_url(not_made_filter_active, &active_categories, &search_query);
-    let next_seven_days_filter_toggle_url = build_next_seven_days_toggle_url(next_seven_days_filter_active, &active_categories, &search_query);
+    let category_filters = build_category_filters(
+        &active_categories,
+        &search_query,
+        not_made_filter_active,
+        next_seven_days_filter_active,
+    );
+    let reset_categories_url = build_reset_url(
+        &search_query,
+        not_made_filter_active,
+        next_seven_days_filter_active,
+    );
+    let not_made_filter_toggle_url =
+        build_not_made_toggle_url(not_made_filter_active, &active_categories, &search_query);
+    let next_seven_days_filter_toggle_url = build_next_seven_days_toggle_url(
+        next_seven_days_filter_active,
+        &active_categories,
+        &search_query,
+    );
 
     let any_filter_active = !active_categories.is_empty()
         || !search_query.is_empty()
         || not_made_filter_active
         || next_seven_days_filter_active;
 
-    let current_query_string = build_current_query_string(&active_categories, &search_query, not_made_filter_active, next_seven_days_filter_active);
+    let current_query_string = build_current_query_string(
+        &active_categories,
+        &search_query,
+        not_made_filter_active,
+        next_seven_days_filter_active,
+    );
 
     let saved_filters = get_all_saved_filters(&pool).await?;
     let saved_filter_items: Vec<SavedFilterItem> = saved_filters
@@ -471,7 +488,13 @@ pub async fn index(
         })
         .collect();
 
-    let filter_collapsed_toggle_url = build_filter_collapsed_toggle_url(filter_collapsed, &active_categories, &search_query, not_made_filter_active, next_seven_days_filter_active);
+    let filter_collapsed_toggle_url = build_filter_collapsed_toggle_url(
+        filter_collapsed,
+        &active_categories,
+        &search_query,
+        not_made_filter_active,
+        next_seven_days_filter_active,
+    );
 
     let template = IndexTemplate {
         recipes: recipe_items,
@@ -1097,8 +1120,7 @@ mod tests {
     #[test]
     fn toggle_url_behaelt_kategorie() {
         // Gegeben: Kategorie "Brot" aktiv, Filter ausgeklappt (Story 40: kein Parameter = eingeklappt)
-        let url =
-            build_filter_collapsed_toggle_url(false, &["Brot".to_string()], "", false, false);
+        let url = build_filter_collapsed_toggle_url(false, &["Brot".to_string()], "", false, false);
         // Dann: URL enthält kategorie=Brot und keinen filter_collapsed Parameter
         assert!(
             url.contains("kategorie=Brot"),
@@ -1128,13 +1150,8 @@ mod tests {
     #[test]
     fn toggle_url_eingeklappt_behaelt_alle_parameter() {
         // Gegeben: Filter eingeklappt + Kategorie + Suche aktiv (Story 40)
-        let url = build_filter_collapsed_toggle_url(
-            true,
-            &["Brot".to_string()],
-            "pasta",
-            false,
-            false,
-        );
+        let url =
+            build_filter_collapsed_toggle_url(true, &["Brot".to_string()], "pasta", false, false);
         // Dann: URL enthält alle Parameter INKLUSIVE filter_collapsed=0 (ausklappen)
         assert!(url.contains("kategorie=Brot"), "kategorie=Brot fehlt");
         assert!(url.contains("q=pasta"), "q=pasta fehlt");
@@ -1147,13 +1164,8 @@ mod tests {
     #[test]
     fn toggle_url_ausgeklappt_mit_parameter_behaelt_alle_parameter() {
         // Gegeben: Filter ausgeklappt (filter_collapsed=0) + Kategorie + Suche aktiv (Story 40)
-        let url = build_filter_collapsed_toggle_url(
-            false,
-            &["Brot".to_string()],
-            "pasta",
-            false,
-            false,
-        );
+        let url =
+            build_filter_collapsed_toggle_url(false, &["Brot".to_string()], "pasta", false, false);
         // Dann: URL enthält alle Parameter AUSSER filter_collapsed (einklappen = Default)
         assert!(url.contains("kategorie=Brot"), "kategorie=Brot fehlt");
         assert!(url.contains("q=pasta"), "q=pasta fehlt");

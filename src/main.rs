@@ -30,3 +30,4 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
+mod emoji;

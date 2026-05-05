@@ -230,6 +230,9 @@
     <li class="recipe-item">
         <div class="recipe-item-content">
             <a href="/recipes/{{ recipe.id }}" class="recipe-item-link">
+                {% if let Some(emoji) = recipe.emoji %}
+                <span class="recipe-emoji">{{ emoji }}</span>
+                {% endif %}
                 <h2>{{ recipe.title }}</h2>
                 <div class="categories">
                     {% for category in recipe.categories %}

@@ -12,6 +12,7 @@ pub struct DuplicateHintTemplate {
 pub struct HeuteRezeptItem {
     pub id: i64,
     pub title: String,
+    pub emoji: Option<&'static str>,
 }
 
 /// Ein Tagesabschnitt auf der "Heute gekocht"-Seite (Gestern, Heute oder Morgen).
@@ -42,6 +43,7 @@ pub struct HeuteTemplate {
 pub struct WochentagesEintragItem {
     pub id: i64,
     pub title: String,
+    pub emoji: Option<&'static str>,
 }
 
 /// Ein Wochentag in der Wochenvorschau mit seinen Rezepten.
@@ -186,10 +188,13 @@ pub struct IndexTemplate {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct RecipeListItem {
     pub id: i64,
     pub title: String,
     pub categories: Vec<String>,
+    /// Emoji für die Listenansicht.
+    pub emoji: Option<&'static str>,
     /// Datum im kompakten Format (TT.MM.JJJJ) oder None.
     pub planned_date: Option<String>,
     /// Datum mit Wochentag (z.B. "Mo, 31.03.2026") oder None.
@@ -220,7 +225,6 @@ impl RecipeFormTemplate {
     pub fn new() -> Self {
         Self::default()
     }
-
 }
 
 /// Ein einzelnes Dubletten-Paar für das Template.

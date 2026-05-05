@@ -56,20 +56,10 @@ async fn three_filters_category_not_made_returns_matching_recipes() {
     let (app, _temp) = setup_test_app().await;
     create_recipe(&app, "Dinkelbrot", &["Brot"], Some("1.6.2025")).await;
     create_recipe(&app, "Roggenbrot", &["Brot"], Some("1.6.2026")).await;
-    create_recipe(
-        &app,
-        "Linseneintopf",
-        &["Mittagessen"],
-        Some("1.1.2024"),
-    )
-    .await;
+    create_recipe(&app, "Linseneintopf", &["Mittagessen"], Some("1.1.2024")).await;
 
     // Wenn: GET /?kategorie=Brot&filter=laenger-nicht-gemacht
-    let (status, body) = get_body(
-        app,
-        "/?kategorie=Brot&filter=laenger-nicht-gemacht",
-    )
-    .await;
+    let (status, body) = get_body(app, "/?kategorie=Brot&filter=laenger-nicht-gemacht").await;
 
     // Dann: HTTP 200, nur "Dinkelbrot" im Body
     assert_eq!(status, StatusCode::OK);

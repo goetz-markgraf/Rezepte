@@ -342,8 +342,13 @@ async fn show_recipe_xss_script_tag_in_ingredients_is_sanitized() {
 
     // Then: HTTP 200, <script>-Tag ist nicht im Zutaten-Bereich des HTML-Output
     assert_eq!(status, StatusCode::OK);
-    let ingredients_start = body.find(r#"<div class="markdown-content">"#).expect("Zutaten-Bereich nicht gefunden");
-    let ingredients_end = body[ingredients_start..].find("</div>").expect("Ende des Zutaten-Bereichs nicht gefunden") + ingredients_start;
+    let ingredients_start = body
+        .find(r#"<div class="markdown-content">"#)
+        .expect("Zutaten-Bereich nicht gefunden");
+    let ingredients_end = body[ingredients_start..]
+        .find("</div>")
+        .expect("Ende des Zutaten-Bereichs nicht gefunden")
+        + ingredients_start;
     let ingredients_content = &body[ingredients_start..ingredients_end];
     assert!(
         !ingredients_content.contains("<script>"),

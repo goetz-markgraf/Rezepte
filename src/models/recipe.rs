@@ -284,11 +284,7 @@ mod tests {
         assert!(result.is_err());
     }
 
-    fn make_test_recipe(
-        id: i64,
-        ingredients: bool,
-        instructions: bool,
-    ) -> Recipe {
+    fn make_test_recipe(id: i64, ingredients: bool, instructions: bool) -> Recipe {
         Recipe {
             id,
             title: format!("Rezept {}", id),
@@ -306,7 +302,6 @@ mod tests {
             planned_date: None,
             created_at: "2026-01-01 10:00:00".to_string(),
             updated_at: "2026-01-01 10:00:00".to_string(),
-
         }
     }
 

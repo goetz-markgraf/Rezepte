@@ -31,7 +31,7 @@
     <ul class="heute-rezept-liste">
         {% for rezept in abschnitt.rezepte %}
         <li class="heute-rezept-item">
-            <a href="/recipes/{{ rezept.id }}" class="heute-rezept-titel">{{ rezept.title }}</a>
+            {% if let Some(emoji) = rezept.emoji %}<span class="recipe-emoji">{{ emoji }}</span> {% endif %}{% if let Some(emoji) = rezept.emoji %}<span class="recipe-emoji">{{ emoji }}</span> {% endif %}<a href="/recipes/{{ rezept.id }}" class="heute-rezept-titel">{{ rezept.title }}</a>
         </li>
         {% endfor %}
     </ul>

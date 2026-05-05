@@ -1006,13 +1006,10 @@ mod tests {
             .await
             .unwrap();
 
-        let results = filter_recipes_by_categories(
-            &pool,
-            &["Kuchen".to_string(), "Brot".to_string()],
-            "",
-        )
-        .await
-        .unwrap();
+        let results =
+            filter_recipes_by_categories(&pool, &["Kuchen".to_string(), "Brot".to_string()], "")
+                .await
+                .unwrap();
 
         let titles: Vec<&str> = results.iter().map(|r| r.title.as_str()).collect();
         assert!(
@@ -1079,9 +1076,7 @@ mod tests {
                 .unwrap();
         }
 
-        let results = filter_recipes_by_categories(&pool, &[], "")
-            .await
-            .unwrap();
+        let results = filter_recipes_by_categories(&pool, &[], "").await.unwrap();
         assert_eq!(results.len(), 3);
     }
 
@@ -1897,4 +1892,3 @@ mod tests {
         );
     }
 }
-

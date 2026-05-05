@@ -90,13 +90,7 @@ async fn wochenvorschau_shows_recipe_today() {
     // Given: Rezept mit planned_date = heute
     let (app, _temp) = setup_test_app().await;
     let today = date_in_days(0); // Heute
-    create_recipe_with_date(
-        &app,
-        "Heute-Rezept",
-        &["Mittagessen"],
-        Some(&today),
-    )
-    .await;
+    create_recipe_with_date(&app, "Heute-Rezept", &["Mittagessen"], Some(&today)).await;
 
     // When: GET /wochenvorschau
     let (_status, body) = get_body(app, "/wochenvorschau").await;
@@ -113,13 +107,7 @@ async fn wochenvorschau_shows_recipe_in_15_day_range() {
     // Given: Rezept mit planned_date in 14 Tagen (Tag 15, index 14)
     let (app, _temp) = setup_test_app().await;
     let day_14 = date_in_days(14);
-    create_recipe_with_date(
-        &app,
-        "Tag-14-Rezept",
-        &["Mittagessen"],
-        Some(&day_14),
-    )
-    .await;
+    create_recipe_with_date(&app, "Tag-14-Rezept", &["Mittagessen"], Some(&day_14)).await;
 
     // When: GET /wochenvorschau
     let (_status, body) = get_body(app, "/wochenvorschau").await;
@@ -136,13 +124,7 @@ async fn wochenvorschau_does_not_show_recipe_after_15_days() {
     // Given: Rezept mit planned_date = Tag 15 (außerhalb des 15-Tage-Fensters)
     let (app, _temp) = setup_test_app().await;
     let day_15 = date_in_days(15);
-    create_recipe_with_date(
-        &app,
-        "Tag-15-Rezept",
-        &["Mittagessen"],
-        Some(&day_15),
-    )
-    .await;
+    create_recipe_with_date(&app, "Tag-15-Rezept", &["Mittagessen"], Some(&day_15)).await;
 
     // When: GET /wochenvorschau
     let (_status, body) = get_body(app, "/wochenvorschau").await;
@@ -174,13 +156,7 @@ async fn wochenvorschau_shows_multiple_recipes_on_same_day() {
     // Given: Zwei Rezepte mit gleichem planned_date = heute
     let (app, _temp) = setup_test_app().await;
     let today = date_in_days(0); // Heute
-    create_recipe_with_date(
-        &app,
-        "Heute-Pfannkuchen",
-        &["Mittagessen"],
-        Some(&today),
-    )
-    .await;
+    create_recipe_with_date(&app, "Heute-Pfannkuchen", &["Mittagessen"], Some(&today)).await;
     create_recipe_with_date(&app, "Heute-Rührei", &["Mittagessen"], Some(&today)).await;
 
     // When: GET /wochenvorschau
@@ -227,10 +203,7 @@ async fn wochenvorschau_shows_zeitraum_header() {
     let (_status, body) = get_body(app, "/wochenvorschau").await;
 
     // Then: Zeitraum-Anzeige mit "–" im Body
-    assert!(
-        body.contains("–"),
-        "Zeitraum-Anzeige sollte sichtbar sein"
-    );
+    assert!(body.contains("–"), "Zeitraum-Anzeige sollte sichtbar sein");
 }
 
 #[tokio::test]
@@ -371,7 +344,7 @@ async fn wochenvorschau_enthaelt_keinen_button_zur_not_made_suche() {
     let (_status, body) = get_body(app, "/wochenvorschau").await;
 
     // Then: Der spezifische Button aus der Wochenvorschau sollte nicht mehr existieren
-    // (Wir prüfen auf CSS-Klasse und Button-Text, nicht auf den Link an sich, 
+    // (Wir prüfen auf CSS-Klasse und Button-Text, nicht auf den Link an sich,
     // da dieser nun global in der Top-Bar vorhanden ist)
     assert!(
         !body.contains("not-made-button"),

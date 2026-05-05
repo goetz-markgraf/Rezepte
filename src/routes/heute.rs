@@ -1,11 +1,9 @@
+use crate::emoji::recipe_emoji;
 use crate::error::AppError;
 use crate::models::get_recipes_drei_tage;
 use crate::templates::{HeuteRezeptItem, HeuteTagesabschnitt, HeuteTemplate};
 use askama::Template;
-use axum::{
-    extract::State,
-    response::Html,
-};
+use axum::{extract::State, response::Html};
 use sqlx::SqlitePool;
 use std::sync::Arc;
 
@@ -89,6 +87,11 @@ pub async fn heute_handler(State(pool): State<Arc<SqlitePool>>) -> Result<Html<S
                 .map(|r| HeuteRezeptItem {
                     id: r.id,
                     title: r.title.clone(),
+                    emoji: recipe_emoji(
+                        &r.title,
+                        r.ingredients.as_deref(),
+                        r.instructions.as_deref(),
+                    ),
                 })
                 .collect(),
         },
@@ -103,6 +106,11 @@ pub async fn heute_handler(State(pool): State<Arc<SqlitePool>>) -> Result<Html<S
                 .map(|r| HeuteRezeptItem {
                     id: r.id,
                     title: r.title.clone(),
+                    emoji: recipe_emoji(
+                        &r.title,
+                        r.ingredients.as_deref(),
+                        r.instructions.as_deref(),
+                    ),
                 })
                 .collect(),
         },
@@ -117,6 +125,11 @@ pub async fn heute_handler(State(pool): State<Arc<SqlitePool>>) -> Result<Html<S
                 .map(|r| HeuteRezeptItem {
                     id: r.id,
                     title: r.title.clone(),
+                    emoji: recipe_emoji(
+                        &r.title,
+                        r.ingredients.as_deref(),
+                        r.instructions.as_deref(),
+                    ),
                 })
                 .collect(),
         },

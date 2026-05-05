@@ -2020,3 +2020,17 @@ fieldset.merge-field-row legend.merge-field-label {
         right: auto;
     }
 }
+
+/* Recipe Emoji Styling */
+.recipe-emoji {
+    display: inline-block;
+    margin-right: 0.4em;
+    font-size: 1.1em;
+}
+
+@media (max-width: 767px) {
+    .recipe-emoji {
+        font-size: 1em;
+        margin-right: 0.3em;
+    }
+}
