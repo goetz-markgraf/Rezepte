@@ -58,6 +58,7 @@ Intelligente Filter und Suche für schnelle Rezeptfindung.
 | 37 | [Einklappen der Filter](./37-filter-einklappen/story.md) | Abgeschlossen |
 | 40 | [Filter standardmäßig eingeklappt](./40-filter-default-eingeklappt/story.md) | Abgeschlossen |
 | 45 | [Hamburger-Menü öffnet nicht an der richtigen Position](./45-hamburger-menu-position/story.md) | Abgeschlossen |
+| 46 | [Emoji für Rezepte mit Beschreibung in Listen](./46-emoji-fuer-rezepte-mit-beschreibung-in-listen/story.md) | Abgeschlossen |
 
 ---
 
