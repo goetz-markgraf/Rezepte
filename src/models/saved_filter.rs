@@ -1,13 +1,10 @@
 use sqlx::FromRow;
 
-/// Ein gespeicherter Filter in der Datenbank.
 #[derive(Debug, FromRow)]
 pub struct SavedFilter {
     pub id: i64,
     pub name: String,
     pub query_string: String,
-    #[allow(dead_code)]
-    pub created_at: String,
 }
 
 /// Eingabedaten zum Erstellen eines gespeicherten Filters.

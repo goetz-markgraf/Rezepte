@@ -84,8 +84,6 @@ pub struct RecipeDetailQuery {
 pub struct IndexQuery {
     pub deleted: Option<String>,
     pub q: Option<String>,
-    #[allow(dead_code)]
-    pub bewertung: Option<String>,
     pub save_error: Option<String>,
     pub save_name: Option<String>,
     pub filter_collapsed: Option<String>,

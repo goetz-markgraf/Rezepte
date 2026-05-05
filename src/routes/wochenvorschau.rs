@@ -4,19 +4,11 @@ use crate::models::get_recipes_current_week;
 use crate::templates::{Wochentag, WochentagesEintragItem, WochenvorschauTemplate};
 use askama::Template;
 use axum::{
-    extract::{Query, State},
+    extract::State,
     response::Html,
 };
-use serde::Deserialize;
 use sqlx::SqlitePool;
 use std::sync::Arc;
-
-/// Query-Parameter für die Wochenvorschau (jetzt ohne week-Parameter)
-#[derive(Deserialize)]
-pub struct WeekQuery {
-    #[allow(dead_code)]
-    pub week: Option<String>, // Für Rückwärtskompatibilität, wird ignoriert
-}
 
 const GERMAN_MONTHS_LONG: &[&str] = &[
     "Januar",
@@ -33,7 +25,6 @@ const GERMAN_MONTHS_LONG: &[&str] = &[
     "Dezember",
 ];
 
-#[allow(dead_code)]
 const GERMAN_WEEKDAYS_SHORT: &[&str] = &["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
 /// Gibt den kurzen deutschen Wochentag-Namen zurück: "Mo" bis "So".
@@ -60,9 +51,7 @@ fn format_date_kurz(date: time::Date) -> String {
 }
 
 /// Handler für GET /wochenvorschau — zeigt alle Rezepte der nächsten 15 Tage.
-/// Die Navigation mit week-Parameter wurde entfernt (Story 38).
 pub async fn wochenvorschau_handler(
-    Query(_query): Query<WeekQuery>,
     State(pool): State<Arc<SqlitePool>>,
 ) -> Result<Html<String>, AppError> {
     let today = time::OffsetDateTime::now_utc().date();
