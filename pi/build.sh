@@ -15,6 +15,7 @@ SERVICE_NAME="rezepte"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 BINARY="${APP_DIR}/target/release/rezepte"
 DATABASE_URL="sqlite:${APP_DIR}/data/recipes.db"
+NGINX_CONF_DIR="/home/${PI_USER}/nginx-config"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -52,6 +53,15 @@ WantedBy=multi-user.target
 EOF
     sudo systemctl daemon-reload
     sudo systemctl enable "${SERVICE_NAME}"
+fi
+
+# Nginx-Konfiguration aktualisieren
+if [ -f "${NGINX_CONF_DIR}/combined.conf" ]; then
+    echo -e "${BLUE}Aktualisiere Nginx-Konfiguration...${NC}"
+    sudo cp "${NGINX_CONF_DIR}/combined.conf" "/etc/nginx/sites-available/combined"
+    sudo ln -sf "/etc/nginx/sites-available/combined" "/etc/nginx/sites-enabled/combined"
+    sudo rm -f "/etc/nginx/sites-enabled/default"
+    sudo nginx -t && sudo systemctl reload nginx
 fi
 
 # Service starten

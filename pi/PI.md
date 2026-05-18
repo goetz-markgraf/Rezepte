@@ -35,34 +35,7 @@ sudo apt update && sudo apt install -y \
 sudo apt install -y nginx
 ```
 
-Konfiguration anlegen:
-
-```bash
-sudo vi /etc/nginx/sites-available/rezepte
-```
-
-Inhalt:
-
-```nginx
-server {
-    listen 80;
-    server_name markgrafen-pi markgrafen-pi.local _;
-
-    location / {
-        proxy_pass http://127.0.0.1:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
-
-Aktivieren:
-
-```bash
-sudo ln -s /etc/nginx/sites-available/rezepte /etc/nginx/sites-enabled/
-sudo rm /etc/nginx/sites-enabled/default
-sudo nginx -t && sudo systemctl enable nginx && sudo systemctl start nginx
-```
+Die Nginx-Konfiguration wird automatisch vom `deploy_to_pi.sh`-Skript des Dashboard-Projekts kopiert und aktiviert. Es ist keine manuelle Konfiguration erforderlich.
 
 ## 4. Erstes Deployment (auf dem Mac)
 
@@ -91,3 +64,7 @@ pi/update_pi.sh
 ```
 
 Die Datenbank auf dem Pi wird dabei nie überschrieben.
+
+## Wichtig
+
+Die Nginx-Konfiguration wird automatisch vom `deploy_to_pi.sh`-Skript des Dashboard-Projekts kopiert und aktiviert. Es ist keine manuelle Konfiguration erforderlich. Die Konfiguration wird in `/home/${PI_USER}/nginx-config/` gespeichert und von dort aus aktiviert.

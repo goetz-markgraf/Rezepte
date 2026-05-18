@@ -10,6 +10,7 @@ set -e
 PI_HOST="markgrafen-pi"
 PI_USER="${USER}"
 PI_TARGET_DIR="/home/${PI_USER}/rezepte"
+NGINX_CONF_DIR="/home/${PI_USER}/nginx-config"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -50,7 +51,17 @@ if [ "$INIT_MODE" == "true" ]; then
     echo ""
     echo -e "${BLUE}Erstmaliges Setup: Kopiere Datenbank...${NC}"
     scp "data/recipes.db" "${PI_USER}@${PI_HOST}:${PI_TARGET_DIR}/data/"
-    echo -e "${GREEN}Datenbank kopiert.${NC}"
+    
+    # Nginx-Konfiguration kopieren
+    echo -e "${BLUE}Kopiere Nginx-Konfiguration...${NC}"
+    ssh "${PI_USER}@${PI_HOST}" "mkdir -p ${NGINX_CONF_DIR}"
+    scp "../pi/nginx/combined.conf" "${PI_USER}@${PI_HOST}:${NGINX_CONF_DIR}/"
+    
+    # Nginx-Konfiguration aktivieren
+    echo -e "${BLUE}Aktiviere Nginx-Konfiguration...${NC}"
+    ssh "${PI_USER}@${PI_HOST}" "sudo cp ${NGINX_CONF_DIR}/combined.conf /etc/nginx/sites-available/combined && sudo ln -sf /etc/nginx/sites-available/combined /etc/nginx/sites-enabled/combined && sudo rm -f /etc/nginx/sites-enabled/default && sudo nginx -t && sudo systemctl reload nginx"
+    
+    echo -e "${GREEN}Datenbank und Nginx-Konfiguration kopiert.${NC}"
 fi
 
 echo ""

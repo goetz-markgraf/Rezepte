@@ -9,6 +9,7 @@ set -e
 PI_HOST="markgrafen-pi"
 PI_USER="${USER}"
 PI_TARGET_DIR="/home/${PI_USER}/rezepte"
+NGINX_CONF_DIR="/home/${PI_USER}/nginx-config"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -22,9 +23,15 @@ echo ""
 echo -e "${BLUE}[1/3] Kopiere Quellcode...${NC}"
 pi/deploy_to_pi.sh
 
-# 2. Auf dem Pi: kompilieren und neustarten
+# 2. Nginx-Konfiguration aktualisieren
 echo ""
-echo -e "${BLUE}[2/3] Kompiliere auf dem Pi...${NC}"
+echo -e "${BLUE}[2/3] Aktualisiere Nginx-Konfiguration...${NC}"
+scp "../pi/nginx/combined.conf" "${PI_USER}@${PI_HOST}:${NGINX_CONF_DIR}/"
+ssh "${PI_USER}@${PI_HOST}" "sudo cp ${NGINX_CONF_DIR}/combined.conf /etc/nginx/sites-available/combined && sudo ln -sf /etc/nginx/sites-available/combined /etc/nginx/sites-enabled/combined && sudo rm -f /etc/nginx/sites-enabled/default && sudo nginx -t && sudo systemctl reload nginx"
+
+# 3. Auf dem Pi: kompilieren und neustarten
+echo ""
+echo -e "${BLUE}[3/3] Kompiliere auf dem Pi...${NC}"
 ssh "${PI_USER}@${PI_HOST}" "bash ${PI_TARGET_DIR}/pi/build.sh"
 
 echo ""
