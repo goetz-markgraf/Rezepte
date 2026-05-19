@@ -26,7 +26,7 @@ pi/deploy_to_pi.sh
 # 2. Nginx-Konfiguration aktualisieren
 echo ""
 echo -e "${BLUE}[2/3] Aktualisiere Nginx-Konfiguration...${NC}"
-scp "../pi/nginx/combined.conf" "${PI_USER}@${PI_HOST}:${NGINX_CONF_DIR}/"
+scp "../nginx/combined.conf" "${PI_USER}@${PI_HOST}:${NGINX_CONF_DIR}/"
 ssh "${PI_USER}@${PI_HOST}" "sudo cp ${NGINX_CONF_DIR}/combined.conf /etc/nginx/sites-available/combined && sudo ln -sf /etc/nginx/sites-available/combined /etc/nginx/sites-enabled/combined && sudo rm -f /etc/nginx/sites-enabled/default && sudo nginx -t && sudo systemctl reload nginx"
 
 # 3. Auf dem Pi: kompilieren und neustarten
