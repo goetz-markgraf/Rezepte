@@ -1447,7 +1447,7 @@ mod tests {
         .unwrap();
         create_recipe(
             &pool,
-            &make_recipe_with_date("Roggenbrot", "Brot", Some("1.6.2026")),
+            &make_recipe_with_date("Roggenbrot", "Brot", Some(&date_in_days(30))),
         )
         .await
         .unwrap();

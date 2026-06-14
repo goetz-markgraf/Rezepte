@@ -55,7 +55,7 @@ async fn three_filters_category_not_made_returns_matching_recipes() {
     //          "Linseneintopf" (Mittagessen, planned_date 2024-01-01)
     let (app, _temp) = setup_test_app().await;
     create_recipe(&app, "Dinkelbrot", &["Brot"], Some("1.6.2025")).await;
-    create_recipe(&app, "Roggenbrot", &["Brot"], Some("1.6.2026")).await;
+    create_recipe(&app, "Roggenbrot", &["Brot"], Some("1.6.2099")).await;
     create_recipe(&app, "Linseneintopf", &["Mittagessen"], Some("1.1.2024")).await;
 
     // Wenn: GET /?kategorie=Brot&filter=laenger-nicht-gemacht

@@ -80,7 +80,7 @@ test.describe('Kombinierte Filter (Story 12)', () => {
     // Gegeben: "Dinkelbrot" (Brot, 1.6.2025), "Roggenbrot" (Brot, 1.6.2026), "Linseneintopf" (Mittagessen, 1.1.2024)
     const suffix = `k6-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     await createRecipeWithOptions(page, `Dinkelbrot-${suffix}`, ['Brot'], '1.6.2025');
-    await createRecipeWithOptions(page, `Roggenbrot-${suffix}`, ['Brot'], '1.6.2026');
+    await createRecipeWithOptions(page, `Roggenbrot-${suffix}`, ['Brot'], '1.6.2099');
     await createRecipeWithOptions(page, `Linseneintopf-${suffix}`, ['Mittagessen'], '1.1.2024');
 
     // Wenn: URL direkt aufrufen mit zwei Filtern
