@@ -79,3 +79,33 @@ Tests sind in Playwright geschrieben und liegen in einem separaten Verzeichnis.
 - **Isolation:** Separate SQLite-DB pro Test-Run (`TEST_DATABASE_URL`)
 - **App-Start:** Playwright startet Rust-App automatisch via `webServer` Config
 - **Befehl:** `npm run test:e2e`
+
+## Agents & Skills
+
+### Agents (`.opencode/agents/`)
+
+| Agent | Beschreibung |
+|-------|-------------|
+| `run-story` | Orchestriert eine Story vollständig (Refining → Plan → Impl → Review) |
+| `complete-backlog` | Arbeitet das gesamte Backlog autonom ab |
+
+### Skills (`.opencode/skills/`)
+
+Skills werden von Agents per `skill`-Tool geladen:
+
+| Skill | Beschreibung |
+|-------|-------------|
+| `refine-story` | Story fachlich verfeinern, `story.md` erstellen |
+| `plan-implementation` | Technischen Implementierungsplan (`plan.md`) erstellen |
+| `implement` | Plan nach TDD implementieren, Qualitätschecks |
+| `review-implementation` | Implementierung reviewen, `review.md` erstellen |
+| `rework` | Prio-1-Findings aus Review beheben |
+| `tdd` | TDD-Methodik (BDD Dual-Loop) |
+| `frag-den-user` | User per iMessage befragen (für autonome Agents) |
+| `informiere-den-user` | User per iMessage informieren (für autonome Agents) |
+
+### Commands (`.opencode/commands/`)
+
+| Command | Beschreibung |
+|---------|-------------|
+| `add-story` | Neue Story zum Backlog hinzufügen |
