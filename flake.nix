@@ -7,6 +7,7 @@
       nodejs_24
       bun
       opencode
+      claude-code
       zig
       cargo
     ];
