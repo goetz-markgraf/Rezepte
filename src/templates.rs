@@ -184,6 +184,8 @@ pub struct IndexTemplate {
     pub filter_collapsed: bool,
     /// URL für den Toggle-Button (ein-/ausklappen).
     pub filter_collapsed_toggle_url: String,
+    /// Ob die Vision-API konfiguriert ist (zeigt „Aus Foto"-Button).
+    pub vision_enabled: bool,
 }
 
 #[derive(Debug)]
@@ -231,6 +233,15 @@ pub struct DublettenPaarItem {
     pub titel_a: String,
     pub id_b: i64,
     pub titel_b: String,
+}
+
+/// Template für die Upload-Seite "Rezept aus Foto".
+#[derive(Template)]
+#[template(path = "recipes/from_photo.html")]
+pub struct PhotoUploadTemplate {
+    pub error: Option<String>,
+    #[allow(dead_code)]
+    pub vision_enabled: bool,
 }
 
 /// Template für die Dubletten-Übersichtsseite.

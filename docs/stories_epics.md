@@ -19,6 +19,7 @@ Das Herzstück der Anwendung - Rezepte erstellen, bearbeiten, anzeigen und lösc
 | 04 | [Rezept-Detailansicht](./04-rezept-detailansicht/story.md) | Abgeschlossen |
 | 36 | [Markdown-Rendering in der Rezept-Detailansicht](./36-markdown-in-rezeptdetails/story.md) | Abgeschlossen |
 | 43 | [Speichern-Button in Bearbeitungsansicht oben hinzufügen](./43-speichern-button-oben-hinzufuegen/story.md) | Abgeschlossen |
+| 47 | [Rezept aus Foto erstellen](./47-rezept-aus-foto/story.md) | Abgeschlossen |
 
 ---
 

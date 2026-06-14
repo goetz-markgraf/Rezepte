@@ -1,4 +1,5 @@
 use axum::{
+    extract::FromRef,
     routing::{get, post},
     Router,
 };
@@ -12,8 +13,29 @@ pub mod recipes;
 pub mod test;
 pub mod wochenvorschau;
 
-pub fn create_router(pool: SqlitePool) -> Router {
-    let pool = Arc::new(pool);
+#[derive(Clone)]
+pub struct AppState {
+    pub pool: Arc<SqlitePool>,
+    pub config: Arc<crate::config::Config>,
+}
+
+impl FromRef<AppState> for Arc<SqlitePool> {
+    fn from_ref(state: &AppState) -> Self {
+        state.pool.clone()
+    }
+}
+
+impl FromRef<AppState> for Arc<crate::config::Config> {
+    fn from_ref(state: &AppState) -> Self {
+        state.config.clone()
+    }
+}
+
+pub fn create_router(pool: SqlitePool, config: crate::config::Config) -> Router {
+    let state = AppState {
+        pool: Arc::new(pool),
+        config: Arc::new(config),
+    };
 
     Router::new()
         .route("/", get(recipes::index))
@@ -32,6 +54,14 @@ pub fn create_router(pool: SqlitePool) -> Router {
             get(recipes::merge_form_handler).post(recipes::merge_handler),
         )
         .route(
+            "/recipes/from-photo",
+            get(recipes::photo_upload_form),
+        )
+        .route(
+            "/recipes/from-photo/analyze",
+            post(recipes::analyze_photo_handler),
+        )
+        .route(
             "/recipes/:id",
             get(recipes::show_recipe).post(recipes::update_recipe_handler),
         )
@@ -47,7 +77,7 @@ pub fn create_router(pool: SqlitePool) -> Router {
         .route("/api/test/clear-recipes", post(test::clear_recipes))
         .route("/api/test/seed-recipe", post(test::seed_recipe))
         .nest_service("/static", ServeDir::new("src/static"))
-        .with_state(pool)
+        .with_state(state)
 }
 
 async fn health_check() -> &'static str {
