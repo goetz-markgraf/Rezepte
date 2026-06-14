@@ -11,7 +11,7 @@ async fn setup_test_app() -> (axum::Router, tempfile::NamedTempFile) {
     let temp_file = tempfile::NamedTempFile::new().unwrap();
     let db_url = format!("sqlite:{}", temp_file.path().to_str().unwrap());
     let pool = create_pool(&db_url).await.unwrap();
-    let app = create_router(pool);
+    let app = create_router(pool, rezepte::config::Config::from_env());
     (app, temp_file)
 }
 

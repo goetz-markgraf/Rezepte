@@ -11,9 +11,11 @@ use crate::models::{
 use crate::templates::{
     CategoryFilterItem, ConfirmDeleteTemplate, DublettenPaarItem, DublettenUebersichtTemplate,
     DuplicateHintTemplate, IndexTemplate, MergeRezeptInfo, MergeTemplate, NotFoundTemplate,
-    RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem, SavedFilterItem,
+    PhotoUploadTemplate, RecipeDetailTemplate, RecipeFormTemplate, RecipeListItem, SavedFilterItem,
     WeekdayPickerRecipeInfo,
 };
+use crate::vision;
+use crate::config::Config;
 use askama::Template;
 use axum::{
     extract::{Path, Query, RawQuery, State},
@@ -401,6 +403,7 @@ fn normalize_categories(raw: Vec<String>) -> Vec<String> {
 /// Unterstützt `?filter=naechste-7-tage` für den "Nächste 7 Tage"-Filter.
 pub async fn index(
     State(pool): State<Arc<SqlitePool>>,
+    State(config): State<Arc<Config>>,
     Query(query): Query<IndexQuery>,
     RawQuery(raw_query): RawQuery,
 ) -> Result<impl IntoResponse, AppError> {
@@ -512,6 +515,7 @@ pub async fn index(
         save_name: query.save_name,
         filter_collapsed,
         filter_collapsed_toggle_url,
+        vision_enabled: config.vision_enabled(),
     };
     Ok(Html(render_template(template)?))
 }
@@ -1081,6 +1085,106 @@ pub async fn merge_handler(
         })?;
 
     Ok(Redirect::to(&format!("/recipes/{}?success=1", target_id)).into_response())
+}
+
+/// Zeigt die Upload-Seite "Rezept aus Foto erstellen".
+/// GET /recipes/from-photo
+pub async fn photo_upload_form(
+    State(config): State<Arc<Config>>,
+) -> Result<impl IntoResponse, AppError> {
+    let template = PhotoUploadTemplate {
+        error: None,
+        vision_enabled: config.vision_enabled(),
+    };
+    Ok(Html(render_template(template)?))
+}
+
+/// Empfängt ein Foto, schickt es an die Vision-API und zeigt das vorausgefüllte Formular.
+/// POST /recipes/from-photo/analyze
+pub async fn analyze_photo_handler(
+    State(pool): State<Arc<SqlitePool>>,
+    State(config): State<Arc<Config>>,
+    mut multipart: axum::extract::Multipart,
+) -> Result<impl IntoResponse, AppError> {
+    let mut image_bytes: Option<Vec<u8>> = None;
+    let mut mime_type = "image/jpeg".to_string();
+
+    while let Some(field) = multipart.next_field().await.map_err(|e| {
+        AppError::BadRequest(format!("Fehler beim Lesen des Uploads: {}", e))
+    })? {
+        if field.name() == Some("photo") {
+            let content_type = field
+                .content_type()
+                .unwrap_or("image/jpeg")
+                .to_string();
+            let bytes = field.bytes().await.map_err(|e| {
+                AppError::BadRequest(format!("Fehler beim Lesen der Datei: {}", e))
+            })?;
+
+            if bytes.is_empty() {
+                let template = PhotoUploadTemplate {
+                    error: Some("Bitte ein Foto auswählen.".to_string()),
+                    vision_enabled: config.vision_enabled(),
+                };
+                return Ok((StatusCode::BAD_REQUEST, Html(render_template(template)?)).into_response());
+            }
+
+            const MAX_SIZE: usize = 10 * 1024 * 1024; // 10 MB
+            if bytes.len() > MAX_SIZE {
+                let template = PhotoUploadTemplate {
+                    error: Some("Das Foto ist zu groß. Maximale Größe: 10 MB.".to_string()),
+                    vision_enabled: config.vision_enabled(),
+                };
+                return Ok((StatusCode::BAD_REQUEST, Html(render_template(template)?)).into_response());
+            }
+
+            mime_type = content_type;
+            image_bytes = Some(bytes.to_vec());
+        }
+    }
+
+    let bytes = match image_bytes {
+        Some(b) => b,
+        None => {
+            let template = PhotoUploadTemplate {
+                error: Some("Bitte ein Foto auswählen.".to_string()),
+                vision_enabled: config.vision_enabled(),
+            };
+            return Ok((StatusCode::BAD_REQUEST, Html(render_template(template)?)).into_response());
+        }
+    };
+
+    let extract = match vision::analyze_image(&config, &bytes, &mime_type).await {
+        Ok(e) => e,
+        Err(AppError::BadRequest(msg)) => {
+            let template = PhotoUploadTemplate {
+                error: Some(msg),
+                vision_enabled: config.vision_enabled(),
+            };
+            return Ok((StatusCode::UNPROCESSABLE_ENTITY, Html(render_template(template)?)).into_response());
+        }
+        Err(e) => return Err(e),
+    };
+
+    let planned_recipes = load_planned_recipes_for_weekday_picker(&pool).await?;
+    let selected_categories = extract
+        .category
+        .map(|c| vec![c])
+        .unwrap_or_default();
+
+    let template = RecipeFormTemplate {
+        categories: VALID_CATEGORIES.iter().map(|&s| s.to_string()).collect(),
+        errors: Vec::new(),
+        title: extract.title,
+        selected_categories,
+        ingredients: extract.ingredients,
+        instructions: extract.instructions,
+        recipe_id: None,
+        planned_date: String::new(),
+        planned_recipes,
+    };
+
+    Ok(Html(render_template(template)?).into_response())
 }
 
 #[cfg(test)]

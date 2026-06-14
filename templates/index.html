@@ -12,6 +12,9 @@
 
 <div class="actions">
     <a href="/recipes/new" class="btn-primary btn-icon-text">{% call icons::icon_plus() %}Neues Rezept</a>
+    {% if vision_enabled %}
+    <a href="/recipes/from-photo" class="btn-secondary btn-icon-text">📷 Aus Foto</a>
+    {% endif %}
 </div>
 
 <form class="search-form" action="/" method="GET">

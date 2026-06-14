@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% import "components/icons.html" as icons %}
+
+{% block title %}Rezept aus Foto erstellen - Rezepte{% endblock %}
+
+{% block content %}
+<div class="form-header">
+    <h1>Rezept aus Foto erstellen</h1>
+</div>
+
+{% if let Some(err) = error %}
+<div class="errors" role="alert">
+    <ul>
+        <li>{{ err }}</li>
+    </ul>
+</div>
+{% endif %}
+
+<form method="POST" action="/recipes/from-photo/analyze" enctype="multipart/form-data">
+    <div class="form-group">
+        <label for="photo">Foto des Rezepts</label>
+        <input
+            type="file"
+            id="photo"
+            name="photo"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/*"
+            capture="camera"
+            required
+            aria-required="true"
+        >
+        <p class="form-hint">Erlaubte Formate: JPEG, PNG, WEBP, HEIC. Maximale Größe: 10 MB.</p>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn-primary btn-icon-text">{% call icons::icon_check() %}Analysieren</button>
+        <a href="/" class="btn-secondary btn-icon-text">{% call icons::icon_x() %}Abbrechen</a>
+    </div>
+</form>
+{% endblock %}

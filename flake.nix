@@ -10,6 +10,7 @@
       claude-code
       zig
       cargo
+      rust-analyzer
     ];
   };
 }

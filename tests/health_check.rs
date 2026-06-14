@@ -37,7 +37,7 @@ async fn spawn_app() -> SocketAddr {
         .expect("Failed to create database pool");
 
     // Create router
-    let app = rezepte::routes::create_router(db_pool);
+    let app = rezepte::routes::create_router(db_pool, rezepte::config::Config::from_env());
 
     // Spawn server
     tokio::spawn(async move {
