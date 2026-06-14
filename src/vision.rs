@@ -239,16 +239,6 @@ fn base64_encode(data: &[u8]) -> String {
 mod tests {
     use super::*;
 
-    fn make_vision_config() -> Config {
-        Config {
-            database_url: "sqlite::memory:".to_string(),
-            port: 8080,
-            vision_api_url: Some("https://api.example.com/v1".to_string()),
-            vision_api_key: Some("test-key".to_string()),
-            vision_model: "gpt-4o".to_string(),
-        }
-    }
-
     #[test]
     fn base64_encode_hello() {
         assert_eq!(base64_encode(b"Hello"), "SGVsbG8=");
