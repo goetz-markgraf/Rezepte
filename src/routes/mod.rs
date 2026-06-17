@@ -7,6 +7,7 @@ use axum::{
 use sqlx::SqlitePool;
 use std::sync::Arc;
 use tower_http::services::ServeDir;
+use axum::extract::DefaultBodyLimit;
 
 pub mod heute;
 pub mod recipes;
@@ -77,6 +78,7 @@ pub fn create_router(pool: SqlitePool, config: crate::config::Config) -> Router 
         .route("/api/test/clear-recipes", post(test::clear_recipes))
         .route("/api/test/seed-recipe", post(test::seed_recipe))
         .nest_service("/static", ServeDir::new("src/static"))
+        .layer(DefaultBodyLimit::max(15 * 1024 * 1024)) // 15 MB für Foto-Uploads
         .with_state(state)
 }
 
