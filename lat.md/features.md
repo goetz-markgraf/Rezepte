@@ -56,3 +56,9 @@ Zutaten und Anleitung werden als Markdown gespeichert und in der Detailansicht g
 ## Emoji-Anzeige
 
 Rezepte mit Inhalt erhalten ein automatisch bestimmtes Emoji in der Listenansicht. Siehe [[domain#Emoji-Zuordnung]].
+
+## Rezept aus Foto
+
+Fotos von Rezepten können hochgeladen und via Vision-API (OpenAI-kompatibel) automatisch extrahiert werden. Das Ergebnis füllt das Rezept-Formular vor.
+
+Implementiert in [[src/vision.rs]] und [[src/routes/recipes.rs#analyze_photo_handler]]. Das Upload-Formular zeigt beim Absenden einen Lade-Spinner mit Hinweistext, damit der User weiß, dass die Analyse läuft (kann mehrere Sekunden dauern). Maximale Upload-Größe: 10 MB (App-seitig); nginx muss `client_max_body_size` auf ≥ 10 MB gesetzt haben.

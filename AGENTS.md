@@ -1,3 +1,5 @@
+Read also AGENTS_second.md!
+
 # Before starting work
 
 - Run `lat search` to find sections relevant to your task. Read them to understand the design intent before writing code.
