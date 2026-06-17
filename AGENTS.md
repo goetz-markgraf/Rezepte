@@ -1,111 +1,105 @@
-# Projekt Rezepte
+# Before starting work
 
-Dieses Repo enthält den Code für eine einfach Rezepte-Verwaltung.
+- Run `lat search` to find sections relevant to your task. Read them to understand the design intent before writing code.
+- Run `lat expand` on user prompts to expand any `[[refs]]` — this resolves section names to file locations and provides context.
 
-Sprache: Deutsch
+# Post-task checklist (REQUIRED — do not skip)
 
-## Fachliche Informationen
+After EVERY task, before responding to the user:
 
-Du findest wichtige Business-Informationen und Angaben zu den Anforderungen und Story Maps in
-dem Ordern `docs/product`.
+- [ ] Update `lat.md/` if you added or changed any functionality, architecture, tests, or behavior
+- [ ] Run `lat check` — all wiki links and code refs must pass
+- [ ] Do not skip these steps. Do not consider your task done until both are complete.
 
-- `docs/product/product-brief-Rezepte.md`
-- `docs/product/prd.md`
+---
 
-## Architektur (Festlegungen)
+# What is lat.md?
 
-**Tech Stack:** Rust + Axum + Askama + sqlx + SQLite + HTMX
+This project uses [lat.md](https://www.npmjs.com/package/lat.md) to maintain a structured knowledge graph of its architecture, design decisions, and test specs in the `lat.md/` directory. It is a set of cross-linked markdown files that describe **what** this project does and **why** — the domain concepts, key design decisions, business logic, and test specifications. Use it to ground your work in the actual architecture rather than guessing.
 
-**Wichtige Constraints:**
-- LAN-only Web-App, KEINE Authentifizierung
-- Single-User (beide Partner = gleicher User)
-- Last-write-wins bei Konflikten
-- DeepLink-fähige URLs mit Query-Parametern
-- SQLite-Datei wird extern gemountet (Backup-fähig)
+# Commands
 
-**Kategorien (hardcoded):** Mittagessen, Brot, Party, Kuchen, Snacks
-
-**Projektstruktur:**
-```
-src/
-├── main.rs, lib.rs, config.rs, db.rs, error.rs
-├── models/recipe.rs
-├── routes/recipes.rs, search.rs
-├── templates/ (Askama HTML)
-└── static/css/ (vanilla CSS)
+```bash
+lat locate "Section Name"      # find a section by name (exact, fuzzy)
+lat refs "file#Section"        # find what references a section
+lat search "natural language"  # semantic search across all sections
+lat expand "user prompt text"  # expand [[refs]] to resolved locations
+lat check                      # validate all links and code refs
 ```
 
-**Key Patterns:**
-- Server-Side Rendering, keine JSON-APIs für UI
-- HTMX für interaktive Elemente (Progressive Enhancement)
-- Form-Posts + Redirects (funktioniert ohne JS)
-- SQLite mit JSON-Array für Kategorien
+Run `lat --help` when in doubt about available commands or options.
 
-**Deployment:** Docker-Image, Port 8080, Volume /data für DB
+If `lat search` fails because no API key is configured, explain to the user that semantic search requires a key provided via `LAT_LLM_KEY` (direct value), `LAT_LLM_KEY_FILE` (path to key file), or `LAT_LLM_KEY_HELPER` (command that prints the key). Supported key prefixes: `sk-...` (OpenAI) or `vck_...` (Vercel). If the user doesn't want to set it up, use `lat locate` for direct lookups instead.
 
-Alle weiteren Informationen stehen in `docs/product/architecture.md`.
+# Syntax primer
 
-## Vorgehensweise
+- **Section ids**: `lat.md/path/to/file#Heading#SubHeading` — full form uses project-root-relative path (e.g. `lat.md/tests/search#RAG Replay Tests`). Short form uses bare file name when unique (e.g. `search#RAG Replay Tests`, `cli#search#Indexing`).
+- **Wiki links**: `[[target]]` or `[[target|alias]]` — cross-references between sections. Can also reference source code: `[[src/foo.ts#myFunction]]`.
+- **Source code links**: Wiki links in `lat.md/` files can reference functions, classes, constants, and methods in TypeScript/JavaScript/Python/Rust/Go/C files. Use the full path: `[[src/config.ts#getConfigDir]]`, `[[src/server.ts#App#listen]]` (class method), `[[lib/utils.py#parse_args]]`, `[[src/lib.rs#Greeter#greet]]` (Rust impl method), `[[src/app.go#Greeter#Greet]]` (Go method), `[[src/app.h#Greeter]]` (C struct). `lat check` validates these exist.
+- **Code refs**: `// @lat: [[section-id]]` (JS/TS/Rust/Go/C) or `# @lat: [[section-id]]` (Python) — ties source code to concepts
 
-### Organisation der Arbeit
+# Test specs
 
-Jede Story hat ein eigenes Verzeichnis im Ordner `docs` mit einer
-Nummer und einer Kurzbezeichnung. Die Nummer startet bei 1, die nächste
-Story erhält dann immer die jeweils nächste Nummer.
+Key tests can be described as sections in `lat.md/` files (e.g. `tests.md`). Add frontmatter to require that every leaf section is referenced by a `// @lat:` or `# @lat:` comment in test code:
 
-In dem Folder stehen dann die folgenden Dateien:
+```markdown
+---
+lat:
+  require-code-mention: true
+---
+# Tests
 
-docs/xx-desc
-├── story.md    (Fachliche Beschreibung, ohne Technik aber mit Akzeptanzkriterien)
-├── plan.md     (Technische Beschreibung und Liste der einzelnen Schritte, mit [ ] zum Abhaken)
-├── review.md   (Nach der Implementierung wird hier das Ergebnis der Review erstellt)
-├── adrs.md     (optional, ADR-Beschreibung, falls spezielle Entscheidungen notwendig sind)
-└── research.md (optional, Ergebnisse von Forschungen und Websuchen, falls notwendig)
+Authentication and authorization test specifications.
 
-### Implementierung
+## User login
 
-Jede Implementierung folgt dem TDD-Pattern:
-- Test schreiben, rot sehen
-- Implementierung schreiben, bis Test grün
-- Refactoring, Vereinfachung und Verbesserung der Implementierung, während der Test grün bleibt
+Verify credential validation and error handling for the login endpoint.
 
-### Abnahme-Tests
+### Rejects expired tokens
+Tokens past their expiry timestamp are rejected with 401, even if otherwise valid.
 
-Sobald ein fachliches Feature erstellt wird, muss es einen UI-Integrationstest dafür geben. Diese
-Tests sind in Playwright geschrieben und liegen in einem separaten Verzeichnis.
+### Handles missing password
+Login request without a password field returns 400 with a descriptive error.
+```
 
-**Wichtige Details:**
-- **Testdaten:** SQL-Seed-Skripte in `tests/seeds/`
-- **Isolation:** Separate SQLite-DB pro Test-Run (`TEST_DATABASE_URL`)
-- **App-Start:** Playwright startet Rust-App automatisch via `webServer` Config
-- **Befehl:** `npm run test:e2e`
+Every section MUST have a description — at least one sentence explaining what the test verifies and why. Empty sections with just a heading are not acceptable. (This is a specific case of the general leading paragraph rule below.)
 
-## Agents & Skills
+Each test in code should reference its spec with exactly one comment placed next to the relevant test — not at the top of the file:
 
-### Agents (`.opencode/agents/`)
+```python
+# @lat: [[tests#User login#Rejects expired tokens]]
+def test_rejects_expired_tokens():
+    ...
 
-| Agent | Beschreibung |
-|-------|-------------|
-| `run-story` | Orchestriert eine Story vollständig (Refining → Plan → Impl → Review) |
-| `complete-backlog` | Arbeitet das gesamte Backlog autonom ab |
+# @lat: [[tests#User login#Handles missing password]]
+def test_handles_missing_password():
+    ...
+```
 
-### Skills (`.opencode/skills/`)
+Do not duplicate refs. One `@lat:` comment per spec section, placed at the test that covers it. `lat check` will flag any spec section not covered by a code reference, and any code reference pointing to a nonexistent section.
 
-Skills werden von Agents per `skill`-Tool geladen:
+# Section structure
 
-| Skill | Beschreibung |
-|-------|-------------|
-| `refine-story` | Story fachlich verfeinern, `story.md` erstellen |
-| `plan-implementation` | Technischen Implementierungsplan (`plan.md`) erstellen |
-| `implement` | Plan nach TDD implementieren, Qualitätschecks |
-| `review-implementation` | Implementierung reviewen, `review.md` erstellen |
-| `rework` | Prio-1-Findings aus Review beheben |
-| `tdd` | TDD-Methodik (BDD Dual-Loop) |
-| `frag-den-user` | User per iMessage befragen (für autonome Agents) |
-| `informiere-den-user` | User per iMessage informieren (für autonome Agents) |
+Every section in `lat.md/` **must** have a leading paragraph — at least one sentence immediately after the heading, before any child headings or other block content. The first paragraph must be ≤250 characters (excluding `[[wiki link]]` content). This paragraph serves as the section's overview and is used in search results, command output, and RAG context — keeping it concise guarantees the section's essence is always captured.
 
-### Commands (`.opencode/commands/`)
+```markdown
+# Good Section
 
-| Command | Beschreibung |
-|---------|-------------|
-| `add-story` | Neue Story zum Backlog hinzufügen |
+Brief overview of what this section documents and why it matters.
+
+More detail can go in subsequent paragraphs, code blocks, or lists.
+
+## Child heading
+
+Details about this child topic.
+```
+
+```markdown
+# Bad Section
+
+## Child heading
+
+Details about this child topic.
+```
+
+The second example is invalid because `Bad Section` has no leading paragraph. `lat check` validates this rule and reports errors for missing or overly long leading paragraphs.
