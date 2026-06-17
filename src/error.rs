@@ -3,6 +3,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
+#[derive(Debug)]
 pub enum AppError {
     Database(sqlx::Error),
     NotFound(String),
