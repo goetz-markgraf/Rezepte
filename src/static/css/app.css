@@ -2034,3 +2034,27 @@ fieldset.merge-field-row legend.merge-field-label {
         margin-right: 0.3em;
     }
 }
+
+/* Photo Upload: Lade-Indikator */
+.analyze-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    margin-top: 1rem;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.analyze-spinner {
+    width: 1.1em;
+    height: 1.1em;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

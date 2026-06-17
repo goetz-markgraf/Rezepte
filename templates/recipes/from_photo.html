@@ -31,8 +31,23 @@
     </div>
 
     <div class="form-actions">
-        <button type="submit" class="btn-primary btn-icon-text">{% call icons::icon_check() %}Analysieren</button>
+        <button type="submit" id="analyze-btn" class="btn-primary btn-icon-text">{% call icons::icon_check() %}Analysieren</button>
         <a href="/" class="btn-secondary btn-icon-text">{% call icons::icon_x() %}Abbrechen</a>
     </div>
+    <div id="analyze-loading" class="analyze-loading" hidden>
+        <span class="analyze-spinner" aria-hidden="true"></span>
+        Foto wird analysiert … das kann ein paar Sekunden dauern.
+    </div>
 </form>
+
+<script>
+    document.querySelector('form').addEventListener('submit', function() {
+        var btn = document.getElementById('analyze-btn');
+        var loading = document.getElementById('analyze-loading');
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        loading.hidden = false;
+    });
+</script>
 {% endblock %}
