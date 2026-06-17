@@ -4,7 +4,7 @@ use image::GenericImageView;
 use image::ImageFormat;
 use serde::{Deserialize, Serialize};
 
-const MAX_IMAGE_BYTES: usize = 5 * 1024 * 1024;
+const MAX_IMAGE_BYTES: usize = 3500 * 1024;
 const MAX_DIMENSION: u32 = 2048;
 
 pub struct RecipeExtract {
@@ -126,10 +126,10 @@ fn compress_for_vision(image_bytes: &[u8], mime_type: &str) -> Result<(Vec<u8>, 
         img.write_with_encoder(encoder)
             .map_err(|e| AppError::BadRequest(format!("Bild konnte nicht kodiert werden: {}", e)))?;
 
-        if buf.get_ref().len() <= MAX_IMAGE_BYTES || quality <= 20 {
+        if buf.get_ref().len() <= MAX_IMAGE_BYTES || quality <= 50 {
             break;
         }
-        quality -= 10;
+        quality -= 30;
     }
 
     tracing::info!(
@@ -187,7 +187,7 @@ pub async fn analyze_image(
     };
 
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(30))
+        .timeout(std::time::Duration::from_secs(120))
         .build()
         .map_err(|e| AppError::BadRequest(format!("HTTP-Client-Fehler: {}", e)))?;
 
@@ -358,22 +358,7 @@ mod tests {
 
     #[test]
     fn compress_large_image_reduces_size() {
-        let img = image::RgbImage::from_pixel(4000, 3000, image::Rgb([200, 100, 50]));
-        let mut buf = std::io::Cursor::new(Vec::new());
-        img.write_with_encoder(image::codecs::jpeg::JpegEncoder::new_with_quality(&mut buf, 95))
-            .unwrap();
-        let jpeg_bytes = buf.into_inner();
-
-        if jpeg_bytes.len() > MAX_IMAGE_BYTES {
-            let (compressed, mime) = compress_for_vision(&jpeg_bytes, "image/jpeg").unwrap();
-            assert!(compressed.len() <= MAX_IMAGE_BYTES);
-            assert_eq!(mime, "image/jpeg");
-        }
-    }
-
-    #[test]
-    fn compress_thumbnail_applied_for_oversized_dimensions() {
-        let mut img = image::RgbImage::new(5000, 4000);
+        let mut img = image::RgbImage::new(2500, 1800);
         for (x, y, pixel) in img.enumerate_pixels_mut() {
             let r = ((x * 17 + y * 31) % 256) as u8;
             let g = ((x * 7 + y * 13) % 256) as u8;
@@ -384,7 +369,27 @@ mod tests {
         img.write_with_encoder(image::codecs::jpeg::JpegEncoder::new_with_quality(&mut buf, 95))
             .unwrap();
         let jpeg_bytes = buf.into_inner();
-        assert!(jpeg_bytes.len() > MAX_IMAGE_BYTES, "test image must exceed 5MB, got {} bytes", jpeg_bytes.len());
+        assert!(jpeg_bytes.len() > MAX_IMAGE_BYTES, "test image must exceed limit, got {} bytes", jpeg_bytes.len());
+
+        let (compressed, mime) = compress_for_vision(&jpeg_bytes, "image/jpeg").unwrap();
+        assert!(compressed.len() <= MAX_IMAGE_BYTES);
+        assert_eq!(mime, "image/jpeg");
+    }
+
+    #[test]
+    fn compress_thumbnail_applied_for_oversized_dimensions() {
+        let mut img = image::RgbImage::new(3000, 2500);
+        for (x, y, pixel) in img.enumerate_pixels_mut() {
+            let r = ((x * 17 + y * 31) % 256) as u8;
+            let g = ((x * 7 + y * 13) % 256) as u8;
+            let b = ((x * 23 + y * 41) % 256) as u8;
+            *pixel = image::Rgb([r, g, b]);
+        }
+        let mut buf = std::io::Cursor::new(Vec::new());
+        img.write_with_encoder(image::codecs::jpeg::JpegEncoder::new_with_quality(&mut buf, 95))
+            .unwrap();
+        let jpeg_bytes = buf.into_inner();
+        assert!(jpeg_bytes.len() > MAX_IMAGE_BYTES, "test image must exceed limit, got {} bytes", jpeg_bytes.len());
 
         let (compressed, _) = compress_for_vision(&jpeg_bytes, "image/jpeg").unwrap();
         let reloaded = image::load_from_memory(&compressed).unwrap();
