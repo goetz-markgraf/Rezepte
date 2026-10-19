@@ -26,8 +26,8 @@ async fn main() -> Result<()> {
     let app = routes::create_router(db_pool, config);
 
     // Start server
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
-    tracing::info!("Server running on http://0.0.0.0:{}", port);
+    let listener = tokio::net::TcpListener::bind(format!("localhost:{}", port)).await?;
+    tracing::info!("Server running on http://localhost:{}", port);
 
     axum::serve(listener, app).await?;
 
